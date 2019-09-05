@@ -1,0 +1,398 @@
+<?php
+namespace Vinou\Utilities\General\Tools;
+
+use \Vinou\Utilities\General\Tools\Helper;
+use \Vinou\Utilities\General\Tools\Redirect;
+use \Vinou\ApiConnector\Api;
+use \Vinou\ApiConnector\Session\Session;
+use \Vinou\ApiConnector\FileHandler\Images;
+use \Vinou\ApiConnector\FileHandler\Pdf;
+
+class Render {
+
+    private $processors = [];
+	protected $templateRootPath = 'Resources/';
+	protected $templateDirectories = ['Templates/','Partials/','Layouts/'];
+    protected $templateStorages = [];
+	protected $layout = 'default.twig';
+	protected $languages = ['en','de'];
+	protected $defaultlang = 'en';
+	protected $pathsegments;
+    protected $options;
+	public $renderArr = [];
+	public $translation = NULL;
+	public $api;
+
+	public function __construct($options = NULL) {
+		is_null($options) ?: $this->options = $options;
+
+		if (defined('PAGE_LANGUAGES'))
+			$this->languages = unserialize(PAGE_LANGUAGES);
+
+		if (defined('PAGE_DEFAULTLANG'))
+			$this->defaultlang = PAGE_DEFAULTLANG;
+
+        $this->loadTemplateStorages();
+		$this->additionalPageData();
+	}
+
+	private function additionalPageData(){
+		$this->renderArr['path'] = $_SERVER['REQUEST_URI'];
+        $this->renderArr['backlink'] = isset($_SERVER['HTTP_REFERER']) ? $_SERVER['HTTP_REFERER'] : false;
+		$this->renderArr['host'] = $_SERVER['HTTP_HOST'];
+        $this->renderArr['date'] = strftime('%d.%m.%Y',time());
+        $this->renderArr['year'] = strftime('%Y',time());
+        $this->renderArr['time'] = strftime('%H:%M',time());
+        $this->renderArr['basketuuid'] = Session::getValue('basket');
+        $items = Session::getValue('card');
+        if ($items && !empty($items)) {
+            $this->renderArr['card'] = [];
+            foreach ($items as $item) {
+                $object = $item['item'];
+                $object['quantity'] = $item['quantity'];
+                $object['basket_item_id'] = $item['id'];
+                $this->renderArr['card'][$item['item_type'].'s'][$item['item_id']] = $object;
+            }
+        }
+
+
+		$this->renderArr['languages'] = $this->languages;
+		strpos($_SERVER['SERVER_PROTOCOL'],'https') ? $this->renderArr['protocol'] = 'https://' : $this->renderArr['protocol'] = 'http://';
+
+		if (count($this->pathsegments)>1 && in_array($this->pathsegments[0],$this->languages)) {
+			$this->renderArr['language'] = $this->pathsegments[0];
+		} else {
+			$this->renderArr['language'] = $this->defaultlang;
+		}
+	}
+
+    public function connect($token, $authId) {
+        $this->api = new Api (
+            $token,
+            $authId,
+            true
+        );
+
+        if ($this->api->status != 'connected') {
+            $this->renderPage('error.twig', [
+                'pageTitle' => 'No Connection'
+            ]);
+            die();
+        }
+
+        return true;
+    }
+
+    public function loadProcessor($processor, $object) {
+        $this->processors[$processor] = $object;
+    }
+
+    public function dataProcessing($options, $data = []) {
+        foreach ($options as $key => $option) {
+            if (is_string($option)) {
+                $function = $option;
+                $result = call_user_func_array([$this->api, $function], $data);
+            }
+            else if (is_array($option) && isset($option['function'])) {
+                $function = $option['function'];
+                unset($option['function']);
+
+                if (isset($option['params'])) $data = array_merge($data,$option['params']);
+
+                if (isset($option['postParams']) && !empty($_POST)) {
+                    $allowedKeys = explode(',', $option['postParams']);
+                    $this->renderArr['postParams'] = [];
+                    foreach ($_POST as $postKey => $postValue) {
+                        if (in_array($postKey, $allowedKeys)) {
+                            $data[$postKey] = $postValue;
+                            $this->renderArr['postParams'][$postKey] = $postValue;
+                        }
+                    }
+                }
+
+                if (isset($option['class']))
+                    $result = call_user_func_array([$option['class'], $function], $data);
+                elseif (isset($option['processor'])) {
+
+                    if (!isset($this->processors[$option['processor']]))
+                        throw new \Exception('data processor does not exists');
+
+                    $result = $this->processors[$option['processor']]->{$function}($data);
+                }
+                else
+                    $result = $this->api->{$function}($data);
+            }
+            else
+                throw new \Exception('dataProcessing for this route could not be solved');
+
+            $selector = isset($option['key']) ? $option['key'] : $key;
+            if (isset($result[$selector]))
+                $this->renderArr[$key] = $result[$selector];
+
+            else
+                $this->renderArr[$key] = $result;
+        }
+    }
+
+	private function initTwig() {
+		$options = $this->options;
+
+		$loader = new \Twig_Loader_Filesystem($this->templateStorages);
+
+		$twig = new \Twig_Environment($loader, array(
+			'cache' => defined('VINOU_CACHE') ? VINOU_CACHE : Helper::getNormDocRoot().'Cache',
+            'debug' => defined('VINOU_DEBUG') ? VINOU_DEBUG : false
+		));
+
+		// This line enables debugging and is included to activate dump()
+		$twig->addExtension(new \Twig_Extension_Debug());
+        $twig->addExtension(new \Vinou\Translations\TwigExtension(isset($options['language']) ? $options['language'] : 'de'));
+
+		$twig->addFilter( new \Twig_SimpleFilter('cast_to_array', function ($stdClassObject) {
+            $response = array();
+            foreach ($stdClassObject as $key => $value) {
+                $response[$key] = (array)$value;
+            }
+            return $response;
+        }));
+
+        $twig->addFilter( new \Twig_SimpleFilter('image', function ($imagesrc,$chstamp,$width) use($options) {
+            if ($options['cache']) {
+                $cachingResult = Images::storeApiImage($imagesrc,$chstamp,$width);
+                return $cachingResult['src'];
+            } else {
+                return Helper::getApiUrl() . $imagesrc;
+            }
+        }));
+
+        $twig->addFilter( new \Twig_SimpleFilter('region', function ($region_id,$countrycode) {
+        	if (strlen($region_id) > 0 && isset($this->translation['wineregions'][$countrycode][$region_id])) {
+            	return $this->translation['wineregions'][$countrycode][$region_id];
+            } else {
+            	return false;
+            }
+        }));
+        $twig->addFilter( new \Twig_SimpleFilter('taste', function ($taste_id) {
+        	if (is_string($taste_id) && strlen($taste_id)>0) {
+            	return $this->translation['tastes'][$taste_id];
+        	} else {
+        		return false;
+        	}
+        }));
+
+        $twig->addFilter( new \Twig_SimpleFilter('groupBy', function ($array, $groupKey) {
+            $return = [];
+            foreach ($array as $item) {
+                if (isset($item[$groupKey])) {
+                    if (!isset($return[$item[$groupKey]]))
+                        $return[$item[$groupKey]] = [];
+
+                    if (isset($item['id']))
+                        $return[$item[$groupKey]][$item['id']] = $item;
+                    else
+                        $return[$item[$groupKey]][] = $item;
+                }
+            }
+            return $return;
+        }));
+
+        $twig->addFilter( new \Twig_SimpleFilter('ksort', function ($array) {
+            ksort($array);
+            return $array;
+        }));
+
+        $twig->addFilter( new \Twig_SimpleFilter('gettype', function ($var) {
+            return gettype($var);
+        }));
+
+        //filter for decimal->brutto conversion 123.456 => 123.46
+        $twig->addFilter( new \Twig_SimpleFilter('brutto', function($decimal) {
+            return $decimal;
+        }));
+
+        //filter for decimal->netto conversion 123.456 => 146.92
+        $twig->addFilter( new \Twig_SimpleFilter('netto', function($decimal) {
+            return ceil($decimal * 10000 /119 ) / 100;
+        }));
+
+        //filter for formatting prices to currency: 123456.78 => 123.456,78
+        $twig->addFilter( new \Twig_SimpleFilter('currency', function($decimal) {
+            return number_format($decimal,2,',','.');
+        }));
+
+        $twig->addFilter( new \Twig_SimpleFilter('cleanup', function($string) {
+        	$string = substr($string, 0, 1) == ' ' ? substr($string, 1, strlen($string)) : $string;
+        	$string = str_replace(',', '', $string);
+        	$string = str_replace('@', '', $string);
+        	$string = str_replace('"', '', $string);
+            return $string;
+        }));
+
+        $twig->addFilter( new \Twig_SimpleFilter('src', function($file) {
+        	$change_date = @filemtime($_SERVER['DOCUMENT_ROOT'].'/'.$file);
+	        if (!$change_date) {
+	            //Fallback if mtime could not be found:
+	            $change_date = mktime(0, 0, 0, date('m'), date('d'), date('Y'));
+	        }
+            return $file.'?'.$change_date;
+        }));
+
+        //filter for formatting prices to currency: 123456.78 => 123.456,78
+        $twig->addFilter( new \Twig_SimpleFilter('arraytocsv', function($array) {
+        	if (is_array($array)) {
+            	return implode(',',$array);
+            } else {
+            	return false;
+            }
+        }));
+
+        //sum of an array of numbers
+        $twig->addFilter( new \Twig_SimpleFilter('sum', function($arr) {
+            return array_reduce($arr, function($carry,$item){ return $carry+$item; },0);
+        }));
+
+        //return a subarray from an array of array by index
+        $twig->addFilter( new \Twig_SimpleFilter('subArray', function($arr,$index) {
+            return array_map(function($item) use ($index) { return $item[$index]; }, $arr);
+        }));
+
+        $twig->addFilter( new \Twig_SimpleFilter('withAttribute', function($arr,$attr, $value) {
+            return array_filter($arr,
+                                function($item) use ($attr, $value) {
+                                    return $item[$attr] == $value;
+                                });
+        }));
+
+        $twig->addFilter( new \Twig_SimpleFilter('withoutAttribute', function($arr,$attr, $value) {
+            return array_filter($arr,
+                                function($item) use ($attr, $value) {
+                                    return $item[$attr] != $value;
+                                });
+        }));
+
+        $twig->addFilter( new \Twig_SimpleFilter('price', function($items) {
+            return array_reduce($items,
+                                function($carry, $item){
+                                    return $carry + ($item['price'] * $item['quantity']);
+                                },
+                                0);
+        }));
+
+        $twig->addFilter( new \Twig_SimpleFilter('wines', function($items) {
+            return array_filter($items,
+                                function($item){
+                                    return $item['type'] == 'wine';
+                                });
+        }));
+
+        $twig->addFilter( new \Twig_SimpleFilter('packages', function($items) {
+            return array_filter($items,
+                                function($item){
+                                    return $item['type'] == 'package';
+                                });
+        }));
+
+        $twig->addFilter( new \Twig_SimpleFilter('link', function($value,$url,$className = null) {
+        	$class = $_SERVER['REQUEST_URI'] == $url ? 'active' : '';
+        	if ($className)
+        		$class .= ' '.$className;
+            $link = '<a href="'.$url.'" class="'.$class.'">'.$value.'</a>';
+            return $link;
+        }, array('pre_escape' => 'html', 'is_safe' => array('html'))));
+
+        $twig->addFilter( new \Twig_SimpleFilter('language', function($value,$translations,$key,$current) {
+        	$class = $current == $key ? 'active' : '';
+        	if (isset($translations[$key])) {
+            	$link = '<a href="'.$translations[$key].'" class="'.$class.'">'.$value.'</a>';
+        	} else {
+        		$link = '<a class="disabled '.$class.'">'.$value.'</a>';
+        	}
+            return $link;
+        }, array('pre_escape' => 'html', 'is_safe' => array('html'))));
+
+
+		return $twig;
+	}
+
+	private function addMDContent($mdfile) {
+		$Parsedown = new \Parsedown();
+		$absFile = Helper::getNormDocRoot() . $mdfile;
+		$content = file_get_contents($absFile);
+		if (strpos($absFile,'.md')) {
+			$this->renderArr['content'] = $Parsedown->text($content);
+		} else {
+			$this->renderArr['content'] = $content;
+		}
+	}
+
+	public function renderPage($template = 'Default.twig',$options = NULL){
+		$view = $this->initTwig();
+		$template = $view->loadTemplate($template);
+		if (!is_null($options))
+			$this->renderOptions($options);
+		echo $template->render($this->renderArr);
+		exit();
+	}
+
+	public function renderOptions($options) {
+		if (is_array($options)) {
+			foreach ($options as $name => $value) {
+				switch ($name) {
+					case 'content':
+						$this->renderArr[$name] = $this->addMDContent($value);
+					default:
+						$this->renderArr[$name] = $value;
+						break;
+				}
+			}
+		} else if (is_string($options)) {
+			$this->renderArr['pageTitle'] = $options;
+		}
+	}
+
+	public function redirect($target) {
+		Redirect::internal($target);
+		exit();
+	}
+
+	public function setTemplateRootPath($path) {
+		$this->templateRootPath = $path;
+	}
+
+	public function setTemplateDirectories($directories) {
+		$this->templateDirectories = $directories;
+	}
+
+    public function loadTemplateStorages() {
+        foreach ($this->templateDirectories as $dir) {
+            $absDir = Helper::getNormDocRoot().$this->templateRootPath.$dir;
+            if (is_dir($absDir))
+                array_push($this->templateStorages, $absDir);
+        }
+    }
+
+    public function addTemplateStorages($rootDir, $folders = []) {
+        $rootDir = substr($rootDir, 0, 1) == '/' ? $rootDir : Helper::getNormDocRoot().$rootDir;
+        if (empty($folders) && is_dir($rootDir)) {
+            array_push($this->templateStorages, $rootDir);
+        } else {
+            foreach ($folders as $dir) {
+                if (is_dir($rootDir.$dir))
+                    array_push($this->templateStorages, $rootDir.$dir);
+            }
+        }
+
+    }
+
+    public function setLanguages($keys) {
+    	$this->languages = $keys;
+    }
+
+    public function setDefaultLanguage($key) {
+    	$this->defaultlang = $key;
+    }
+
+}
+
+
+?>

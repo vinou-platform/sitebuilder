@@ -1,0 +1,24 @@
+{
+    "name": "vinou/utilities-general",
+    "version": "0.0.1",
+    "type": "library",
+    "description": "Vinou General Utilities",
+    "keywords": [
+        "Vinou",
+        "Utilities"
+    ],
+    "homepage": "http://doc.vinou.de",
+    "authors": [{
+        "name": "Vinou GmbH",
+        "role": "Developer",
+        "homepage": "https://www.vinou.de"
+    }],
+    "license": [
+        "GPL-2.0+"
+    ],
+    "autoload": {
+        "psr-4": {
+            "Vinou\\Utilities\\General\\": "Classes/"
+        }
+    }
+}
