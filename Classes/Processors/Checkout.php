@@ -119,7 +119,10 @@ class Checkout {
         $mail->setFrom('noreply@vinou.de','Vinou - Connected Winebusiness');
         $mail->setReceiver('christian@christianhaendel.de');
         $mail->setSubject('Ihre Bestellung');
-        $mail->setData(Session::getValue('order'));
+        $mail->setData([
+            'order' => Session::getValue('order'),
+            'card' => Session::getValue('card')
+        ]);
         return $mail->send();
     }
 
