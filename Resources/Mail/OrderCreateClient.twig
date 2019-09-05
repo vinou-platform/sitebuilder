@@ -1,0 +1,72 @@
+{% extends "Layouts/Default.html" %}
+{% block mailcontent %}
+	<h3>Vielen Dank!</h3>
+	<p>Wir haben ihre Bestellung wie folgt erhalten.<br><br></p>
+
+	<table border="0" cellspacing="0" cellpadding="10" style="border: 1px solid #999999; border-collapse: collapse; width: 100%">
+		<tr>
+			<td style="border: 1px solid #999999;" colspan="2">
+				<p><b>Rechnungsadresse:</b><br>
+					Firma: {{order.billing.company}}<br>
+					Name: {{order.billing.firstname}} {{order.billing.lastname}} <br>
+					Straße: {{order.billing.address}}<br>
+					PLZ/Ort: {{order.billing.zip}} {{order.billing.city}} <br>
+					Email: {{order.billing.email}}<br>
+					Tel: {{order.billing.phone}}<br>
+				</p>
+			</td>
+			<td style="border: 1px solid #999999;" colspan="2">
+				<p><b>Die Lieferung erfolgt an:</b><br>
+					Name: {{order.delivery.firstname}} {{order.delivery.lastname}} <br>
+					Straße: {{order.delivery.address}}<br>
+					PLZ/Ort: {{order.delivery.zip}} {{order.delivery.city}} <br>
+				</p>
+			</td>
+		</tr>
+		<tr>
+			<td colspan="4" style="border: 1px solid #999999;">
+				<p><b>Zahlungsart:</b><br>
+				{{order.payment}}</p>
+			</td>
+		</tr>
+		<tr>
+			<td colspan="4" style="border: 1px solid #999999;">
+				<p><b>Ihre Nachricht an uns:</b><br>
+				{{order.note}}<br></p>
+			</td>
+		</tr>
+		<tr>
+			<td style="border: 1px solid #999999;"><b>Position</b></td>
+			<td style="border: 1px solid #999999;"><b>Artikel</b></td>
+			<td style="border: 1px solid #999999;"><b>Stückzahl</b></td>
+			<td style="border: 1px solid #999999;"><b>Preis</b></td>
+		</tr>
+		{% set net = 0 %}
+		{% set gross = 0 %}
+		{% set index = 0 %}
+		{% for item in card %}
+			<tr>
+				<td style="border: 1px solid #999999;">{{loop.index}}</td>
+				<td style="border: 1px solid #999999;">{{item.item.name}}</td>
+				<td style="border: 1px solid #999999;">{{item.item.price|number_format(2, ',', '.')}}</td>
+				<td style="border: 1px solid #999999;">{{(item.item.gross * item.quantity)|number_format(2, ',', '.')}} EUR</td>
+			</tr>
+			{% set net = net + (item.item.net * item.quantity) %}
+			{% set gross = gross + (item.item.gross * item.quantity) %}
+		{% endfor %}
+		<tr>
+			<td style="border: 1px solid #999999;" colspan="3">Gesamtsumme Netto</td>
+			<td style="border: 1px solid #999999;">{{net|number_format(2, ',', '.')}} EUR</td>
+		</tr>
+		<tr>
+			<td style="border: 1px solid #999999;" colspan="3">Mehrwertssteuer</td>
+			<td style="border: 1px solid #999999;">{{(gross - net)|number_format(2, ',', '.')}} EUR</td>
+		</tr>
+		<tr>
+			<td style="border: 1px solid #999999;" colspan="3">Gesamtsumme Brutto</td>
+			<td style="border: 1px solid #999999;">{{gross|number_format(2, ',', '.')}} EUR</td>
+		</tr>
+
+	</table>
+	<p>Ihre Bestellung wird schnellstmöglich bearbeitet.</p>
+{% endblock %}
