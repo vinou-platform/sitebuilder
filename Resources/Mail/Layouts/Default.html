@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+	<meta charset="UTF-8">
+	<title>{{title}}</title>
+	<style>
+		body,html {
+			background-color: #f9f9f9;
+			line-height: 1.4em;
+			font-family: Roboto, Helvetica, Arial, sans-serif;
+		}
+
+		h1,h2,h3,h4,h5 {
+			color: #333333;
+		}
+
+		p,li,span,td,th,tr,table,a {
+			color: #999999;
+		}
+
+		a {
+			color: #640000;
+			text-decoration: none;
+		}
+
+	</style>
+</head>
+<body>
+	<table border="0" cellspacing="0" cellpadding="0" width="100%">
+		<tr>
+			<td width="*">&nbsp;</td>
+			<td width="600">
+				<table border="0" cellspacing="0" cellpadding="30" width="100%" style="border-left: 1px solid #CCCCCC; border-right: 1px solid #CCCCCC; background-color: white;">
+					<tr>
+						<td>
+							{% block mailcontent %}{% endblock %}
+						</td>
+					</tr>
+				</table>
+			</td>
+			<td width="*">&nbsp;</td>
+		</tr>
+	</table>
+
+</body>
+</html>

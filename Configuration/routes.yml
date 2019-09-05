@@ -1,0 +1,49 @@
+/:
+  template: 'Start.twig'
+  pageTitle: 'Vinou Online-Shop'
+  public: true
+  dataProcessing:
+    wines: getWinesAll
+    categories: getCategoriesAll
+
+kategorie:
+  template: 'Categories/List.twig'
+  pageTitle: 'Kategorien'
+  public: true
+  dataProcessing:
+    categories: getCategoriesAll
+
+kategorie/{id}:
+  template: 'Categories/Detail.twig'
+  pageTitle: 'Kategorie-Weine'
+  public: true
+  dataProcessing:
+    category: getCategoryWithWines
+
+weine:
+  template: 'Wines/List.twig'
+  pageTitle: 'Weinliste'
+  public: true
+  dataProcessing:
+    wines: getWinesAll
+
+weine/{id}:
+  template: 'Wines/Detail.twig'
+  pageTitle: 'Wein-Details'
+  public: true
+  dataProcessing:
+    wine: getWine
+
+produkte:
+  template: 'Products/List.twig'
+  pageTitle: 'Produkte'
+  public: true
+  dataProcessing:
+    products: getProductsAll
+
+produkte/{id}:
+  template: 'Products/Detail.twig'
+  pageTitle: 'Produkt-Details'
+  public: true
+  dataProcessing:
+    product: getProduct
