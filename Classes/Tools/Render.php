@@ -205,6 +205,13 @@ class Render {
             return gettype($var);
         }));
 
+        $twig->addFilter( new \Twig_SimpleFilter('http', function ($src) {
+            if (strpos($src,'://'))
+                return $src;
+
+            return 'http://'.$src;
+        }));
+
         $twig->addFilter( new \Twig_SimpleFilter('filesize', function ($file) {
             $file = Helper::getNormDocRoot().$file;
             $bytes = floatval(filesize($file));
