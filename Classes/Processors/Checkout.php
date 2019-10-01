@@ -64,7 +64,9 @@ class Checkout {
             'source' => 'shop',
             'payment_type' => Session::getValue('payment'),
             'basket' => Session::getValue('basket'),
+            'billing_type' => 'client',
             'billing' => Session::getValue('billing'),
+            'delivery_type' => 'address',
             'delivery' => Session::getValue('delivery') ?? Session::getValue('billing')
         ];
 
