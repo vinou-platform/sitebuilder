@@ -137,4 +137,38 @@ class Checkout {
         $mail->setData(Session::getValue('order'));
         return $mail->send();
     }
+
+    public static function sendClientRegisterMail($data = NULL) {
+
+        if (isset($data['lostpassword_hash']) && isset($data['mail'])) {
+            $mail = new Mailer();
+            $mail->setTemplate('ClientRegistration.twig');
+            $mail->setReceiver($data['mail']);
+            $mail->setSubject('Bestätige Deine Registrierung auf '.$_SERVER['SERVER_NAME']);
+            $mail->setData([
+                'client' => $data,
+                'domain' => $_SERVER['SERVER_NAME']
+            ]);
+            return $mail->send();
+        }
+
+        return false;
+    }
+
+    public static function sendPasswordResetMail($data = NULL) {
+
+        if (isset($data['hash']) && isset($data['mail'])) {
+            $mail = new Mailer();
+            $mail->setTemplate('PasswordReset.twig');
+            $mail->setReceiver($data['mail']);
+            $mail->setSubject('Dein Passwort wurde zurückgesetzt '.$_SERVER['SERVER_NAME']);
+            $mail->setData([
+                'client' => $data,
+                'domain' => $_SERVER['SERVER_NAME']
+            ]);
+            return $mail->send();
+        }
+
+        return false;
+    }
 }

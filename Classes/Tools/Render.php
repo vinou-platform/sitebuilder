@@ -37,7 +37,7 @@ class Render {
 	}
 
 	private function additionalPageData(){
-		$this->renderArr['path'] = $_SERVER['REQUEST_URI'];
+		$this->renderArr['path'] = explode('?', $_SERVER['REQUEST_URI'])[0];
         $this->renderArr['backlink'] = isset($_SERVER['HTTP_REFERER']) ? $_SERVER['HTTP_REFERER'] : false;
 		$this->renderArr['host'] = $_SERVER['HTTP_HOST'];
         $this->renderArr['date'] = strftime('%d.%m.%Y',time());
@@ -53,6 +53,14 @@ class Render {
                 $object['basket_item_id'] = $item['id'];
                 $this->renderArr['card'][$item['item_type'].'s'][$item['item_id']] = $object;
             }
+        }
+
+        foreach ($_POST as $postKey => $postValue) {
+            $this->renderArr['postParams'][$postKey] = $postValue;
+        }
+
+        foreach ($_GET as $getKey => $getValue) {
+            $this->renderArr['getParams'][$getKey] = $getValue;
         }
 
 
@@ -101,14 +109,30 @@ class Render {
 
                 if (isset($option['postParams']) && !empty($_POST)) {
                     $allowedKeys = explode(',', $option['postParams']);
-                    $this->renderArr['postParams'] = [];
                     foreach ($_POST as $postKey => $postValue) {
                         if (in_array($postKey, $allowedKeys)) {
                             $data[$postKey] = $postValue;
-                            $this->renderArr['postParams'][$postKey] = $postValue;
                         }
                     }
                 }
+
+                if (isset($option['getParams']) && !empty($_GET)) {
+                    $allowedKeys = explode(',', $option['getParams']);
+                    foreach ($_GET as $getKey => $getValue) {
+                        if (in_array($getKey, $allowedKeys)) {
+                            $data[$getKey] = $getValue;
+                        }
+                    }
+                }
+
+                if (isset($option['useData'])) {
+                    $dataToUse = explode(',', $option['useData']);
+                    foreach ($dataToUse as $dataKey) {
+                        if (isset($this->renderArr[$dataKey]) && $this->renderArr[$dataKey])
+                            $data = array_merge($data,$this->renderArr[$dataKey]);
+                    }
+                }
+
 
                 if (isset($option['class']))
                     $result = call_user_func_array([$option['class'], $function], $data);
@@ -134,15 +158,23 @@ class Render {
         }
     }
 
-	private function initTwig() {
+	private function initTwig($config) {
 		$options = $this->options;
 
 		$loader = new \Twig_Loader_Filesystem($this->templateStorages);
 
-		$twig = new \Twig_Environment($loader, array(
-			'cache' => defined('VINOU_CACHE') ? VINOU_CACHE : Helper::getNormDocRoot().'Cache',
+        $settings = [
+            'cache' => defined('VINOU_CACHE') ? VINOU_CACHE : Helper::getNormDocRoot().'Cache',
             'debug' => defined('VINOU_DEBUG') ? VINOU_DEBUG : false
-		));
+        ];
+
+        if (isset($config['cache']))
+            $settings['cache'] = $config['cache'];
+
+        if (isset($config['debug']))
+            $settings['debug'] = $config['debug'];
+
+		$twig = new \Twig_Environment($loader, $settings);
 
 		// This line enables debugging and is included to activate dump()
 		$twig->addExtension(new \Twig_Extension_Debug());
@@ -371,7 +403,7 @@ class Render {
 	}
 
 	public function renderPage($template = 'Default.twig',$options = NULL){
-		$view = $this->initTwig();
+		$view = $this->initTwig(isset($options['twig']) ? $options['twig'] : NULL);
 		$template = $view->loadTemplate($template);
 		if (!is_null($options))
 			$this->renderOptions($options);
