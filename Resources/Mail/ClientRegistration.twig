@@ -1,0 +1,17 @@
+<html>
+
+<head>
+    <title>{{title}}</title>
+</head>
+
+<body style="font-family: Arial; text-align: center">
+	<div style="display: block; margin: 0px auto; max-width: 600px; text-align: left;">
+		<h3>Hallo {{client.first_name}} {{client.last_name}},</h3>
+		<p>
+			Wir haben deine Registrierung erhalten. Bitte bestätige deinen Account mit dem folgenden link<br><br>
+			<a href="{{domain}}/client/activate?mail={{client.mail}}&hash={{client.lostpassword_hash}}">Aktivierung bestätigen</a>
+		</p>
+	</div>
+</body>
+
+</html>

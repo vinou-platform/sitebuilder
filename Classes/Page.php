@@ -7,7 +7,9 @@ use \Vinou\Utilities\General\Router\DynamicRoutes;
 use \Vinou\Utilities\General\Tools\Helper;
 use \Vinou\Utilities\General\Tools\Render;
 use \Vinou\Utilities\General\Processors\Checkout;
+use \Vinou\Utilities\General\Processors\Client;
 use \Vinou\Utilities\General\Processors\Mailer;
+use \Vinou\Utilities\General\Processors\Files;
 
 /**
  * Page
@@ -75,6 +77,9 @@ class Page {
         );
         $this->render->loadProcessor(
             'mailer', new Mailer()
+        );
+        $this->render->loadProcessor(
+            'files', new Files()
         );
     }
 
