@@ -10,9 +10,18 @@ use \Vinou\Utilities\General\Tools\Helper;
 /**
  * Shop
  */
-class Checkout {
+class Shop {
 
-    public static function loadBilling() {
+    protected $api;
+
+    public function __construct($api = null) {
+        if (is_null($api))
+            throw new \Exception('no api was initialized');
+        else
+            $this->api = $api;
+    }
+
+    public function loadBilling() {
         if (!empty($_POST) && isset($_POST['billing'])) {
             Session::setValue('billing',$_POST['billing']);
 
@@ -23,30 +32,30 @@ class Checkout {
                     throw new \Exception('no url was set for delivery as hidden input');
             }
 
-            self::checkSubmitRedirect();
+            $this->checkSubmitRedirect();
         }
         return Session::getValue('billing');
     }
 
-    public static function loadDelivery() {
+    public function loadDelivery() {
         if (!empty($_POST) && isset($_POST['delivery'])) {
             Session::setValue('delivery',$_POST['delivery']);
 
-            self::checkSubmitRedirect();
+            $this->checkSubmitRedirect();
         }
         return Session::getValue('delivery');
     }
 
-    public static function loadPayment() {
+    public function loadPayment() {
         if (!empty($_POST) && isset($_POST['payment'])) {
             Session::setValue('payment',$_POST['payment']);
 
-            self::checkSubmitRedirect();
+            $this->checkSubmitRedirect();
         }
         return Session::getValue('payment');
     }
 
-    public static function check() {
+    public function check() {
         if (!empty($_POST)) {
             if (!isset($_POST['cop']) || !isset($_POST['disclaimer']))
                 exit();
@@ -54,12 +63,12 @@ class Checkout {
             if (isset($_POST['note']))
                 Session::setValue('note',$_POST['note']);
 
-            self::checkSubmitRedirect();
+            $this->checkSubmitRedirect();
         }
         return false;
     }
 
-    public static function prepareSessionOrder() {
+    public function prepareSessionOrder() {
         $order = [
             'source' => 'shop',
             'payment_type' => Session::getValue('payment'),
@@ -77,26 +86,81 @@ class Checkout {
         return $order;
     }
 
-    public static function removeSessionData() {
-        Session::deleteValue('payment');
-        Session::deleteValue('basket');
-        Session::deleteValue('billing');
-        Session::deleteValue('delivery');
-        Session::deleteValue('note');
-        Session::deleteValue('order');
+    public function removeSessionData($delete = true) {
+        if ($delete) {
+            Session::deleteValue('payment');
+            Session::deleteValue('basket');
+            Session::deleteValue('billing');
+            Session::deleteValue('delivery');
+            Session::deleteValue('note');
+            Session::deleteValue('order');
+        }
+        return $delete;
     }
 
-    public static function saveOrderJSON() {
-        self::checkFolders();
+    public function saveOrderJSON() {
+        $this->checkFolders();
 
         $folder = strftime('Orders/%Y/%m/%d');
-        self::checkFolders($folder);
+        $this->checkFolders($folder);
 
         $filename = strftime('%H-%M-').Session::getValue('basket').'.json';
-        file_put_contents(Helper::getNormDocRoot().$folder.'/'.$filename, json_encode(Session::getValue('order')));
+        $formattedOrder = $this->prepareOrderToSend();
+        file_put_contents(Helper::getNormDocRoot().$folder.'/'.$filename, json_encode($formattedOrder));
+        return $formattedOrder;
     }
 
-    public static function checkFolders($folder = 'Orders') {
+    public function prepareOrderToSend() {
+        $order = Session::getValue('order');
+        $client = Session::getValue('client');
+        if ($client) {
+            $clientId = $client['id'];
+            $order['client_id'] = $clientId;
+
+            $compareFields = [
+                'first_name' => 'firstname',
+                'last_name' => 'lastname',
+                'company' => 'company',
+                'address' => 'address',
+                'zip' => 'zip',
+                'city' => 'city'
+            ];
+
+            //compare billing;
+            $billingMatch = true;
+            foreach ($compareFields as $source => $target) {
+                if (isset($order['billing'][$target]) && strcmp($client[$source],$order['billing'][$target]) !== 0) {
+                    $billingMatch = false;
+                    $order['billing_type'] = 'address';
+                    break;
+                }
+            }
+            if ($billingMatch) {
+                $order['billing_type'] = 'client';
+                $order['billing_id'] = $clientId;
+                unset($order['billing']);
+            }
+
+            $deliveryMatch = true;
+            foreach ($compareFields as $source => $target) {
+                if (isset($order['delivery'][$target]) && strcmp($client[$source],$order['delivery'][$target]) !== 0) {
+                    $deliveryMatch = false;
+                    $order['delivery_type'] = 'address';
+                    break;
+                }
+            }
+
+            if ($deliveryMatch) {
+                $order['delivery_type'] = 'client';
+                $order['delivery_id'] = $clientId;
+                unset($order['delivery']);
+            }
+
+        }
+        return $order;
+    }
+
+    public function checkFolders($folder = 'Orders') {
 
         $orderDir = Helper::getNormDocRoot() . $folder;
 
@@ -110,35 +174,30 @@ class Checkout {
         }
     }
 
-    public static function checkSubmitRedirect() {
+    public function checkSubmitRedirect() {
         if (isset($_POST['submitted']) && (bool)$_POST['submitted'] && isset($_POST['redirect']['standard']))
             Redirect::internal($_POST['redirect']['standard']);
     }
 
-    public static function clientMail() {
+    public function sendClientNotification($addedOrder) {
+
+        if ($addedOrder && $addedOrder['number'])
+            $order = $this->api->getOrder($addedOrder['id']);
+        else
+            return false;
+
         $mail = new Mailer();
         $mail->setTemplate('OrderCreateClient.twig');
-        $mail->setFrom('noreply@vinou.de','Vinou - Connected Winebusiness');
-        $mail->setReceiver('christian@christianhaendel.de');
-        $mail->setSubject('Ihre Bestellung');
+        $mail->setReceiver($order['billing']['mail']);
+        $mail->setSubject('Ihre Bestellung '.$order['number']);
         $mail->setData([
-            'order' => Session::getValue('order'),
-            'card' => Session::getValue('card')
+            'order' => $order,
+            'customer' => $this->api->getCustomer()
         ]);
         return $mail->send();
     }
 
-    public static function testmail() {
-        $mail = new Mailer();
-        $mail->setTemplate('OrderCreateClient.twig');
-        $mail->setFrom('noreply@vinou.de','Vinou - Connected Winebusiness');
-        $mail->setReceiver('christian@christianhaendel.de');
-        $mail->setSubject('Testmail');
-        $mail->setData(Session::getValue('order'));
-        return $mail->send();
-    }
-
-    public static function sendClientRegisterMail($data = NULL) {
+    public function sendClientRegisterMail($data = NULL) {
 
         if (isset($data['lostpassword_hash']) && isset($data['mail'])) {
             $mail = new Mailer();
@@ -155,7 +214,7 @@ class Checkout {
         return false;
     }
 
-    public static function sendPasswordResetMail($data = NULL) {
+    public function sendPasswordResetMail($data = NULL) {
 
         if (isset($data['hash']) && isset($data['mail'])) {
             $mail = new Mailer();

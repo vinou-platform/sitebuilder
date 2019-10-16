@@ -6,8 +6,7 @@ use \Vinou\ApiConnector\Api;
 use \Vinou\Utilities\General\Router\DynamicRoutes;
 use \Vinou\Utilities\General\Tools\Helper;
 use \Vinou\Utilities\General\Tools\Render;
-use \Vinou\Utilities\General\Processors\Checkout;
-use \Vinou\Utilities\General\Processors\Client;
+use \Vinou\Utilities\General\Processors\Shop;
 use \Vinou\Utilities\General\Processors\Mailer;
 use \Vinou\Utilities\General\Processors\Files;
 
@@ -73,7 +72,7 @@ class Page {
 
     private function loadDefaultProcessors() {
         $this->render->loadProcessor(
-            'checkout', new Checkout()
+            'shop', new Shop($this->render->api)
         );
         $this->render->loadProcessor(
             'mailer', new Mailer()

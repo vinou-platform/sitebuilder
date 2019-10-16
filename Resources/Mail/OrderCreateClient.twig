@@ -5,18 +5,29 @@
 
 	<table border="0" cellspacing="0" cellpadding="10" style="border: 1px solid #999999; border-collapse: collapse; width: 100%">
 		<tr>
+			<td colspan="2" style="border: 1px solid #999999;">
+				<p><b>Bestellnummer:</b><br>
+				{{order.number}}</p>
+			</td>
+			<td colspan="2" style="border: 1px solid #999999;">
+				<p><b>Kundennumer:</b><br>
+				{{order.billing.number}}</p>
+			</td>
+		</tr>
+		<tr>
 			<td style="border: 1px solid #999999;" colspan="2">
 				<p><b>Rechnungsadresse:</b><br>
-					Firma: {{order.billing.company}}<br>
+					{% if order.billing.company and order.billing.company != '' %}Firma: {{order.billing.company}}<br>{% endif %}
 					Name: {{order.billing.firstname}} {{order.billing.lastname}} <br>
 					Straße: {{order.billing.address}}<br>
 					PLZ/Ort: {{order.billing.zip}} {{order.billing.city}} <br>
-					Email: {{order.billing.email}}<br>
-					Tel: {{order.billing.phone}}<br>
+					Email: {{order.billing.mail}}<br>
+					{% if order.billing.phone and order.billing.phone != '' %}Firma: {{Tel.billing.phone}}<br>{% endif %}
 				</p>
 			</td>
 			<td style="border: 1px solid #999999;" colspan="2">
 				<p><b>Die Lieferung erfolgt an:</b><br>
+					{% if order.delivery.company and order.delivery.company != '' %}Firma: {{order.delivery.company}}<br>{% endif %}
 					Name: {{order.delivery.firstname}} {{order.delivery.lastname}} <br>
 					Straße: {{order.delivery.address}}<br>
 					PLZ/Ort: {{order.delivery.zip}} {{order.delivery.city}} <br>
@@ -26,7 +37,7 @@
 		<tr>
 			<td colspan="4" style="border: 1px solid #999999;">
 				<p><b>Zahlungsart:</b><br>
-				{{order.payment}}</p>
+				{{('order.paymenttypes.' ~ order.payment_type)|translate}}</p>
 			</td>
 		</tr>
 		<tr>
@@ -44,7 +55,7 @@
 		{% set net = 0 %}
 		{% set gross = 0 %}
 		{% set index = 0 %}
-		{% for item in card %}
+		{% for item in order.positions %}
 			<tr>
 				<td style="border: 1px solid #999999;">{{loop.index}}</td>
 				<td style="border: 1px solid #999999;">{{item.item.name}}</td>
@@ -53,7 +64,20 @@
 			</tr>
 			{% set net = net + (item.item.net * item.quantity) %}
 			{% set gross = gross + (item.item.gross * item.quantity) %}
+			{% if loop.last %}
+				{% set index = loop.index + 1 %}
+			{% endif %}
 		{% endfor %}
+		{% if order.package %}
+			<tr>
+				<td style="border: 1px solid #999999;">{{index}}</td>
+				<td style="border: 1px solid #999999;">Versand und Verpackung</td>
+				<td style="border: 1px solid #999999;">{{order.package.gross|number_format(2, ',', '.')}} EUR</td>
+				<td style="border: 1px solid #999999;">{{order.package.gross|number_format(2, ',', '.')}} EUR</td>
+			</tr>
+			{% set net = net + (order.package.net * 1) %}
+			{% set gross = gross + (order.package.gross * 1) %}
+		{% endif %}
 		<tr>
 			<td style="border: 1px solid #999999;" colspan="3">Gesamtsumme Netto</td>
 			<td style="border: 1px solid #999999;">{{net|number_format(2, ',', '.')}} EUR</td>

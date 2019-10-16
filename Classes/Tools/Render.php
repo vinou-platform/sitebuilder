@@ -128,11 +128,14 @@ class Render {
                 if (isset($option['useData'])) {
                     $dataToUse = explode(',', $option['useData']);
                     foreach ($dataToUse as $dataKey) {
-                        if (isset($this->renderArr[$dataKey]) && $this->renderArr[$dataKey])
-                            $data = array_merge($data,$this->renderArr[$dataKey]);
+                        if (isset($this->renderArr[$dataKey]) && $this->renderArr[$dataKey]) {
+                            if (is_array($this->renderArr[$dataKey]))
+                                $data = array_merge($data,$this->renderArr[$dataKey]);
+                            else
+                                array_push($data,$this->renderArr[$dataKey]);
+                        }
                     }
                 }
-
 
                 if (isset($option['class']))
                     $result = call_user_func_array([$option['class'], $function], $data);
