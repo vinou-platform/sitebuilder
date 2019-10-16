@@ -206,6 +206,7 @@ class Shop {
             $mail->setSubject('Bestätige Deine Registrierung auf '.$_SERVER['SERVER_NAME']);
             $mail->setData([
                 'client' => $data,
+                'customer' => $this->api->getCustomer(),
                 'domain' => $_SERVER['SERVER_NAME']
             ]);
             return $mail->send();
@@ -223,6 +224,7 @@ class Shop {
             $mail->setSubject('Dein Passwort wurde zurückgesetzt '.$_SERVER['SERVER_NAME']);
             $mail->setData([
                 'client' => $data,
+                'customer' => $this->api->getCustomer(),
                 'domain' => $_SERVER['SERVER_NAME']
             ]);
             return $mail->send();
