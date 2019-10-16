@@ -17,7 +17,7 @@ class Helper {
 
     public static function getNormDocRoot(){
         if(self::$normDocRoot == NULL){
-            $str = $_SERVER['DOCUMENT_ROOT'];
+            $str = defined('VINOU_ROOT') ? VINOU_ROOT : $_SERVER['DOCUMENT_ROOT'];
             $strLength = strlen($str);
             if($strLength > 0){
                 if($str[0] != '/'){

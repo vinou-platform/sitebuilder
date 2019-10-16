@@ -86,8 +86,9 @@ class Shop {
         return $order;
     }
 
-    public function removeSessionData($delete = true) {
-        if ($delete) {
+    public function removeSessionData($status) {
+
+        if ($status) {
             Session::deleteValue('payment');
             Session::deleteValue('basket');
             Session::deleteValue('billing');
@@ -95,7 +96,7 @@ class Shop {
             Session::deleteValue('note');
             Session::deleteValue('order');
         }
-        return $delete;
+        return $status;
     }
 
     public function saveOrderJSON() {
@@ -155,7 +156,12 @@ class Shop {
                 $order['delivery_id'] = $clientId;
                 unset($order['delivery']);
             }
-
+        } else {
+            unset($order['billing_type']);
+            unset($order['delivery_type']);
+            if (!$order['delivery']) {
+                $order['delivery'] = $order['billing'];
+            }
         }
         return $order;
     }
@@ -186,15 +192,33 @@ class Shop {
         else
             return false;
 
+        $customer = $this->api->getCustomer();
+
         $mail = new Mailer();
         $mail->setTemplate('OrderCreateClient.twig');
         $mail->setReceiver($order['billing']['mail']);
         $mail->setSubject('Ihre Bestellung '.$order['number']);
         $mail->setData([
             'order' => $order,
-            'customer' => $this->api->getCustomer()
+            'customer' => $customer
         ]);
-        return $mail->send();
+        $send = $mail->send();
+
+        $client = Session::getValue('client');
+        if (!$client) {
+            $accountmail = new Mailer();
+            $accountmail->setTemplate('NewAccountByOrder.twig');
+            $accountmail->setReceiver($order['billing']['mail']);
+            $accountmail->setSubject('Dein Account auf '.$_SERVER['SERVER_NAME']);
+            $accountmail->setData([
+                'client' => $order['billing'],
+                'domain' => $_SERVER['SERVER_NAME'],
+                'customer' => $customer
+            ]);
+            $accountsend = $accountmail->send();
+        }
+
+        return $send;
     }
 
     public function sendClientRegisterMail($data = NULL) {
