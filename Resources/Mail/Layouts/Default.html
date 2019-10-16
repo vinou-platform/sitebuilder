@@ -15,7 +15,7 @@
 		}
 
 		p,li,span,td,th,tr,table,a {
-			color: #999999;
+			color: #333333;
 		}
 
 		a {
@@ -30,13 +30,24 @@
 		<tr>
 			<td width="*">&nbsp;</td>
 			<td width="600">
-				<table border="0" cellspacing="0" cellpadding="30" width="100%" style="border-left: 1px solid #CCCCCC; border-right: 1px solid #CCCCCC; background-color: white;">
+				<table border="0" cellspacing="0" cellpadding="30" width="100%" style="border: 1px solid #CCCCCC; background-color: white;">
 					<tr>
 						<td>
 							{% block mailcontent %}{% endblock %}
 						</td>
 					</tr>
 				</table>
+			</td>
+			<td width="*">&nbsp;</td>
+		</tr>
+		<tr>
+			<td width="*">&nbsp;</td>
+			<td width="600">
+				<p style="font-size: 10px; line-height: 14px; text-align: center;">
+					<br/>
+					{{customer.company}} &middot; UST-ID: {{customer.vatid}}{% if customer.taxid %} &middot; Steuernummer: {{customer.taxid}}{% endif %}<br>
+					Adresse: {{customer.address}} {{customer.zip}} {{customer.city}} &middot; Telefon: {{customer.phone}} &middot; E-Mail: {{customer.mail}}<br>
+				</p>
 			</td>
 			<td width="*">&nbsp;</td>
 		</tr>
