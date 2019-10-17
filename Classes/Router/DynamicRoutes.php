@@ -12,7 +12,8 @@ use Vinou\Utilities\General\Tools\Render;
 class DynamicRoutes {
 	private $router;
 	private $render;
-	private $configuration;
+	private $configuration = [];
+	private $loadDefaults = true;
 	public $routeFile = null;
 
 	function __construct($router, $render) {
@@ -28,19 +29,41 @@ class DynamicRoutes {
 
 	public function init() {
 
-		$this->loadConfiguration();
+		if ($this->loadDefaults)
+			$this->loadDefaultRoutes();
+
+		if (!is_null($this->routeFile))
+			$this->loadAdditionalRoutes();
+
 		$this->generateRoutes();
 
 	}
 
-	private function loadConfiguration() {
+	public function setDefaults($status) {
+		$this->loadDefaults = $status;
+	}
+
+	public function loadDefaultRoutes() {
+		$configDir = str_replace('Classes/Router', 'Configuration/Routes', Helper::getClassPath(get_class($this)));
+		if ($handle = opendir($configDir)) {
+		    while (false !== ($entry = readdir($handle))) {
+		        if ($entry != "." && $entry != ".." && pathinfo($entry)['extension'] == 'yml') {
+		        	$absFile = $configDir.'/'.$entry;
+		        	$this->configuration = array_merge($this->configuration, spyc_load_file($absFile));
+		        }
+		    }
+		    closedir($handle);
+		}
+	}
+
+	private function loadAdditionalRoutes() {
 
 		if (!is_file($this->routeFile) && !is_file(Helper::getNormDocRoot().VINOU_CONFIG_DIR.$this->routeFile))
 			throw new \Exception('Route configuration file could not be solved');
 
 		$absRouteFile = substr($this->routeFile, 0, 1) == '/' ? $this->routeFile : Helper::getNormDocRoot().VINOU_CONFIG_DIR.$this->routeFile;
 
-		$this->configuration = spyc_load_file($absRouteFile);
+		$this->configuration = array_merge($this->configuration, spyc_load_file($absRouteFile));
 	}
 
 	private function generateRoutes($configuration = NULL) {

@@ -1,0 +1,103 @@
+client/login:
+  template: 'Client/login.twig'
+  pageTitle: 'Login'
+  public: true
+  method: all
+  dataProcessing:
+    login:
+      function: clientLogin
+      postParams: mail,password,submitted,redirect
+
+client/logout:
+  template: 'Client/logout.twig'
+  pageTitle: 'Logout'
+  public: true
+  method: all
+  dataProcessing:
+    logout:
+      function: clientLogout
+      params:
+        redirect: '/client/login'
+
+client/profile:
+  template: 'Client/profile.twig'
+  pageTitle: 'Kundendaten bearbeiten'
+  public: true
+  twig:
+    cache: false
+  method: all
+  dataProcessing:
+    update:
+      function: editClient
+      postParams: gender,first_name,last_name,address,address_supplement,zip,city,phone,mail,username,password,submitted,redirect
+
+client/orders:
+  template: 'Client/orders.twig'
+  pageTitle: 'Deine Bestellungen'
+  public: true
+  method: all
+  dataProcessing:
+    orders: getClientOrders
+
+client/orders/{id}:
+  template: 'Client/order-detail.twig'
+  pageTitle: 'Bestellung ansehen'
+  public: true
+  dataProcessing:
+    order: getClientOrder
+
+client/register:
+  template: 'Client/register.twig'
+  pageTitle: 'Registrieren'
+  public: true
+  twig:
+    cache: false
+  method: all
+  dataProcessing:
+    register:
+      function: registerClient
+      postParams: gender,company,first_name,last_name,address,address_supplement,zip,city,phone,mail,username,password,password_repeat,submitted,redirect
+    registerMail:
+      processor: 'shop'
+      function: 'sendClientRegisterMail'
+      useData: 'register'
+
+client/activate:
+  template: 'Client/activate.twig'
+  pageTitle: 'Aktivieren'
+  public: true
+  twig:
+    cache: false
+  method: all
+  dataProcessing:
+    activate:
+      function: activateClient
+      getParams: mail,hash
+
+client/lostpassword:
+  template: 'Client/lostpassword.twig'
+  pageTitle: 'Passwort vergessen'
+  public: true
+  twig:
+    cache: false
+  method: all
+  dataProcessing:
+    response:
+      function: getPasswordHash
+      postParams: mail
+    resetMail:
+      processor: 'shop'
+      function: 'sendPasswordResetMail'
+      useData: 'response'
+
+client/resetPassword:
+  template: 'Client/resetpassword.twig'
+  pageTitle: 'Passwort zurücksetzen'
+  public: true
+  twig:
+    cache: false
+  method: all
+  dataProcessing:
+    reset:
+      function: resetPassword
+      postParams: mail,hash,password,password_repeat

@@ -1,0 +1,35 @@
+/:
+  template: 'start.twig'
+  pageTitle: 'Willkommen'
+  public: true
+  dataProcessing:
+    wines:
+      function: getWinesLatest
+      params:
+        max: 6
+        orderBy: topseller DESC
+
+widerruf:
+  template: 'widerruf.twig'
+  pageTitle: 'Widerrufsbelehrung'
+  public: true
+
+agb:
+  template: 'agb.twig'
+  pageTitle: 'AGBs'
+  public: true
+
+lieferung-versand:
+  template: 'versand.twig'
+  pageTitle: 'Lieferung & Versand'
+  public: true
+
+impressum:
+  template: 'impressum.twig'
+  pageTitle: 'Impressum'
+  public: true
+
+datenschutz:
+  template: 'datenschutz.twig'
+  pageTitle: 'Datenschutz'
+  public: true

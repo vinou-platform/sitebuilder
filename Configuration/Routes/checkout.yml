@@ -1,0 +1,86 @@
+warenkorb:
+  template: 'Checkout/basket.twig'
+  pageTitle: 'Warenkorb'
+  public: true
+  dataProcessing:
+    basket: getBasket
+    package: getBasketPackage
+
+checkout:
+  template: 'Checkout/billing.twig'
+  pageTitle: 'Rechnungsadresse'
+  public: true
+  method: all
+  dataProcessing:
+    billing:
+      function: loadBilling
+      processor: shop
+    delivery:
+      function: loadDelivery
+      processor: shop
+
+checkout/lieferanschrift:
+  template: 'Checkout/delivery.twig'
+  pageTitle: 'Lieferanschrift'
+  public: true
+  method: all
+  dataProcessing:
+    billing:
+      function: loadBilling
+      processor: shop
+    delivery:
+      function: loadDelivery
+      processor: shop
+
+checkout/zahlungsart:
+  template: 'Checkout/payment.twig'
+  pageTitle: 'Zahlungsart'
+  public: true
+  method: all
+  dataProcessing:
+    payment:
+      function: loadPayment
+      processor: shop
+
+checkout/uebersicht:
+  template: 'Checkout/summary.twig'
+  pageTitle: 'Bestellübersicht'
+  public: true
+  method: all
+  dataProcessing:
+    basket: getBasket
+    package: getBasketPackage
+    billing:
+      function: loadBilling
+      processor: shop
+    delivery:
+      function: loadDelivery
+      processor: shop
+    payment:
+      function: loadPayment
+      processor: shop
+    order:
+      function: check
+      processor: shop
+
+checkout/abschliessen:
+  template: 'Checkout/finish.twig'
+  pageTitle: 'Bestellung abgeschlossen'
+  dataProcessing:
+    order:
+      function: prepareSessionOrder
+      processor: shop
+    localOrder:
+      function: saveOrderJSON
+      processor: shop
+    addedOrder:
+      function: addOrder
+      useData: 'localOrder'
+    mail:
+      function: sendClientNotification
+      processor: shop
+      useData: 'addedOrder'
+    success:
+      function: removeSessionData
+      processor: shop
+      useData: 'mail'
