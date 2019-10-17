@@ -1,11 +1,3 @@
-/:
-  template: 'Start.twig'
-  pageTitle: 'Vinou Online-Shop'
-  public: true
-  dataProcessing:
-    wines: getWinesAll
-    categories: getCategoriesAll
-
 kategorie:
   template: 'Categories/List.twig'
   pageTitle: 'Kategorien'
@@ -34,16 +26,12 @@ weine/{id}:
   dataProcessing:
     wine: getWine
 
-produkte:
-  template: 'Products/List.twig'
-  pageTitle: 'Produkte'
+suche:
+  template: 'Wines/Search.twig'
+  pageTitle: 'Suchbegriff'
+  method: all
   public: true
   dataProcessing:
-    products: getProductsAll
-
-produkte/{id}:
-  template: 'Products/Detail.twig'
-  pageTitle: 'Produkt-Details'
-  public: true
-  dataProcessing:
-    product: getProduct
+    wines:
+      function: searchWine
+      postParams: query,max

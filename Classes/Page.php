@@ -18,6 +18,9 @@ class Page {
     protected $routeConfig;
     protected $settingsFile = NULL;
     protected $router;
+    protected $config = NULL;
+    protected $settings = NULL;
+    public $loadDefaults = true;
     public $render;
 
     function __construct(string $token, string $authId) {
@@ -61,10 +64,8 @@ class Page {
     public function run() {
         $this->loadSettings();
 
-        if (is_null($this->routeConfig->routeFile)) {
-            $path = str_replace('Classes', '', Helper::getClassPath(get_class($this)));
-            $this->routeConfig->setRouteFile($path.'Configuration/routes.yml');
-        }
+        if (isset($this->config['load']['defaultRoutes']))
+            $this->routeConfig->setDefaults($this->config['load']['defaultRoutes']);
 
         $this->routeConfig->init();
         $this->router->run();
@@ -82,22 +83,45 @@ class Page {
         );
     }
 
-    private function loadSettings() {
-        if (is_null($this->settingsFile))
-            return;
+    private function loadDefaultSettings() {
+        $settingsFile = str_replace('Classes', 'Configuration', Helper::getClassPath(get_class($this))).'/settings.yml';
+        $this->settings = spyc_load_file($settingsFile);
+    }
+
+    private function loadAdditionalSettings() {
 
         $absFile = substr($this->settingsFile, 0, 1) == '/' ? $this->settingsFile : Helper::getNormDocRoot().VINOU_CONFIG_DIR.$this->settingsFile;
         if (!is_file($absFile))
             throw new \Exception('Settings file '.$absFile.' could not be resolved');
 
+        $additionalSettings = spyc_load_file($absFile);
 
-        $settings = spyc_load_file($absFile);
-        if (isset($settings['additionalContent']))
-            $this->render->dataProcessing($settings['additionalContent']);
+        $this->settings = is_null($this->settings) ? $additionalSettings : array_replace_recursive($this->settings, $additionalSettings);
+    }
 
-        if (isset($settings['settings']))
-            $this->render->renderArr['settings'] = $settings['settings'];
+    private function parseSettings() {
+        if (is_null($this->settings))
+            throw new \Exception('Settings parsing error');
 
+        if (isset($this->settings['system']))
+            $this->config = $this->settings['system'];
+
+        if (isset($this->settings['additionalContent']))
+            $this->render->dataProcessing($this->settings['additionalContent']);
+
+        if (isset($this->settings['settings']))
+            $this->render->renderArr['settings'] = $this->settings['settings'];
+    }
+
+    private function loadSettings() {
+
+        if ($this->loadDefaults)
+            $this->loadDefaultSettings();
+
+        if (!is_null($this->settingsFile))
+            $this->loadAdditionalSettings();
+
+        $this->parseSettings();
         return;
     }
 

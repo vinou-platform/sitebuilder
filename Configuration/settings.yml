@@ -1,0 +1,38 @@
+system:
+  load:
+    defaultRoutes: true
+
+additionalContent:
+  categories:
+    function: getCategoriesAll
+    params:
+      orderBy: sorting DESC
+  customer: getCustomer
+  paymentMethods:
+    function: getAvailablePayments
+    key: payments
+  client:
+    function: getClient
+
+settings:
+  defaults:
+    quantity: 6
+    payment: invoice
+  allowedPayments: bank,cash,invoice,prepaid,paypal
+  seo:
+    titleAdd: '- Vinou OnlineShop'
+  billing:
+    required:
+      - mail
+      - firstname
+      - lastname
+      - address
+      - zip
+      - city
+  delivery:
+    required:
+      - firstname
+      - lastname
+      - address
+      - zip
+      - city

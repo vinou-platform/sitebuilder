@@ -1,0 +1,13 @@
+produkte:
+  template: 'Products/List.twig'
+  pageTitle: 'Produkte'
+  public: true
+  dataProcessing:
+    products: getProductsAll
+
+produkte/{id}:
+  template: 'Products/Detail.twig'
+  pageTitle: 'Produkt-Details'
+  public: true
+  dataProcessing:
+    product: getProduct

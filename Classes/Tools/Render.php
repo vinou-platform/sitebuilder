@@ -67,7 +67,7 @@ class Render {
 		$this->renderArr['languages'] = $this->languages;
 		strpos($_SERVER['SERVER_PROTOCOL'],'https') ? $this->renderArr['protocol'] = 'https://' : $this->renderArr['protocol'] = 'http://';
 
-		if (count($this->pathsegments)>1 && in_array($this->pathsegments[0],$this->languages)) {
+		if ($this->pathsegments && count($this->pathsegments)>1 && in_array($this->pathsegments[0],$this->languages)) {
 			$this->renderArr['language'] = $this->pathsegments[0];
 		} else {
 			$this->renderArr['language'] = $this->defaultlang;
