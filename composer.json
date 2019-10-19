@@ -2,10 +2,11 @@
     "name": "vinou/page-package",
     "version": "0.0.1",
     "type": "library",
-    "description": "Vinou General Utilities",
+    "description": "PHP Package to generate template based webpages with dynamic content from the Vinou Plattform",
     "keywords": [
         "Vinou",
-        "Utilities"
+        "Utilities",
+        "Page"
     ],
     "homepage": "http://doc.vinou.de",
     "authors": [{
