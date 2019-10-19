@@ -3,8 +3,8 @@ namespace Vinou\Page;
 
 use \Bramus\Router\Router;
 use \Vinou\ApiConnector\Api;
+use \Vinou\ApiConnector\Tools\Helper;
 use \Vinou\Page\Router\DynamicRoutes;
-use \Vinou\Page\Tools\Helper;
 use \Vinou\Page\Tools\Render;
 use \Vinou\Page\Processors\Shop;
 use \Vinou\Page\Processors\Mailer;
@@ -19,19 +19,17 @@ class Page {
     protected $settingsFile = NULL;
     protected $router;
     protected $config = NULL;
-    protected $settings = NULL;
+    protected $settings = [];
+    protected $themeID = NULL;
+    protected $themeRoot = NULL;
     public $loadDefaults = true;
     public $render;
 
-    function __construct(string $token, string $authId) {
+    function __construct() {
         $this->router = new Router();
         $this->render = new Render();
 
-        $this->render->connect(
-            $token,
-            $authId
-        );
-
+        $this->render->connect();
         $this->render->api->initBasket();
 
         $this->loadDefaultProcessors();
@@ -61,8 +59,18 @@ class Page {
         $this->render->addTemplateStorages($rootDir, $folders);
     }
 
+    public function loadTheme($themeID, $themeDir) {
+        $this->themeID = $themeID;
+        $this->themeDir = $themeDir;
+        $themeFolders = ['Layouts/', 'Partials/', 'Templates/'];
+        $this->render->loadDefaultStorages();
+        $this->render->addTemplateStorages($themeDir.'Resources/', $themeFolders);
+        $this->routeConfig->setRouteStorage($themeDir.'Configuration/Routes/');
+    }
+
     public function run() {
         $this->loadSettings();
+        $this->render->loadDefaultStorages();
 
         if (isset($this->config['load']['defaultRoutes']))
             $this->routeConfig->setDefaults($this->config['load']['defaultRoutes']);
@@ -85,6 +93,12 @@ class Page {
 
     private function loadDefaultSettings() {
         $settingsFile = str_replace('Classes', 'Configuration', Helper::getClassPath(get_class($this))).'/settings.yml';
+        if (!is_null($this->themeID) && !is_null($this->themeDir)) {
+            $themeSettings = Helper::getNormDocRoot().$this->themeDir.'/Configuration/settings.yml';
+            if (is_file($themeSettings))
+                $settingsFile = $themeSettings;
+        }
+
         $this->settings = spyc_load_file($settingsFile);
     }
 

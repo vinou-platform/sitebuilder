@@ -3,9 +3,9 @@ namespace Vinou\Page\Processors;
 
 use \Vinou\ApiConnector\Api;
 use \Vinou\ApiConnector\Session\Session;
+use \Vinou\ApiConnector\Tools\Helper;
 use \Vinou\Page\Processors\Mailer;
 use \Vinou\Page\Tools\Redirect;
-use \Vinou\Page\Tools\Helper;
 
 /**
  * Shop
