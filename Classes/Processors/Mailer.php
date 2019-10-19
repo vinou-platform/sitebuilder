@@ -1,9 +1,9 @@
 <?php
-namespace Vinou\Utilities\General\Processors;
+namespace Vinou\Page\Processors;
 
 use \PHPMailer\PHPMailer\PHPMailer;
 use \PHPMailer\PHPMailer\Exception;
-use \Vinou\Utilities\General\Tools\Helper;
+use \Vinou\Page\Tools\Helper;
 
 class Mailer {
 

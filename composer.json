@@ -19,7 +19,7 @@
     ],
     "autoload": {
         "psr-4": {
-            "Vinou\\Utilities\\General\\": "Classes/"
+            "Vinou\\Page\\": "Classes/"
         }
     }
 }

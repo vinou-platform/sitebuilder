@@ -1,8 +1,8 @@
 <?php
-namespace Vinou\Utilities\General\Tools;
+namespace Vinou\Page\Tools;
 
-use \Vinou\Utilities\General\Tools\Helper;
-use \Vinou\Utilities\General\Tools\Redirect;
+use \Vinou\Page\Tools\Helper;
+use \Vinou\Page\Tools\Redirect;
 use \Vinou\ApiConnector\Api;
 use \Vinou\ApiConnector\Session\Session;
 use \Vinou\ApiConnector\FileHandler\Images;

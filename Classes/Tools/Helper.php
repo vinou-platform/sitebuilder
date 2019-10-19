@@ -1,5 +1,5 @@
 <?php
-namespace Vinou\Utilities\General\Tools;
+namespace Vinou\Page\Tools;
 
 use \Composer\Autoload\ClassLoader;
 
