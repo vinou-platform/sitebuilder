@@ -1,34 +1,34 @@
-kategorie:
+category:
   template: 'Categories/List.twig'
-  pageTitle: 'Kategorien'
+  pageTitle: 'Our categories'
   public: true
   dataProcessing:
     categories: getCategoriesAll
 
-kategorie/{id}:
+category/{id}:
   template: 'Categories/Detail.twig'
-  pageTitle: 'Kategorie-Weine'
+  pageTitle: 'The wines of category'
   public: true
   dataProcessing:
     category: getCategoryWithWines
 
-weine:
+wines:
   template: 'Wines/List.twig'
-  pageTitle: 'Weinliste'
+  pageTitle: 'Winelist'
   public: true
   dataProcessing:
     wines: getWinesAll
 
-weine/{id}:
+wines/{id}:
   template: 'Wines/Detail.twig'
-  pageTitle: 'Wein-Details'
+  pageTitle: 'Wine details'
   public: true
   dataProcessing:
     wine: getWine
 
-suche:
+search:
   template: 'Wines/Search.twig'
-  pageTitle: 'Suchbegriff'
+  pageTitle: 'Search'
   method: all
   public: true
   dataProcessing:
