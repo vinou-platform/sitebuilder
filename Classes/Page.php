@@ -1,14 +1,14 @@
 <?php
-namespace Vinou\Utilities\General;
+namespace Vinou\Page;
 
 use \Bramus\Router\Router;
 use \Vinou\ApiConnector\Api;
-use \Vinou\Utilities\General\Router\DynamicRoutes;
-use \Vinou\Utilities\General\Tools\Helper;
-use \Vinou\Utilities\General\Tools\Render;
-use \Vinou\Utilities\General\Processors\Shop;
-use \Vinou\Utilities\General\Processors\Mailer;
-use \Vinou\Utilities\General\Processors\Files;
+use \Vinou\Page\Router\DynamicRoutes;
+use \Vinou\Page\Tools\Helper;
+use \Vinou\Page\Tools\Render;
+use \Vinou\Page\Processors\Shop;
+use \Vinou\Page\Processors\Mailer;
+use \Vinou\Page\Processors\Files;
 
 /**
  * Page

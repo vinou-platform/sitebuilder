@@ -1,8 +1,8 @@
 <?php
-namespace Vinou\Utilities\General\Router;
+namespace Vinou\Page\Router;
 
-use Vinou\Utilities\General\Tools\Helper;
-use Vinou\Utilities\General\Tools\Render;
+use \Vinou\Page\Tools\Helper;
+use \Vinou\Page\Tools\Render;
 
 /**
  * Dynamic Routes

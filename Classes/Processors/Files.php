@@ -1,5 +1,5 @@
 <?php
-namespace Vinou\Utilities\General\Processors;
+namespace Vinou\Page\Processors;
 
 class Files {
 
