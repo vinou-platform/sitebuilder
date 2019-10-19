@@ -1,24 +1,24 @@
 <?php
 namespace Vinou\Page\Tools;
 
-use \Vinou\Page\Tools\Helper;
-use \Vinou\Page\Tools\Redirect;
 use \Vinou\ApiConnector\Api;
 use \Vinou\ApiConnector\Session\Session;
 use \Vinou\ApiConnector\FileHandler\Images;
 use \Vinou\ApiConnector\FileHandler\Pdf;
+use \Vinou\ApiConnector\Tools\Helper;
+use \Vinou\ApiConnector\Tools\Redirect;
 
 class Render {
 
     private $processors = [];
 	protected $templateRootPath = 'Resources/';
 	protected $templateDirectories = ['Templates/','Partials/','Layouts/'];
-    protected $templateStorages = [];
 	protected $layout = 'default.twig';
 	protected $languages = ['en','de'];
 	protected $defaultlang = 'en';
 	protected $pathsegments;
     protected $options;
+    public $templateStorages = [];
 	public $renderArr = [];
 	public $translation = NULL;
 	public $api;
@@ -32,11 +32,10 @@ class Render {
 		if (defined('PAGE_DEFAULTLANG'))
 			$this->defaultlang = PAGE_DEFAULTLANG;
 
-        $this->loadTemplateStorages();
-		$this->additionalPageData();
+		$this->defaultPageData();
 	}
 
-	private function additionalPageData(){
+	private function defaultPageData(){
 		$this->renderArr['path'] = explode('?', $_SERVER['REQUEST_URI'])[0];
         $this->renderArr['backlink'] = isset($_SERVER['HTTP_REFERER']) ? $_SERVER['HTTP_REFERER'] : false;
 		$this->renderArr['host'] = $_SERVER['HTTP_HOST'];
@@ -74,12 +73,8 @@ class Render {
 		}
 	}
 
-    public function connect($token, $authId) {
-        $this->api = new Api (
-            $token,
-            $authId,
-            true
-        );
+    public function connect() {
+        $this->api = new Api ();
 
         if ($this->api->status != 'connected') {
             $this->renderPage('error.twig', [
@@ -95,7 +90,10 @@ class Render {
         $this->processors[$processor] = $object;
     }
 
-    public function dataProcessing($options, $data = []) {
+    public function dataProcessing($options = NULL, $data = []) {
+        if (!is_array($options))
+            return false;
+
         foreach ($options as $key => $option) {
             if (is_string($option)) {
                 $function = $option;
@@ -163,6 +161,18 @@ class Render {
 
 	private function initTwig($config) {
 		$options = $this->options;
+
+        // load template from page package if nothing is initiated
+        if (empty($this->templateStorages)) {
+
+            $packageResourcePath = str_replace('Classes/Tools', 'Resources', Helper::getClassPath(get_class($this)));
+
+            foreach ($this->templateDirectories as $dir) {
+                $packageDir = $packageResourcePath.'/'.$dir;
+                if (is_dir($packageDir))
+                    array_push($this->templateStorages, $packageDir);
+            }
+        }
 
 		$loader = new \Twig_Loader_Filesystem($this->templateStorages);
 
@@ -309,7 +319,7 @@ class Render {
         }));
 
         $twig->addFilter( new \Twig_SimpleFilter('src', function($file) {
-        	$change_date = @filemtime($_SERVER['DOCUMENT_ROOT'].'/'.$file);
+        	$change_date = @filemtime(Helper::getNormDocRoot().'/'.$file);
 	        if (!$change_date) {
 	            //Fallback if mtime could not be found:
 	            $change_date = mktime(0, 0, 0, date('m'), date('d'), date('Y'));
@@ -443,11 +453,12 @@ class Render {
 		$this->templateDirectories = $directories;
 	}
 
-    public function loadTemplateStorages() {
+    public function loadDefaultStorages() {
+        // load web root storages every time
         foreach ($this->templateDirectories as $dir) {
-            $absDir = Helper::getNormDocRoot().$this->templateRootPath.$dir;
-            if (is_dir($absDir))
-                array_push($this->templateStorages, $absDir);
+            $resourceDir = Helper::getNormDocRoot().$this->templateRootPath.$dir;
+            if (is_dir($resourceDir) && !in_array($resourceDir, $this->templateStorages))
+                array_push($this->templateStorages, $resourceDir);
         }
     }
 
@@ -461,7 +472,6 @@ class Render {
                     array_push($this->templateStorages, $rootDir.$dir);
             }
         }
-
     }
 
     public function setLanguages($keys) {

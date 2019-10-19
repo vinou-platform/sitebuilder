@@ -1,7 +1,7 @@
 <?php
 namespace Vinou\Page\Router;
 
-use \Vinou\Page\Tools\Helper;
+use \Vinou\ApiConnector\Tools\Helper;
 use \Vinou\Page\Tools\Render;
 
 /**
@@ -14,6 +14,7 @@ class DynamicRoutes {
 	private $render;
 	private $configuration = [];
 	private $loadDefaults = true;
+	private $routeStorage = null;
 	public $routeFile = null;
 
 	function __construct($router, $render) {
@@ -43,8 +44,17 @@ class DynamicRoutes {
 		$this->loadDefaults = $status;
 	}
 
+	public function setRouteStorage($storage) {
+		$this->routeStorage = $storage;
+	}
+
 	public function loadDefaultRoutes() {
-		$configDir = str_replace('Classes/Router', 'Configuration/Routes', Helper::getClassPath(get_class($this)));
+		if (is_null($this->routeStorage))
+			$configDir = str_replace('Classes/Router', 'Configuration/Routes', Helper::getClassPath(get_class($this)));
+		else {
+			$configDir = Helper::getNormDocRoot().$this->routeStorage;
+		}
+
 		if ($handle = opendir($configDir)) {
 		    while (false !== ($entry = readdir($handle))) {
 		        if ($entry != "." && $entry != ".." && pathinfo($entry)['extension'] == 'yml') {

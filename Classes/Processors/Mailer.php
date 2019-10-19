@@ -3,7 +3,7 @@ namespace Vinou\Page\Processors;
 
 use \PHPMailer\PHPMailer\PHPMailer;
 use \PHPMailer\PHPMailer\Exception;
-use \Vinou\Page\Tools\Helper;
+use \Vinou\ApiConnector\Tools\Helper;
 
 class Mailer {
 
