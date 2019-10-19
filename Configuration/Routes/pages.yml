@@ -1,7 +1,6 @@
 /:
-  template: 'start.twig'
-  pageTitle: 'Willkommen'
-  public: true
+  template: 'main.twig'
+  pageTitle: 'Welcome'
   dataProcessing:
     wines:
       function: getWinesLatest
@@ -9,27 +8,17 @@
         max: 6
         orderBy: topseller DESC
 
-widerruf:
-  template: 'widerruf.twig'
-  pageTitle: 'Widerrufsbelehrung'
-  public: true
+cancellation:
+  pageTitle: 'cancellation policy'
 
-agb:
-  template: 'agb.twig'
-  pageTitle: 'AGBs'
-  public: true
+gbt:
+  pageTitle: 'General business terms'
 
-lieferung-versand:
-  template: 'versand.twig'
-  pageTitle: 'Lieferung & Versand'
-  public: true
+delivery:
+  pageTitle: 'Delivery and shipping'
 
-impressum:
-  template: 'impressum.twig'
-  pageTitle: 'Impressum'
-  public: true
+imprint:
+  pageTitle: 'Imprint'
 
-datenschutz:
-  template: 'datenschutz.twig'
-  pageTitle: 'Datenschutz'
-  public: true
+disclaimer:
+  pageTitle: 'Disclaimer'
