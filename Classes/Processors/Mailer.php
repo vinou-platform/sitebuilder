@@ -1,5 +1,5 @@
 <?php
-namespace Vinou\Page\Processors;
+namespace Vinou\Sitebuilder\Processors;
 
 use \PHPMailer\PHPMailer\PHPMailer;
 use \PHPMailer\PHPMailer\Exception;

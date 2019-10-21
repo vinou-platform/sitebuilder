@@ -1,8 +1,8 @@
 <?php
-namespace Vinou\Page\Router;
+namespace Vinou\Sitebuilder\Router;
 
 use \Vinou\ApiConnector\Tools\Helper;
-use \Vinou\Page\Tools\Render;
+use \Vinou\Sitebuilder\Tools\Render;
 
 /**
  * Dynamic Routes
