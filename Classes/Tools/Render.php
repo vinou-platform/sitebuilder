@@ -1,5 +1,5 @@
 <?php
-namespace Vinou\Sitebuilder\Tools;
+namespace Vinou\SiteBuilder\Tools;
 
 use \Vinou\ApiConnector\Api;
 use \Vinou\ApiConnector\Session\Session;
