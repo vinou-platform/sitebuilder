@@ -1,5 +1,5 @@
 <?php
-namespace Vinou\Sitebuilder\Processors;
+namespace Vinou\SiteBuilder\Processors;
 
 use \Vinou\ApiConnector\Tools\Helper;
 
