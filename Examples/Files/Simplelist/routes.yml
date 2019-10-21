@@ -1,0 +1,21 @@
+media:
+  template: 'Files/List.twig'
+  pageTitle: 'Datei-Liste'
+  public: true
+  dataProcessing:
+    filelist:
+      processor: files
+      function: createFilelist
+      params:
+        source: 'Gallery/'
+
+media/{folder}:
+  template: 'Files/List.twig'
+  pageTitle: 'Datei-Liste'
+  public: true
+  dataProcessing:
+    filelist:
+      processor: files
+      function: createFilelist
+      params:
+        source: 'Gallery/'

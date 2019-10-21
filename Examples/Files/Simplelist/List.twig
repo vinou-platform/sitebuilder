@@ -1,0 +1,23 @@
+{% extends "Default.twig" %}
+{% set pageType = 'fullscreen' %}
+{% block content %}
+	<div class="row" data-padding="big">
+		<div class="inner-wrap">
+			<h1 class="align-center">{{pageTitle}}</h1>
+		</div>
+	</div>
+	<div class="row" data-padding="big" collapse>
+		<div class="inner-wrap">
+			{% if filelist.error %}
+				<p class="inline-message" data-type="error">
+					<span class="title">Ein Fehler ist aufgetreten</span>
+					<span class="description">{{filelist.error}}</span>
+				</p>
+			{% else %}
+
+			{% include 'LinkList.twig' with {files: filelist.files, back: filelist.back} %}
+
+			{% endif %}
+		</div>
+	</div>
+{% endblock %}
