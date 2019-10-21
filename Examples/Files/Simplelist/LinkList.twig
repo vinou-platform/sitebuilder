@@ -1,0 +1,18 @@
+<ul>
+	{% for entry in files %}
+		<li>
+			{% if entry.type == 'dir' %}
+				<a href="{{path}}/{{entry.name}}"><i class="far fa-folder"></i> {{entry.name}}</a>
+				{#
+					<! -- UNCOMMENT THIS LINE TO GET A FULL RECURSIVE LIST -->
+					{% include 'LinkList.twig' with {files: entry.files} %} 
+				#}
+			{% else %}
+				<i class="far fa-file"></i> {{entry.name}}
+			{% endif %}
+		</li>
+	{% endfor %}
+	{% if back %}
+		<li><a href="{{back}}">Zurück</a>
+	{% endif %}
+</ul>
