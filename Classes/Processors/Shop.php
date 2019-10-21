@@ -4,8 +4,8 @@ namespace Vinou\SiteBuilder\Processors;
 use \Vinou\ApiConnector\Api;
 use \Vinou\ApiConnector\Session\Session;
 use \Vinou\ApiConnector\Tools\Helper;
+use \Vinou\ApiConnector\Tools\Redirect;
 use \Vinou\SiteBuilder\Processors\Mailer;
-use \Vinou\SiteBuilder\Tools\Redirect;
 
 /**
  * Shop
