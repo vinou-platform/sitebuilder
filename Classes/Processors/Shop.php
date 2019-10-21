@@ -1,11 +1,11 @@
 <?php
-namespace Vinou\Page\Processors;
+namespace Vinou\Sitebuilder\Processors;
 
 use \Vinou\ApiConnector\Api;
 use \Vinou\ApiConnector\Session\Session;
 use \Vinou\ApiConnector\Tools\Helper;
-use \Vinou\Page\Processors\Mailer;
-use \Vinou\Page\Tools\Redirect;
+use \Vinou\Sitebuilder\Processors\Mailer;
+use \Vinou\Sitebuilder\Tools\Redirect;
 
 /**
  * Shop

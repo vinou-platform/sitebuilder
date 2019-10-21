@@ -1,19 +1,19 @@
 <?php
-namespace Vinou\Page;
+namespace Vinou\Sitebuilder;
 
 use \Bramus\Router\Router;
 use \Vinou\ApiConnector\Api;
 use \Vinou\ApiConnector\Tools\Helper;
-use \Vinou\Page\Router\DynamicRoutes;
-use \Vinou\Page\Tools\Render;
-use \Vinou\Page\Processors\Shop;
-use \Vinou\Page\Processors\Mailer;
-use \Vinou\Page\Processors\Files;
+use \Vinou\Sitebuilder\Router\DynamicRoutes;
+use \Vinou\Sitebuilder\Tools\Render;
+use \Vinou\Sitebuilder\Processors\Shop;
+use \Vinou\Sitebuilder\Processors\Mailer;
+use \Vinou\Sitebuilder\Processors\Files;
 
 /**
- * Page
+ * Site
  */
-class Page {
+class Site {
 
     protected $routeConfig;
     protected $settingsFile = NULL;
