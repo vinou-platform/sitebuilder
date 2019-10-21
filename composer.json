@@ -1,12 +1,12 @@
 {
-    "name": "vinou/page-package",
+    "name": "vinou/site-builder",
     "version": "0.0.1",
     "type": "library",
-    "description": "PHP Package to generate template based webpages with dynamic content from the Vinou Plattform",
+    "description": "PHP library to generate template based webpages with dynamic content from the Vinou Plattform",
     "keywords": [
         "Vinou",
         "Utilities",
-        "Page"
+        "Sitebuilder"
     ],
     "homepage": "http://doc.vinou.de",
     "authors": [{
