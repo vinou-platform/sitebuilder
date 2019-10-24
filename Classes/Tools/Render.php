@@ -241,6 +241,13 @@ class Render {
             return $return;
         }));
 
+        $twig->addFilter( new \Twig_SimpleFilter('sortBy', function ($array, $property, $direction = 'ASC') {
+            usort($array, function($a, $b) use ($property, $direction) {
+                return $direction === 'ASC' ? strcmp($a[$property], $b[$property]) : strcmp($b[$property], $a[$property]);
+            });
+            return $array;
+        }));
+
         $twig->addFilter( new \Twig_SimpleFilter('ksort', function ($array) {
             ksort($array);
             return $array;
