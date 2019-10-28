@@ -123,8 +123,10 @@ class Site {
         if (isset($this->settings['additionalContent']))
             $this->render->dataProcessing($this->settings['additionalContent']);
 
-        if (isset($this->settings['settings']))
+        if (isset($this->settings['settings'])) {
             $this->render->renderArr['settings'] = $this->settings['settings'];
+            $this->render->setConfig($this->settings['settings']);
+        }
     }
 
     private function loadSettings() {

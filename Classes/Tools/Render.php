@@ -18,6 +18,7 @@ class Render {
 	protected $defaultlang = 'en';
 	protected $pathsegments;
     protected $options;
+    protected $config;
     public $templateStorages = [];
 	public $renderArr = [];
 	public $translation = NULL;
@@ -34,6 +35,10 @@ class Render {
 
 		$this->defaultPageData();
 	}
+
+    public function setConfig($settings = NULL) {
+        $this->config = $settings;
+    }
 
 	private function defaultPageData(){
 		$this->renderArr['path'] = explode('?', $_SERVER['REQUEST_URI'])[0];
@@ -425,8 +430,11 @@ class Render {
 	public function renderPage($template = 'Default.twig',$options = NULL){
 		$view = $this->initTwig(isset($options['twig']) ? $options['twig'] : NULL);
 		$template = $view->loadTemplate($template);
-		if (!is_null($options))
+		if (!is_null($options)) {
+            if (isset($options['public']) && !$options['public'] && !Session::getValue('client'))
+                $this->forbidden();
 			$this->renderOptions($options);
+        }
 		echo $template->render($this->renderArr);
 		exit();
 	}
@@ -451,6 +459,11 @@ class Render {
 		Redirect::internal($target);
 		exit();
 	}
+
+    public function forbidden() {
+        if (isset($this->config['permissionRedirect']))
+            Redirect::internal($this->config['permissionRedirect']);
+    }
 
 	public function setTemplateRootPath($path) {
 		$this->templateRootPath = $path;
