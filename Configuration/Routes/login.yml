@@ -11,7 +11,7 @@ client/login:
 client/logout:
   template: 'Client/logout.twig'
   pageTitle: 'Logout'
-  public: true
+  public: false
   method: all
   dataProcessing:
     logout:
@@ -22,7 +22,7 @@ client/logout:
 client/profile:
   template: 'Client/profile.twig'
   pageTitle: 'Kundendaten bearbeiten'
-  public: true
+  public: false
   twig:
     cache: false
   method: all
@@ -34,7 +34,7 @@ client/profile:
 client/orders:
   template: 'Client/orders.twig'
   pageTitle: 'Deine Bestellungen'
-  public: true
+  public: false
   method: all
   dataProcessing:
     orders: getClientOrders
@@ -42,7 +42,7 @@ client/orders:
 client/orders/{id}:
   template: 'Client/order-detail.twig'
   pageTitle: 'Bestellung ansehen'
-  public: true
+  public: false
   dataProcessing:
     order: getClientOrder
 
