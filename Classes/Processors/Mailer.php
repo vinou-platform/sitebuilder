@@ -10,6 +10,8 @@ use \Gregwar\Captcha\PhraseBuilder;
 
 class Mailer {
 
+	protected $api;
+
 	protected $templateRootPath = '../../Resources/';
 	protected $templateDirectories = ['Mail/'];
 	protected $template = 'Default.twig';
@@ -19,7 +21,10 @@ class Mailer {
 	protected $configFile = 'mail.yml';
 	protected $mailer = null;
 	protected $config = [];
+	protected $formconfig = [];
 	protected $useCaptcha = true;
+	protected $sendCopyToSender = false;
+	protected $mails = [];
 
 	public $fromMail = null;
 	public $fromName = null;
@@ -27,7 +32,12 @@ class Mailer {
 	public $subject = null;
 	public $data = [];
 
-	public function __construct() {
+	public function __construct($api = null) {
+        if (is_null($api))
+            throw new \Exception('no api was initialized');
+        else
+            $this->api = $api;
+
 		$this->initMailer();
 		$this->loadDefaultTemplateStorage();
 		$this->loadConfig();
@@ -39,22 +49,32 @@ class Mailer {
 		$this->mailer->Encoding = 'base64';
 	}
 
-	public function send() {
+	public function sendMails() {
 		$this->initTwig();
-		$mailcontent = $this->render();
 
-		$this->mailer->setFrom($this->fromMail, $this->fromName, 0);
-		$this->mailer->addReplyTo($this->fromMail);
-		$this->mailer->addAddress($this->receiver);
-		$this->mailer->Subject = $this->subject;
-		$this->mailer->msgHTML($mailcontent);
-		if (!$this->mailer->send()) {
-			return $this->mailer->ErrorInfo;
-		} else {
-			Session::deleteValue('captcha');
-		    return true;
+		foreach ($this->mails as $mail) {
+			$mailcontent = $this->render($mail['template'], $mail['data']);
+			$this->mailer->setFrom($this->fromMail, $this->fromName, 0);
+			$this->mailer->addReplyTo($this->fromMail);
+
+			if (isset($mail['subject']))
+				$this->setSubject($mail['subject']);
+
+			if (isset($mail['receiver']))
+				$this->setReceiver($mail['receiver']);
+
+			$this->mailer->ClearAllRecipients();
+			$this->mailer->addAddress($this->receiver);
+			$this->mailer->Subject = $this->subject;
+			$this->mailer->msgHTML($mailcontent);
+
+			if (!$this->mailer->send()) {
+				return $this->mailer->ErrorInfo;
+			}
 		}
 
+		Session::deleteValue('captcha');
+		return true;
 	}
 
 	public function setTemplate($template) {
@@ -133,7 +153,7 @@ class Mailer {
 				'captchaerror' => 'captcha could not be detected or is invalid'
 			];
 
-		return $this->send();
+		return $this->sendMails();
 	}
 
 	public function sendJSONForm() {
@@ -145,11 +165,57 @@ class Mailer {
 
   		$this->loadFormConfig($data, $data['data']);
 
-		return $this->send();
+		return $this->sendMails();
   	}
 
   	public function loadFormConfig($config, $data) {
 
+  		$formconfig = $this->validateFormConfig($config);
+
+  		$mail = [];
+  		$maildata = [];
+
+  		if (isset($formconfig['subject'])) {
+  			$mail['subject'] = $formconfig['subject'];
+			$maildata['title'] = $formconfig['subject'];
+		}
+
+  		if (isset($formconfig['receiver']))
+  			$mail['receiver'] = $formconfig['receiver'];
+
+
+  		if (isset($formconfig['template']))
+  			$mail['template'] = $formconfig['template'];
+
+  		if (isset($formconfig['disableCaptcha'])) {
+  			$this->useCaptcha = !$formconfig['disableCaptcha'];
+  		}
+
+		$maildata['formdata'] = [];
+		foreach ($data as $field => $value) {
+			if (in_array($field, $formconfig['fields']))
+				$maildata['formdata'][$field] = $value;
+		}
+
+		$maildata['customer'] = $this->api->getCustomer();
+		$mail['data'] = $maildata;
+		array_push($this->mails, $mail);
+
+		if (isset($formconfig['confirmation'])) {
+			$mailconfig = $this->validateMailConfig($formconfig['confirmation']);
+			$maildata['title'] = $mailconfig['subject'];
+
+			$confirmationmail = [
+				'subject' => $mailconfig['subject'],
+				'receiver' => $data[$mailconfig['receiver']],
+				'template' => $mailconfig['template'],
+				'data' => $maildata
+			];
+			array_push($this->mails, $confirmationmail);
+		}
+  	}
+
+  	public function validateFormConfig($config) {
   		if (!isset($this->config['forms']))
   			throw new \Exception('no forms are defined');
 
@@ -163,30 +229,19 @@ class Mailer {
 
   		$formconfig = $this->config['forms'][$formKey];
 
-  		if (isset($formconfig['subject'])) {
-			$this->setSubject($formconfig['subject']);
-			$this->data['title'] = $formconfig['subject'];
-		}
-
-  		if (isset($formconfig['receiver']))
-  			$this->setReceiver($formconfig['receiver']);
-
-
-  		if (isset($formconfig['template']))
-  			$this->setTemplate($formconfig['template']);
-
-  		if (isset($formconfig['disableCaptcha'])) {
-  			$this->useCaptcha = !$formconfig['disableCaptcha'];
-  		}
-
-		if (!isset($formconfig['fields']))
+  		if (!isset($formconfig['fields']))
 			throw new \Exception('no param fields defined in form config');
 
-		$this->data['formdata'] = [];
-		foreach ($data as $field => $value) {
-			if (in_array($field, $formconfig['fields']))
-				$this->data['formdata'][$field] = $value;
-		}
+		return $formconfig;
+  	}
+
+  	public function validateMailConfig($config) {
+  		$required = ['subject', 'receiver', 'template'];
+  		foreach ($required as $field) {
+	  		if (!isset($config[$field]))
+	  			throw new \Exception('no '.$field.' defined');
+  		}
+  		return $config;
   	}
 
 	public function loadConfig() {
@@ -257,9 +312,15 @@ class Mailer {
 	}
 
 
-	private function render() {
-		$template = $this->renderer->loadTemplate($this->template);
-		return $template->render($this->data);
+	private function render($template = NULL, $data = NULL) {
+		if (is_null($template))
+			$template = $this->template;
+
+		if (is_null($data))
+			$data = $this->data;
+
+		$twig = $this->renderer->loadTemplate($template);
+		return $twig->render($data);
 	}
 
 	private function initTwig() {

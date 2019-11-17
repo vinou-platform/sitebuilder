@@ -84,7 +84,7 @@ class Site {
             'shop', new Shop($this->render->api)
         );
         $this->render->loadProcessor(
-            'mailer', new Mailer()
+            'mailer', new Mailer($this->render->api)
         );
         $this->render->loadProcessor(
             'files', new Files()
