@@ -17,6 +17,14 @@
     "license": [
         "GPL-2.0+"
     ],
+    "require": {
+        "bramus/router": "dev-master",
+        "twig/twig": "*",
+        "mustangostang/spyc": "^0.5.1",
+        "erusev/parsedown": "^1.7",
+        "phpmailer/phpmailer": "^6.0",
+        "gregwar/captcha": "^1.1"
+    },
     "autoload": {
         "psr-4": {
             "Vinou\\SiteBuilder\\": "Classes/"
