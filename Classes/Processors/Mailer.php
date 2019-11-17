@@ -19,6 +19,7 @@ class Mailer {
 	protected $configFile = 'mail.yml';
 	protected $mailer = null;
 	protected $config = [];
+	protected $useCaptcha = true;
 
 	public $fromMail = null;
 	public $fromName = null;
@@ -111,8 +112,12 @@ class Mailer {
 		];
 	}
 
-	public function validateCaptcha($phrase) {
+	public function validateCaptcha() {
+		if (!isset($_POST['captcha']))
+			return false;
+
 		$sessionPhrase = Session::getValue('captcha');
+		$phrase = $_POST['captcha'];
 		return $phrase === (string)$sessionPhrase;
 	}
 
@@ -121,12 +126,12 @@ class Mailer {
 		if (empty($_POST) || !isset($_POST['submitted']) || $_POST['submitted'] == 0)
 			return false;
 
-		if (!isset($_POST['captcha']) || !$this->validateCaptcha($_POST['captcha']))
+		$this->loadFormConfig($params, $_POST);
+
+		if ($this->useCaptcha && !$this->validateCaptcha())
 			return [
 				'captchaerror' => 'captcha could not be detected or is invalid'
 			];
-
-		$this->loadFormConfig($params, $_POST);
 
 		return $this->send();
 	}
@@ -169,6 +174,10 @@ class Mailer {
 
   		if (isset($formconfig['template']))
   			$this->setTemplate($formconfig['template']);
+
+  		if (isset($formconfig['disableCaptcha'])) {
+  			$this->useCaptcha = !$formconfig['disableCaptcha'];
+  		}
 
 		if (!isset($formconfig['fields']))
 			throw new \Exception('no param fields defined in form config');
