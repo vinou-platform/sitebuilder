@@ -2,6 +2,7 @@
 namespace Vinou\SiteBuilder\Tools;
 
 use \Vinou\ApiConnector\Api;
+use \Vinou\ApiConnector\PublicApi;
 use \Vinou\ApiConnector\Session\Session;
 use \Vinou\ApiConnector\FileHandler\Images;
 use \Vinou\ApiConnector\FileHandler\Pdf;
@@ -79,13 +80,20 @@ class Render {
 	}
 
     public function connect() {
-        $this->api = new Api ();
 
-        if ($this->api->status != 'connected') {
-            $this->renderPage('error.twig', [
-                'pageTitle' => 'No Connection'
-            ]);
-            die();
+        if (defined('VINOU_MODE') && VINOU_MODE === 'Public') {
+            $this->api = new PublicApi ();
+        } else {
+            $this->api = new Api ();
+
+            if ($this->api->status != 'connected') {
+                $this->renderPage('error.twig', [
+                    'pageTitle' => 'No Connection'
+                ]);
+                die();
+            }
+
+            $this->api->initBasket();
         }
 
         return true;
