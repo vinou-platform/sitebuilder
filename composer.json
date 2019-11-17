@@ -18,7 +18,7 @@
         "GPL-2.0+"
     ],
     "require": {
-        "bramus/router": "dev-master",
+        "bramus/router": "*",
         "twig/twig": "*",
         "mustangostang/spyc": "^0.5.1",
         "erusev/parsedown": "^1.7",
