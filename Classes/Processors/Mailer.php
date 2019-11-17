@@ -4,6 +4,9 @@ namespace Vinou\SiteBuilder\Processors;
 use \PHPMailer\PHPMailer\PHPMailer;
 use \PHPMailer\PHPMailer\Exception;
 use \Vinou\ApiConnector\Tools\Helper;
+use \Vinou\ApiConnector\Session\Session;
+use \Gregwar\Captcha\CaptchaBuilder;
+use \Gregwar\Captcha\PhraseBuilder;
 
 class Mailer {
 
@@ -47,6 +50,7 @@ class Mailer {
 		if (!$this->mailer->send()) {
 			return $this->mailer->ErrorInfo;
 		} else {
+			Session::deleteValue('captcha');
 		    return true;
 		}
 
@@ -77,10 +81,50 @@ class Mailer {
 		$this->configFile = $file;
 	}
 
+	public function loadCaptcha($params = NULL) {
+
+		$phrase = Session::getValue('captcha');
+		if (!$phrase) {
+			$phraseBuilder = new PhraseBuilder(5, '0123456789');
+			$captcha = new CaptchaBuilder(null, $phraseBuilder);
+		}
+		else {
+			$captcha = new CaptchaBuilder($phrase);
+		}
+
+		if (isset($params['bgcolor']))
+			list($r, $g, $b) = explode(',',$params['bgcolor']);
+		else
+			list($r, $g, $b) = [100, 0, 0];
+
+		$width = isset($params['width']) ? $params['width'] : 120;
+		$height = isset($params['height']) ? $params['height'] : 50;
+
+		$captcha->setBackgroundColor($r, $g, $b);
+		$captcha->setIgnoreAllEffects(true);
+		$captcha->build($width, $height);
+		Session::setValue('captcha', $captcha->getPhrase());
+
+		return [
+			'phrase' => $captcha->getPhrase(),
+			'image' => $captcha->inline(),
+		];
+	}
+
+	public function validateCaptcha($phrase) {
+		$sessionPhrase = Session::getValue('captcha');
+		return $phrase === (string)$sessionPhrase;
+	}
+
 	public function sendPostForm($params) {
 
 		if (empty($_POST) || !isset($_POST['submitted']) || $_POST['submitted'] == 0)
 			return false;
+
+		if (!isset($_POST['captcha']) || !$this->validateCaptcha($_POST['captcha']))
+			return [
+				'captchaerror' => 'captcha could not be detected or is invalid'
+			];
 
 		$this->loadFormConfig($params, $_POST);
 
