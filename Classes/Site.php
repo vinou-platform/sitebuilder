@@ -30,7 +30,6 @@ class Site {
         $this->render = new Render();
 
         $this->render->connect();
-        $this->render->api->initBasket();
 
         $this->loadDefaultProcessors();
 
