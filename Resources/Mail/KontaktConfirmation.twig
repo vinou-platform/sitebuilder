@@ -1,0 +1,16 @@
+{% extends "Layouts/Default.html" %}
+{% block mailcontent %}
+	<h1>{{title}}</h1>
+	<p>Vielen Dank für Ihre Anfrage. Wir haben Ihre Anfrage wie folgt erhalten:</p>
+
+	<table cellpadding="4" cellspacing="0" border="1">
+		{% for label,value in formdata %}
+			<tr>
+				<td><b>{{label}}:</b></td>
+				<td>{{value}}</td>
+			</tr>
+		{% endfor %}
+	</table>
+
+	<p>Wir werden Ihre Anfrage schnellstmöglich bearbeiten.</p>
+{% endblock %}
