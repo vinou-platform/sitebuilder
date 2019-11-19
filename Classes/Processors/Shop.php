@@ -157,7 +157,14 @@ class Shop {
                 unset($order['delivery']);
             }
         } else {
-            unset($order['billing_type']);
+            $check = $this->api->checkClientMail($order['billing']);
+            if ($check) {
+                $order['client_id'] = $check;
+                $order['billing_type'] = 'address';
+            } else {
+                unset($order['billing_type']);
+            }
+
             unset($order['delivery_type']);
             if (!$order['delivery']) {
                 $order['delivery'] = $order['billing'];
