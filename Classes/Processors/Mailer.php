@@ -10,7 +10,7 @@ use \Gregwar\Captcha\PhraseBuilder;
 
 class Mailer {
 
-	protected $api;
+	protected $api = NULL;
 
 	protected $templateRootPath = '../../Resources/';
 	protected $templateDirectories = ['Mail/'];
@@ -33,9 +33,7 @@ class Mailer {
 	public $data = [];
 
 	public function __construct($api = null) {
-        if (is_null($api))
-            throw new \Exception('no api was initialized');
-        else
+        if (!is_null($api))
             $this->api = $api;
 
 		$this->initMailer();
@@ -48,6 +46,24 @@ class Mailer {
 		$this->mailer->CharSet = 'UTF-8';
 		$this->mailer->Encoding = 'base64';
 	}
+
+	public function send() {
+		$this->initTwig();
+		$mailcontent = $this->render();
+
+		$this->mailer->setFrom($this->fromMail, $this->fromName, 0);
+		$this->mailer->addReplyTo($this->fromMail);
+		$this->mailer->addAddress($this->receiver);
+		$this->mailer->Subject = $this->subject;
+		$this->mailer->msgHTML($mailcontent);
+		if (!$this->mailer->send()) {
+			return $this->mailer->ErrorInfo;
+		} else {
+			Session::deleteValue('captcha');
+		    return true;
+		}
+	}
+
 
 	public function sendMails() {
 		$this->initTwig();
@@ -216,6 +232,9 @@ class Mailer {
   	}
 
   	public function validateFormConfig($config) {
+  		if (is_null($this->api))
+  			throw new \Exception('no api initialized');
+
   		if (!isset($this->config['forms']))
   			throw new \Exception('no forms are defined');
 
