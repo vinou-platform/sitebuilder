@@ -91,6 +91,7 @@ class Shop {
         if ($status) {
             Session::deleteValue('payment');
             Session::deleteValue('basket');
+            Session::deleteValue('card');
             Session::deleteValue('billing');
             Session::deleteValue('delivery');
             Session::deleteValue('note');
@@ -203,7 +204,7 @@ class Shop {
 
         $mail = new Mailer();
         $mail->setTemplate('OrderCreateClient.twig');
-        $mail->setReceiver($order['billing']['mail']);
+        $mail->setReceiver($order['client']['mail']);
         $mail->setSubject('Ihre Bestellung '.$order['number']);
         $mail->setData([
             'order' => $order,
@@ -211,14 +212,23 @@ class Shop {
         ]);
         $send = $mail->send();
 
+        $adminmail = new Mailer();
+        $adminmail->setTemplate('OrderCreateClientNotification.twig');
+        $adminmail->setSubject('Vinou-Bestellung '.$order['number']);
+        $adminmail->setData([
+            'order' => $order,
+            'customer' => $customer
+        ]);
+        $send = $adminmail->send();
+
         $client = Session::getValue('client');
         if (!$client) {
             $accountmail = new Mailer();
             $accountmail->setTemplate('NewAccountByOrder.twig');
-            $accountmail->setReceiver($order['billing']['mail']);
+            $accountmail->setReceiver($order['client']['mail']);
             $accountmail->setSubject('Dein Account auf '.$_SERVER['SERVER_NAME']);
             $accountmail->setData([
-                'client' => $order['billing'],
+                'client' => $order['client'],
                 'domain' => $_SERVER['SERVER_NAME'],
                 'customer' => $customer
             ]);
