@@ -3,6 +3,10 @@
 	<h3>Vielen Dank!</h3>
 	<p>Wir haben ihre Bestellung wie folgt erhalten.<br><br></p>
 
+	{% if order.payment_type == 'prepaid' %}
+	<p><b>Sie haben als Zahlungsart Vorkasse gewählt. Bitte berücksichtigen Sie, dass bis zum Zahlungseingang die Ware nicht versendet wird.</b></p>
+	{% endif %}
+
 	<table border="0" cellspacing="0" cellpadding="10" style="border: 1px solid #999999; border-collapse: collapse; width: 100%">
 		<tr>
 			<td colspan="2" style="border: 1px solid #999999;">
