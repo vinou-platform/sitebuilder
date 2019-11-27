@@ -210,6 +210,7 @@ class Shop {
             'order' => $order,
             'customer' => $customer
         ]);
+        $mail->loadShopAttachments();
         $send = $mail->send();
 
         $adminmail = new Mailer();

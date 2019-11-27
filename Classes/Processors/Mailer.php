@@ -118,6 +118,16 @@ class Mailer {
 		$this->configFile = $file;
 	}
 
+	public function loadShopAttachments() {
+		if (isset($this->config['shop']['attachments'])) {
+			foreach ($this->config['shop']['attachments'] as $key => $file) {
+				$absFile = Helper::getNormDocRoot().$file;
+				if (is_file($absFile))
+					$this->mailer->addAttachment($absFile);
+			}
+		}
+	}
+
 	public function loadCaptcha($params = NULL) {
 
 		$phrase = Session::getValue('captcha');
