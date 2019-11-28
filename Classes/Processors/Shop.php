@@ -224,12 +224,21 @@ class Shop {
 
         $client = Session::getValue('client');
         if (!$client) {
+            $client = $order['client'];
+            $pwreset = $this->api->getPasswordHash(['mail' => $order['client']['mail']]);
+
+            if (isset($pwreset['lostpassword_hash']))
+                $client['lostpassword_hash'] = $pwreset['lostpassword_hash'];
+
+            if (isset($pwreset['lostpassword_expire']))
+                $client['lostpassword_expire'] = $pwreset['lostpassword_expire'];
+
             $accountmail = new Mailer();
             $accountmail->setTemplate('NewAccountByOrder.twig');
             $accountmail->setReceiver($order['client']['mail']);
             $accountmail->setSubject('Dein Account auf '.$_SERVER['SERVER_NAME']);
             $accountmail->setData([
-                'client' => $order['client'],
+                'client' => $client,
                 'domain' => $_SERVER['SERVER_NAME'],
                 'customer' => $customer
             ]);
