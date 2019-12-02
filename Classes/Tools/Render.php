@@ -43,6 +43,7 @@ class Render {
 
 	private function defaultPageData(){
 		$this->renderArr['path'] = explode('?', $_SERVER['REQUEST_URI'])[0];
+        $this->renderArr['request_uri'] = $_SERVER['REQUEST_URI'];
         $this->renderArr['backlink'] = isset($_SERVER['HTTP_REFERER']) ? $_SERVER['HTTP_REFERER'] : false;
 		$this->renderArr['host'] = $_SERVER['HTTP_HOST'];
         $this->renderArr['date'] = strftime('%d.%m.%Y',time());
@@ -467,8 +468,10 @@ class Render {
 	}
 
 	public function redirect($target) {
-		Redirect::internal($target);
-		exit();
+        if (strncmp($target,'http',4) === 0)
+            Redirect::external($target);
+        else
+            Redirect::internal($target);
 	}
 
     public function forbidden() {

@@ -6,6 +6,7 @@ use \Vinou\ApiConnector\Api;
 use \Vinou\ApiConnector\Tools\Helper;
 use \Vinou\SiteBuilder\Router\DynamicRoutes;
 use \Vinou\SiteBuilder\Tools\Render;
+use \Vinou\SiteBuilder\Processors\External;
 use \Vinou\SiteBuilder\Processors\Shop;
 use \Vinou\SiteBuilder\Processors\Mailer;
 use \Vinou\SiteBuilder\Processors\Files;
@@ -87,6 +88,9 @@ class Site {
         );
         $this->render->loadProcessor(
             'files', new Files()
+        );
+        $this->render->loadProcessor(
+            'external', new External()
         );
     }
 

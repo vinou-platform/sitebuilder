@@ -92,7 +92,10 @@ class DynamicRoutes {
 
 			switch ($options['type']) {
 				case 'redirect':
-					$this->render->redirect($options['redirect']);
+					$method = isset($options['method']) ? $options['method'] : 'get';
+					$this->router->{$method}($pattern, function() use ($options) {
+						$this->render->redirect($options['redirect']);
+					});
 					break;
 
 				case 'namespace':
