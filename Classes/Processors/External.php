@@ -15,7 +15,34 @@ class External {
 		if (!isset($params['url']))
 			return false;
 
-		return file_get_contents($params['url']);
+		$ch = curl_init();
+		curl_setopt($ch, CURLOPT_RETURNTRANSFER, 1);
+		curl_setopt($ch, CURLOPT_URL, $params['url']);
+		$result = curl_exec($ch);
+		$requestinfo = curl_getinfo($ch);
+		$httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+		switch ($httpCode) {
+			case 200:
+				curl_close($ch);
+				return $result;
+				break;
+			case 401:
+				return [
+					'error' => 'unauthorized',
+					'info' => $requestinfo,
+					'response' => $result
+				];
+				break;
+			default:
+				return [
+					'error' => 'an error occured',
+					'info' => $requestinfo,
+					'response' => $result
+				];
+				break;
+		}
+		return false;
+
 	}
 
 }
