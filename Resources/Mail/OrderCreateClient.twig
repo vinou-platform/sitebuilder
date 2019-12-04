@@ -107,5 +107,17 @@
 		</tr>
 
 	</table>
-	<p>Ihre Bestellung wird schnellstmöglich bearbeitet.</p>
+
+	{% if order.payment_type == 'prepaid' %}
+		<p>Bitte überweisen Sie den fälligen Gesamtbetrag von {{gross|number_format(2, ',', '.')}} EUR auf folgendes Konto:<br>
+			IBAN: {{customer.settings.bank.iban}}<br>
+			BIC: {{customer.settings.bank.bic}}<br>
+			Kreditinstitut: {{customer.settings.bank.bankname}}<br>
+			Kontoinhaber: {{customer.settings.bank.owner}}<br>
+			Verwendungszweck: {{order.number}}<br><br>
+			<b>Bis zum erhalt der Zahlung verbleibt die Ware im Weingut.</b>
+		</p>
+	{% else %}
+		<p>Ihre Bestellung wird schnellstmöglich bearbeitet.</p>
+	{% endif %}
 {% endblock %}
