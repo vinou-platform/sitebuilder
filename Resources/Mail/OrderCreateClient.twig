@@ -109,13 +109,31 @@
 	</table>
 
 	{% if order.payment_type == 'prepaid' %}
-		<p>Bitte überweisen Sie den fälligen Gesamtbetrag von {{gross|number_format(2, ',', '.')}} EUR auf folgendes Konto:<br>
-			IBAN: {{customer.settings.bank.iban}}<br>
-			BIC: {{customer.settings.bank.bic}}<br>
-			Kreditinstitut: {{customer.settings.bank.bankname}}<br>
-			Kontoinhaber: {{customer.settings.bank.owner}}<br>
-			Verwendungszweck: {{order.number}}<br><br>
-			<b>Bis zum erhalt der Zahlung verbleibt die Ware im Weingut.</b>
+		<p class="text-align: center"><br><b>Bitte überweisen Sie den fälligen Gesamtbetrag von {{gross|number_format(2, ',', '.')}} EUR auf folgendes Konto:<b><br><br></b></b>
+		<table border="0" cellspacing="0" cellpadding="10" style="border: 1px solid #999999; border-collapse: collapse; width: 100%">
+			<tr>
+				<td colspan="2" style="border: 1px solid #999999;">IBAN:</td>
+				<td colspan="2" style="border: 1px solid #999999;">{{customer.settings.bank.iban}}</td>
+			</tr>
+			<tr>
+				<td colspan="2" style="border: 1px solid #999999;">BIC:</td>
+				<td colspan="2" style="border: 1px solid #999999;">{{customer.settings.bank.bic}}</td>
+			</tr>
+			<tr>
+				<td colspan="2" style="border: 1px solid #999999;">Kreditinstitut:</td>
+				<td colspan="2" style="border: 1px solid #999999;">{{customer.settings.bank.bankname}}</td>
+			</tr>
+			<tr>
+				<td colspan="2" style="border: 1px solid #999999;">Kontoinhaber:</td>
+				<td colspan="2" style="border: 1px solid #999999;">{{customer.settings.bank.owner}}</td>
+			</tr>
+			<tr>
+				<td colspan="2" style="border: 1px solid #999999;">Verwendungszweck:</td>
+				<td colspan="2" style="border: 1px solid #999999;">{{order.number}}</td>
+			</tr>
+		</table>
+		<p>
+			<br><b>Bis zum erhalt der Zahlung verbleibt die Ware im Weingut.</b>
 		</p>
 	{% else %}
 		<p>Ihre Bestellung wird schnellstmöglich bearbeitet.</p>
