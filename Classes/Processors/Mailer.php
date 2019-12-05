@@ -365,6 +365,10 @@ class Mailer {
 		$this->renderer->addExtension(new \Twig_Extension_Debug());
         $this->renderer->addExtension(new \Vinou\Translations\TwigExtension(isset($options['language']) ? $options['language'] : 'de'));
 
+        $this->renderer->addFilter( new \Twig_SimpleFilter('base64image', function($url) {
+            return Helper::imageToBase64($url);
+        }));
+
 		return $this->renderer;
 	}
 }

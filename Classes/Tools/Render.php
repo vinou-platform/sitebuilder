@@ -406,6 +406,10 @@ class Render {
                                 });
         }));
 
+        $twig->addFilter( new \Twig_SimpleFilter('base64image', function($url) {
+            return Helper::imageToBase64($url);
+        }));
+
         $twig->addFilter( new \Twig_SimpleFilter('link', function($value,$url,$className = null) {
         	$class = $_SERVER['REQUEST_URI'] == $url ? 'active' : '';
         	if ($className)
