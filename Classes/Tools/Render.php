@@ -95,6 +95,8 @@ class Render {
             }
 
             $this->api->initBasket();
+
+            $this->translation = $this->api->loadLocalization();
         }
 
         return true;
@@ -165,11 +167,16 @@ class Render {
                 throw new \Exception('dataProcessing for this route could not be solved');
 
             $selector = isset($option['key']) ? $option['key'] : $key;
-            if (isset($result[$selector]))
-                $this->renderArr[$key] = $result[$selector];
 
+            if (isset($result[$selector])) {
+                $this->renderArr[$key] = $result[$selector];
+            }
             else
                 $this->renderArr[$key] = $result;
+
+            if (isset($result['clusters'])) {
+                $this->renderArr['clusters'] = $result['clusters'];
+            }
         }
     }
 
@@ -408,6 +415,22 @@ class Render {
 
         $twig->addFilter( new \Twig_SimpleFilter('base64image', function($url) {
             return Helper::imageToBase64($url);
+        }));
+
+        $twig->addFilter( new \Twig_SimpleFilter('grapetypes', function($array) {
+            $return = [];
+            foreach ($array as $entry) {
+                if (is_array($entry)) {
+                    foreach ($entry as $id) {
+                        $return[$id] = $this->translation['grapetypes'][$id]['name'];
+                    }
+                } else {
+                    $return[$entry] = $this->translation['grapetypes'][$entry]['name'];
+                }
+            }
+            asort($return);
+            return $return;
+
         }));
 
         $twig->addFilter( new \Twig_SimpleFilter('link', function($value,$url,$className = null) {
