@@ -227,11 +227,11 @@ class Shop {
             $client = $order['client'];
             $pwreset = $this->api->getPasswordHash(['mail' => $order['client']['mail']]);
 
-            if (isset($pwreset['lostpassword_hash']))
-                $client['lostpassword_hash'] = $pwreset['lostpassword_hash'];
+            if (isset($pwreset['hash']))
+                $client['lostpassword_hash'] = $pwreset['hash'];
 
-            if (isset($pwreset['lostpassword_expire']))
-                $client['lostpassword_expire'] = $pwreset['lostpassword_expire'];
+            if (isset($pwreset['expire']))
+                $client['lostpassword_expire'] = $pwreset['expire'];
 
             $accountmail = new Mailer();
             $accountmail->setTemplate('NewAccountByOrder.twig');
