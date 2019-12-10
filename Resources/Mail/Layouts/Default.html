@@ -36,7 +36,10 @@
 	<table border="0" cellspacing="0" cellpadding="0" width="100%">
 		<tr>
 			<td width="*">&nbsp;</td>
-			<td width="600" align="center"><img src="{{('https://api.vinou.de' ~ customer.image)|base64image}}" width="150" style="width: 150px; margin: 1.5em auto; display: inline-block;"/></td>
+			<td width="600" align="center">
+				{% if customer.image %}
+					<img src="{{('https://api.vinou.de' ~ customer.image)|base64image}}" width="150" style="width: 150px; margin: 1.5em auto; display: inline-block;"/>
+				{% else %}&nbsp;{% endif %}</td>
 			<td width="*">&nbsp;</td>
 		</tr>
 		<tr>
