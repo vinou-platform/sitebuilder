@@ -15,7 +15,7 @@ class Mailer {
 	protected $templateRootPath = '../../Resources/';
 	protected $templateDirectories = ['Mail/'];
 	protected $template = 'Default.twig';
-	protected $storage = [];
+	public $storage = [];
 
 	protected $renderer = null;
 	protected $configFile = 'mail.yml';
@@ -336,7 +336,7 @@ class Mailer {
 		}
 
 		foreach ($subfolders as $directory) {
-			array_push($this->storage,$rootDir.$directory);
+			array_unshift($this->storage,$rootDir.$directory);
 		}
 	}
 
