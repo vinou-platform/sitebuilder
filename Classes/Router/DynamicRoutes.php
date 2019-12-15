@@ -90,9 +90,10 @@ class DynamicRoutes {
 			if (!isset($options['type']))
 				$options['type'] = 'page';
 
+			$method = isset($options['method']) ? $options['method'] : 'get';
+
 			switch ($options['type']) {
 				case 'redirect':
-					$method = isset($options['method']) ? $options['method'] : 'get';
 					$this->router->{$method}($pattern, function() use ($options) {
 						$this->render->redirect($options['redirect']);
 					});
@@ -115,9 +116,15 @@ class DynamicRoutes {
 						$this->generateRoutes($options['routes']);
 					});
 					break;
+
+				case 'sitemap':
+					$this->router->{$method}($pattern, function() use ($configuration) {
+						$this->render->renderSitemap($configuration);
+					});
+					break;
+
 				default:
 					// Page
-					$method = isset($options['method']) ? $options['method'] : 'get';
 					$this->router->{$method}($pattern, function() use ($options) {
 						$template = $this->detectForTemplate($options);
 						if (isset($options['contentFunc']))
