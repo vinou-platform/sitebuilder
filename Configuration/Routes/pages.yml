@@ -22,3 +22,6 @@ imprint:
 
 disclaimer:
   pageTitle: 'Disclaimer'
+
+sitemap.xml:
+  type: 'sitemap'
