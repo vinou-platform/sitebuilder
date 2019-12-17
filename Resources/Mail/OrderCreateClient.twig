@@ -28,7 +28,7 @@
 						PLZ/Ort: {{order.billing.zip}} {{order.billing.city}} <br>
 					{% else %}
 						{% if order.client.company and order.client.company != '' %}Firma: {{order.client.company}}<br>{% endif %}
-						Name: {{order.client.firstname}} {{order.client.lastname}} <br>
+						Name: {{order.client.first_name}} {{order.client.last_name}} <br>
 						Straße: {{order.client.address}}<br>
 						PLZ/Ort: {{order.client.zip}} {{order.client.city}} <br>
 					{% endif %}
@@ -42,7 +42,7 @@
 					{% if order.delivery_type == 'address' %}
 						Name: {{order.delivery.first_name}} {{order.delivery.last_name}} <br>
 					{% else %}
-						Name: {{order.delivery.firstname}} {{order.delivery.lastname}} <br>
+						Name: {{order.delivery.first_name}} {{order.delivery.last_name}} <br>
 					{% endif %}
 					Straße: {{order.delivery.address}}<br>
 					PLZ/Ort: {{order.delivery.zip}} {{order.delivery.city}} <br>
@@ -64,7 +64,7 @@
 		<tr>
 			<td style="border: 1px solid #999999;"><b>Position</b></td>
 			<td style="border: 1px solid #999999;"><b>Artikel</b></td>
-			<td style="border: 1px solid #999999;"><b>Stückzahl</b></td>
+			<td style="border: 1px solid #999999;"><b>Einzelpreis</b></td>
 			<td style="border: 1px solid #999999;"><b>Preis</b></td>
 		</tr>
 		{% set net = 0 %}
@@ -73,9 +73,9 @@
 		{% for item in order.positions %}
 			<tr>
 				<td style="border: 1px solid #999999;">{{loop.index}}</td>
-				<td style="border: 1px solid #999999;">{{item.item.name}}</td>
-				<td style="border: 1px solid #999999;">{{item.item.price|number_format(2, ',', '.')}}</td>
-				<td style="border: 1px solid #999999;">{{(item.item.gross * item.quantity)|number_format(2, ',', '.')}} EUR</td>
+				<td style="border: 1px solid #999999;">{{item.quantity}}&nbsp;x&nbsp;{{item.item.name}}</td>
+				<td style="border: 1px solid #999999;">{{item.item.price|number_format(2, ',', '.')}}&nbsp;EUR</td>
+				<td style="border: 1px solid #999999;">{{(item.item.gross * item.quantity)|number_format(2, ',', '.')}}&nbsp;EUR</td>
 			</tr>
 			{% set net = net + (item.item.net * item.quantity) %}
 			{% set gross = gross + (item.item.gross * item.quantity) %}
@@ -87,29 +87,29 @@
 			<tr>
 				<td style="border: 1px solid #999999;">{{index}}</td>
 				<td style="border: 1px solid #999999;">Versand und Verpackung</td>
-				<td style="border: 1px solid #999999;">{{order.package.gross|number_format(2, ',', '.')}} EUR</td>
-				<td style="border: 1px solid #999999;">{{order.package.gross|number_format(2, ',', '.')}} EUR</td>
+				<td style="border: 1px solid #999999;">{{order.package.gross|number_format(2, ',', '.')}}&nbsp;EUR</td>
+				<td style="border: 1px solid #999999;">{{order.package.gross|number_format(2, ',', '.')}}&nbsp;EUR</td>
 			</tr>
 			{% set net = net + (order.package.net * 1) %}
 			{% set gross = gross + (order.package.gross * 1) %}
 		{% endif %}
 		<tr>
 			<td style="border: 1px solid #999999;" colspan="3">Gesamtsumme Netto</td>
-			<td style="border: 1px solid #999999;">{{net|number_format(2, ',', '.')}} EUR</td>
+			<td style="border: 1px solid #999999;">{{net|number_format(2, ',', '.')}}&nbsp;EUR</td>
 		</tr>
 		<tr>
 			<td style="border: 1px solid #999999;" colspan="3">Mehrwertssteuer</td>
-			<td style="border: 1px solid #999999;">{{(gross - net)|number_format(2, ',', '.')}} EUR</td>
+			<td style="border: 1px solid #999999;">{{(gross - net)|number_format(2, ',', '.')}}&nbsp;EUR</td>
 		</tr>
 		<tr>
 			<td style="border: 1px solid #999999;" colspan="3">Gesamtsumme Brutto</td>
-			<td style="border: 1px solid #999999;">{{gross|number_format(2, ',', '.')}} EUR</td>
+			<td style="border: 1px solid #999999;">{{gross|number_format(2, ',', '.')}}&nbsp;EUR</td>
 		</tr>
 
 	</table>
 
 	{% if order.payment_type == 'prepaid' %}
-		<p class="text-align: center"><br><b>Bitte überweisen Sie den fälligen Gesamtbetrag von {{gross|number_format(2, ',', '.')}} EUR auf folgendes Konto:<b><br><br></b></b>
+		<p class="text-align: center"><br><b>Bitte überweisen Sie den fälligen Gesamtbetrag von {{gross|number_format(2, ',', '.')}}&nbsp;EUR auf folgendes Konto:<b><br><br></b></b>
 		<table border="0" cellspacing="0" cellpadding="10" style="border: 1px solid #999999; border-collapse: collapse; width: 100%">
 			<tr>
 				<td colspan="2" style="border: 1px solid #999999;">IBAN:</td>
