@@ -193,6 +193,27 @@ class Shop {
             Redirect::internal($_POST['redirect']['standard']);
     }
 
+    public function quantityCheck() {
+        $settings = Session::getValue('settings');
+
+        if (!isset($settings['minBasketSize']))
+            return true;
+
+        $card = Session::getValue('card');
+        if (!$card)
+            Redirect::internal('/warenkorb');
+
+        $quantity = 0;
+        foreach ($card as $item) {
+            $quantity = $quantity + $item['quantity'];
+        }
+
+        if ($quantity < $settings['minBasketSize'])
+            Redirect::internal('/warenkorb');
+
+        return;
+    }
+
     public function sendClientNotification($addedOrder) {
 
         if ($addedOrder && $addedOrder['number'])

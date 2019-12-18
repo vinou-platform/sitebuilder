@@ -4,6 +4,7 @@ namespace Vinou\SiteBuilder;
 use \Bramus\Router\Router;
 use \Vinou\ApiConnector\Api;
 use \Vinou\ApiConnector\Tools\Helper;
+use \Vinou\ApiConnector\Session\Session;
 use \Vinou\SiteBuilder\Router\DynamicRoutes;
 use \Vinou\SiteBuilder\Tools\Render;
 use \Vinou\SiteBuilder\Processors\External;
@@ -129,6 +130,7 @@ class Site {
         if (isset($this->settings['settings'])) {
             $this->render->renderArr['settings'] = $this->settings['settings'];
             $this->render->setConfig($this->settings['settings']);
+            Session::setValue('settings', $this->settings['settings']);
         }
     }
 
