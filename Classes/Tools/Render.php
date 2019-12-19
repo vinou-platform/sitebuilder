@@ -50,6 +50,7 @@ class Render {
         $this->renderArr['request_uri'] = $_SERVER['REQUEST_URI'];
         $this->renderArr['backlink'] = isset($_SERVER['HTTP_REFERER']) ? $_SERVER['HTTP_REFERER'] : false;
 		$this->renderArr['host'] = $_SERVER['HTTP_HOST'];
+        $this->renderArr['domain'] = Helper::getCurrentHost();
         $this->renderArr['date'] = strftime('%d.%m.%Y',time());
         $this->renderArr['year'] = strftime('%Y',time());
         $this->renderArr['time'] = strftime('%H:%M',time());
@@ -181,6 +182,9 @@ class Render {
             if (isset($result['clusters'])) {
                 $this->renderArr['clusters'] = $result['clusters'];
             }
+
+            if (isset($option['stopProcessing']) && $option['stopProcessing'] && !$result)
+                break;
         }
     }
 

@@ -79,6 +79,11 @@ class Shop {
             'delivery' => Session::getValue('delivery') ?? Session::getValue('billing')
         ];
 
+        if ($order['payment_type'] == 'paypal') {
+            $order['return_url'] = Helper::getCurrentHost() . '/checkout/paypal/finish';
+            $order['cancel_url'] = Helper::getCurrentHost() . '/checkout/paypal/cancel';
+        }
+
         $note = Session::getValue('note');
         if ($note) $order['note'] = $note;
 
