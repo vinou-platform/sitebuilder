@@ -97,10 +97,16 @@
 			<td style="border: 1px solid #999999;" colspan="3">Gesamtsumme Netto</td>
 			<td style="border: 1px solid #999999;">{{net|number_format(2, ',', '.')}}&nbsp;EUR</td>
 		</tr>
-		<tr>
-			<td style="border: 1px solid #999999;" colspan="3">Mehrwertssteuer</td>
-			<td style="border: 1px solid #999999;">{{(tax)|number_format(2, ',', '.')}}&nbsp;EUR</td>
-		</tr>
+		{% if customer.tax_free %}
+			<tr>
+				<td style="border: 1px solid #999999;" colspan="4">{{ 'customer.field.smallBusiness.description'|translate }}</td>
+			</tr>
+		{% else %}
+			<tr>
+				<td style="border: 1px solid #999999;" colspan="3">Mehrwertssteuer</td>
+				<td style="border: 1px solid #999999;">{{(tax)|number_format(2, ',', '.')}}&nbsp;EUR</td>
+			</tr>
+		{% endif %}
 		<tr>
 			<td style="border: 1px solid #999999;" colspan="3">Gesamtsumme Brutto</td>
 			<td style="border: 1px solid #999999;">{{gross|number_format(2, ',', '.')}}&nbsp;EUR</td>
