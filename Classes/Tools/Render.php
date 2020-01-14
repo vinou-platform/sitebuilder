@@ -272,7 +272,14 @@ class Render {
 
         $twig->addFilter( new \Twig_SimpleFilter('sortBy', function ($array, $property, $direction = 'ASC') {
             usort($array, function($a, $b) use ($property, $direction) {
-                return $direction === 'ASC' ? strcmp($a[$property], $b[$property]) : strcmp($b[$property], $a[$property]);
+                $x = $a[$property];
+                $y = $b[$property];
+
+                if (is_numeric($x))
+                    return $direction === 'ASC' ? $x > $y : $x < $y;
+                else
+                    return $direction === 'ASC' ? strcmp($x, $y) : strcmp($y, $x);
+
             });
             return $array;
         }));
