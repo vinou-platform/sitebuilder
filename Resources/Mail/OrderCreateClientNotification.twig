@@ -63,16 +63,20 @@
 			<td style="border: 1px solid #999999;"><b>Preis</b></td>
 		</tr>
 		{% set net = 0 %}
+		{% set tax = 0 %}
 		{% set gross = 0 %}
 		{% set index = 0 %}
 		{% for item in order.positions %}
 			<tr>
-				<td style="border: 1px solid #999999;">{{loop.index}}</td>
-				<td style="border: 1px solid #999999;">{{item.quantity}}&nbsp;x&nbsp;{{item.item.name}}</td>
-				<td style="border: 1px solid #999999;">{{item.item.price|number_format(2, ',', '.')}}&nbsp;EUR</td>
-				<td style="border: 1px solid #999999;">{{(item.item.gross * item.quantity)|number_format(2, ',', '.')}}&nbsp;EUR</td>
+				<td style="border: 1px solid #999999;" valign="top">{{loop.index}}</td>
+				<td style="border: 1px solid #999999;" valign="top">{{item.quantity}}&nbsp;x&nbsp;{{item.item.name}}<br>
+					(Artikelnummer: {{item.item.articlenumber}})
+				</td>
+				<td style="border: 1px solid #999999;" valign="top">{{item.item.gross|number_format(2, ',', '.')}}&nbsp;EUR</td>
+				<td style="border: 1px solid #999999;" valign="top">{{(item.item.gross * item.quantity)|number_format(2, ',', '.')}}&nbsp;EUR</td>
 			</tr>
 			{% set net = net + (item.item.net * item.quantity) %}
+			{% set tax = tax + (item.item.tax * item.quantity) %}
 			{% set gross = gross + (item.item.gross * item.quantity) %}
 			{% if loop.last %}
 				{% set index = loop.index + 1 %}
@@ -86,6 +90,7 @@
 				<td style="border: 1px solid #999999;">{{order.package.gross|number_format(2, ',', '.')}}&nbsp;EUR</td>
 			</tr>
 			{% set net = net + (order.package.net * 1) %}
+			{% set tax = tax + (order.package.tax * 1) %}
 			{% set gross = gross + (order.package.gross * 1) %}
 		{% endif %}
 		<tr>
@@ -94,7 +99,7 @@
 		</tr>
 		<tr>
 			<td style="border: 1px solid #999999;" colspan="3">Mehrwertssteuer</td>
-			<td style="border: 1px solid #999999;">{{(gross - net)|number_format(2, ',', '.')}}&nbsp;EUR</td>
+			<td style="border: 1px solid #999999;">{{(tax)|number_format(2, ',', '.')}}&nbsp;EUR</td>
 		</tr>
 		<tr>
 			<td style="border: 1px solid #999999;" colspan="3">Gesamtsumme Brutto</td>
