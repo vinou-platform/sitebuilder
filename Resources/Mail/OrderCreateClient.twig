@@ -75,7 +75,7 @@
 			<tr>
 				<td style="border: 1px solid #999999;" valign="top">{{loop.index}}</td>
 				<td style="border: 1px solid #999999;" valign="top">{{item.quantity}}&nbsp;x&nbsp;{{item.item.name}}<br>
-					(Artikelnummer: {{item.item.articlenumber}})</td>
+					(Artikelnummer: {{item.item.articlenumber}}{% if item.item.bottlesize > 0 %}, Flaschengröße: {{item.item.bottlesize * 1000}}ml{% endif %}{% if item.item.place %}, Lage: {{item.item.place}}{% endif %})</td>
 				<td style="border: 1px solid #999999;" valign="top">{{item.item.gross|number_format(2, ',', '.')}}&nbsp;EUR</td>
 				<td style="border: 1px solid #999999;" valign="top">{{(item.item.gross * item.quantity)|number_format(2, ',', '.')}}&nbsp;EUR</td>
 			</tr>
