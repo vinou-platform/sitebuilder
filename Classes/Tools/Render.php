@@ -362,6 +362,10 @@ class Render {
         }));
 
         $twig->addFilter( new \Twig_SimpleFilter('src', function($file) {
+
+            if (!is_file(Helper::getNormDocRoot().'/'.$file))
+                return false;
+
         	$change_date = @filemtime(Helper::getNormDocRoot().'/'.$file);
 	        if (!$change_date) {
 	            //Fallback if mtime could not be found:
