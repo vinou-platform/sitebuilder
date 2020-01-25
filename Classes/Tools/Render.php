@@ -12,6 +12,8 @@ use \Thepixeldeveloper\Sitemap\Urlset;
 use \Thepixeldeveloper\Sitemap\Url;
 use \Thepixeldeveloper\Sitemap\Drivers\XmlWriterDriver;
 use \Thepixeldeveloper\Sitemap\Extensions\Image;
+use \Gumlet\ImageResize;
+use \Gumlet\ImageResizeException;
 
 class Render {
 
@@ -230,13 +232,16 @@ class Render {
             return $response;
         }));
 
-        $twig->addFilter( new \Twig_SimpleFilter('image', function ($imagesrc,$chstamp,$width) use($options) {
-            if ($options['cache']) {
-                $cachingResult = Images::storeApiImage($imagesrc,$chstamp,$width);
-                return $cachingResult['src'];
-            } else {
-                return Helper::getApiUrl() . $imagesrc;
+        $twig->addFilter( new \Twig_SimpleFilter('image', function ($imagesrc, $chstamp, $width = NULL) use($options) {
+            $image = Images::storeApiImage($imagesrc, $chstamp);
+            if (!is_null($width)) {
+                $targetFile = dirname($image['absolute']) . '/' . $width . '-' . basename($image['absolute']);
+                $resize = new ImageResize($image['absolute']);
+                $resize->resizeToWidth($width);
+                $resize->save($targetFile);
+                $image['src'] = str_replace(Helper::getNormDocRoot(), '/', $targetFile);
             }
+            return $image;
         }));
 
         $twig->addFilter( new \Twig_SimpleFilter('region', function ($region_id,$countrycode) {
@@ -469,7 +474,6 @@ class Render {
         	}
             return $link;
         }, array('pre_escape' => 'html', 'is_safe' => array('html'))));
-
 
 		return $twig;
 	}
