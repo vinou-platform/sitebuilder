@@ -236,9 +236,11 @@ class Render {
             $image = Images::storeApiImage($imagesrc, $chstamp);
             if (!is_null($width)) {
                 $targetFile = dirname($image['absolute']) . '/' . $width . '-' . basename($image['absolute']);
-                $resize = new ImageResize($image['absolute']);
-                $resize->resizeToWidth($width);
-                $resize->save($targetFile);
+                if (!is_file($targetFile) || $image['recreate']) {
+                    $resize = new ImageResize($image['absolute']);
+                    $resize->resizeToWidth($width);
+                    $resize->save($targetFile);
+                }
                 $image['src'] = str_replace(Helper::getNormDocRoot(), '/', $targetFile);
             }
             return $image;
