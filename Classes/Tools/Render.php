@@ -232,13 +232,25 @@ class Render {
             return $response;
         }));
 
-        $twig->addFilter( new \Twig_SimpleFilter('image', function ($imagesrc, $chstamp, $width = NULL) use($options) {
+        $twig->addFilter( new \Twig_SimpleFilter('image', function ($imagesrc, $chstamp, $dimension = NULL) use($options) {
             $image = Images::storeApiImage($imagesrc, $chstamp);
-            if (!is_null($width)) {
-                $targetFile = dirname($image['absolute']) . '/' . $width . '-' . basename($image['absolute']);
+            $extension = pathinfo($image['src'], PATHINFO_EXTENSION);
+            if ($extension != 'svg' && !is_null($dimension)) {
+                $prefix = $dimension;
+                if (is_array($dimension)) {
+                    list($width, $height) = $dimension;
+                    $prefix = $width . 'x' . $height;
+                }
+                $targetFile = dirname($image['absolute']) . '/' . $prefix . '-' . basename($image['absolute']);
+
                 if (!is_file($targetFile) || $image['recreate']) {
                     $resize = new ImageResize($image['absolute']);
-                    $resize->resizeToWidth($width);
+
+                    if (is_integer($dimension))
+                        $resize->resizeToWidth($dimension);
+                    else if (is_array($dimension))
+                        $resize->resizeToBestFit($width, $height);
+
                     $resize->save($targetFile);
                 }
                 $image['src'] = str_replace(Helper::getNormDocRoot(), '/', $targetFile);
