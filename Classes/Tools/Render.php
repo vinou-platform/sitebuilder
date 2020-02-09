@@ -29,6 +29,8 @@ class Render {
     public $templateStorages = [];
 	public $renderArr = [];
 	public $translation = NULL;
+    public $regions = [];
+    public $countries = [];
 	public $api;
 
 	public function __construct($options = NULL) {
@@ -104,6 +106,10 @@ class Render {
             $this->api->initBasket();
 
             $this->translation = $this->api->loadLocalization();
+            foreach ($this->translation['wineregions'] as $countryregions) {
+                $this->regions = array_replace($this->regions, $countryregions);
+            }
+            $this->countries = $this->translation['countries'];
         }
 
         return true;
@@ -258,13 +264,13 @@ class Render {
             return $image;
         }));
 
-        $twig->addFilter( new \Twig_SimpleFilter('region', function ($region_id,$countrycode) {
-        	if (strlen($region_id) > 0 && isset($this->translation['wineregions'][$countrycode][$region_id])) {
-            	return $this->translation['wineregions'][$countrycode][$region_id];
-            } else {
-            	return false;
-            }
+        $twig->addFilter( new \Twig_SimpleFilter('region', function ($region_id) {
+            if (!is_numeric($region_id))
+                return false;
+
+            return isset($this->regions[$region_id]) ? $this->regions[$region_id] : $region_id;
         }));
+
         $twig->addFilter( new \Twig_SimpleFilter('taste', function ($taste_id) {
         	if (is_string($taste_id) && strlen($taste_id)>0) {
             	return $this->translation['tastes'][$taste_id];
