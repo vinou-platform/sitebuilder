@@ -78,7 +78,6 @@ class Render {
             $this->renderArr['getParams'][$getKey] = $getValue;
         }
 
-
 		$this->renderArr['languages'] = $this->languages;
 		strpos($_SERVER['SERVER_PROTOCOL'],'https') ? $this->renderArr['protocol'] = 'https://' : $this->renderArr['protocol'] = 'http://';
 
@@ -110,6 +109,9 @@ class Render {
                 $this->regions = array_replace($this->regions, $countryregions);
             }
             $this->countries = $this->translation['countries'];
+
+            $this->renderArr['regions'] = $this->regions;
+            $this->renderArr['countries'] = $this->countries;
         }
 
         return true;
