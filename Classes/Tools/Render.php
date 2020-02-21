@@ -479,13 +479,42 @@ class Render {
 
         }));
 
-        $twig->addFilter( new \Twig_SimpleFilter('link', function($value,$url,$className = null) {
-        	$class = $_SERVER['REQUEST_URI'] == $url ? 'active' : '';
-        	if ($className)
-        		$class .= ' '.$className;
-            $link = '<a href="'.$url.'" class="'.$class.'">'.$value.'</a>';
+        $twig->addFilter( new \Twig_SimpleFilter('link', function($label,$url,$additionalParams = null, $options = null) {
+        	$classSuffix = $_SERVER['REQUEST_URI'] == $url ? ' active' : false;
+
+            $link = '<a href="'.$url.'"';
+
+        	if (!is_null($additionalParams)) {
+
+                //needed to convert old links that work with only string parameter
+                if (is_string($additionalParams))
+                    $additionalParams = [
+                        'class' => $additionalParams
+                    ];
+
+                if (is_array($additionalParams) || is_object($additionalParams)) {
+                    foreach ($additionalParams as $attribute => $value) {
+                        //attribute processing
+                        switch ($attribute) {
+                            case 'class':
+                                if ($classSuffix)
+                                    $value .= $classSuffix;
+
+                                break;
+
+                            default:
+                                break;
+                        }
+
+                        //attribute rendering
+                        $link .= ' ' . $attribute .'="' . $value . '"';
+                    }
+                }
+            }
+
+            $link .= '>'.$label.'</a>';
             return $link;
-        }, array('pre_escape' => 'html', 'is_safe' => array('html'))));
+        }, array('is_safe' => array('html'))));
 
         $twig->addFilter( new \Twig_SimpleFilter('language', function($value,$translations,$key,$current) {
         	$class = $current == $key ? 'active' : '';
