@@ -484,36 +484,31 @@ class Render {
 
             $link = '<a href="'.$url.'"';
 
-        	if (!is_null($additionalParams)) {
+            if (!is_array($additionalParams))
+                $additionalParams = [
+                    'class' => is_string($additionalParams) ? $additionalParams : ''
+                ];
 
-                //needed to convert old links that work with only string parameter
-                if (is_string($additionalParams))
-                    $additionalParams = [
-                        'class' => $additionalParams
-                    ];
-
-                if (is_array($additionalParams) || is_object($additionalParams)) {
-                    foreach ($additionalParams as $attribute => $value) {
-                        //attribute processing
-                        switch ($attribute) {
-                            case 'class':
-                                if ($classSuffix)
-                                    $value .= $classSuffix;
-
-                                break;
-
-                            default:
-                                break;
+            foreach ($additionalParams as $attribute => $value) {
+                //attribute processing
+                switch ($attribute) {
+                    case 'class':
+                        if ($classSuffix) {
+                            $value .= $classSuffix;
                         }
 
-                        //attribute rendering
-                        $link .= ' ' . $attribute .'="' . $value . '"';
-                    }
+                        break;
+
+                    default:
+                        break;
                 }
+
+                //attribute rendering
+                $link .= ' ' . $attribute .'="' . $value . '"';
             }
 
-            $link .= '>'.$label.'</a>';
-            return $link;
+            return $link . '>'. $label . '</a>';
+
         }, array('is_safe' => array('html'))));
 
         $twig->addFilter( new \Twig_SimpleFilter('language', function($value,$translations,$key,$current) {
