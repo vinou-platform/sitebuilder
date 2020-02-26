@@ -140,7 +140,10 @@ class Render {
                     $allowedKeys = explode(',', $option['postParams']);
                     foreach ($_POST as $postKey => $postValue) {
                         if (in_array($postKey, $allowedKeys)) {
-                            $data[$postKey] = $postValue;
+                            if (isset($data[$postKey]))
+                                $data[$postKey] = array_merge($data[$postKey],$postValue);
+                            else
+                                $data[$postKey] = $postValue;
                         }
                     }
                 }
@@ -149,7 +152,10 @@ class Render {
                     $allowedKeys = explode(',', $option['getParams']);
                     foreach ($_GET as $getKey => $getValue) {
                         if (in_array($getKey, $allowedKeys)) {
-                            $data[$getKey] = $getValue;
+                            if (isset($data[$getKey]))
+                                $data[$getKey] = array_merge($data[$getKey],$getValue);
+                            else
+                                $data[$getKey] = $getValue;
                         }
                     }
                 }
