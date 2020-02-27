@@ -42,7 +42,33 @@ class External {
 				break;
 		}
 		return false;
+	}
 
+	public function loadFile($file, $type) {
+		if (substr($file,0,1) != '/')
+			$file = Helper::getNormDocRoot() . $file;
+
+		if (!is_file($file))
+			return 'file not found';
+
+		switch(strtolower($type)) {
+			case 'json':
+				$content = file_get_contents($file);
+				return json_decode($content, true);
+				break;
+
+			default:
+				break;
+		}
+
+		return false;
+	}
+
+	public function loadJSONFile($params) {
+		if (!isset($params['file']))
+			return false;
+
+		return $this->loadFile($params['file'], 'json');
 	}
 
 }
