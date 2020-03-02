@@ -13,12 +13,25 @@ use \Vinou\SiteBuilder\Processors\Mailer;
 class Shop {
 
     protected $api;
+    protected $settings = false;
+    protected $client = false;
 
     public function __construct($api = null) {
         if (is_null($api))
             throw new \Exception('no api was initialized');
         else
             $this->api = $api;
+
+        $this->loadSettings();
+        $this->loadClient();
+    }
+
+    public function loadSettings() {
+        $this->settings = Session::getValue('settings');
+    }
+
+    public function loadClient() {
+        $this->client = Session::getValue('client');
     }
 
     public function loadBilling() {
@@ -198,25 +211,57 @@ class Shop {
             Redirect::internal($_POST['redirect']['standard']);
     }
 
-    public function quantityCheck() {
-        $settings = Session::getValue('settings');
+    public function validateBasket() {
+        if (isset($this->settings['minBasketSize'])) {
+            $card = Session::getValue('card');
+            if (!$card)
+                Redirect::internal($this->settings['pages']['basket']);
 
-        if (!isset($settings['minBasketSize']))
-            return true;
+            $quantity = 0;
+            foreach ($card as $item) {
+                $quantity = $quantity + $item['quantity'];
+            }
 
-        $card = Session::getValue('card');
-        if (!$card)
-            Redirect::internal('/warenkorb');
-
-        $quantity = 0;
-        foreach ($card as $item) {
-            $quantity = $quantity + $item['quantity'];
+            if ($quantity < $this->settings['minBasketSize'])
+                Redirect::internal($this->settings['pages']['basket']);
         }
+        return true;
+    }
 
-        if ($quantity < $settings['minBasketSize'])
-            Redirect::internal('/warenkorb');
+    public function validateBilling() {
+        $billing = Session::getValue('billing');
+        if (!$billing)
+            Redirect::internal($this->settings['pages']['billing']);
 
-        return;
+        return true;
+    }
+
+    public function validatePayment() {
+        $payment = Session::getValue('payment');
+
+        $allowedPayments = $this->client && isset($this->settings['clientPayments']) ? $this->settings['clientPayments'] : $this->settings['allowedPayments'];
+
+        if (is_string($allowedPayments));
+            $allowedPayments = explode(',', preg_replace('/\s/', '', $allowedPayments));
+
+        if (!in_array($payment, $allowedPayments))
+            Redirect::internal($this->settings['pages']['payment']);
+
+        return true;
+    }
+
+    public function validateOrder() {
+
+        // Validate Basket
+        $this->validateBasket();
+
+        // Validate Billing
+        $this->validateBilling();
+
+        // Check if payment is allowed
+        $this->validatePayment();
+
+        return true;
     }
 
     public function sendClientNotification($addedOrder) {
