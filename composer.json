@@ -19,7 +19,7 @@
     ],
     "require": {
         "bramus/router": "*",
-        "twig/twig": "*",
+        "twig/twig": "2.*",
         "mustangostang/spyc": "^0.5.1",
         "erusev/parsedown": "^1.7",
         "phpmailer/phpmailer": "^6.0",
