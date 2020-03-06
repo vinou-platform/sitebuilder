@@ -89,7 +89,9 @@ class Shop {
             'billing_type' => 'client',
             'billing' => Session::getValue('billing'),
             'delivery_type' => 'address',
-            'delivery' => Session::getValue('delivery') ?? Session::getValue('billing')
+            'delivery' => Session::getValue('delivery') ?? Session::getValue('billing'),
+            'invoice_type' => isset($this->settings['checkout']['invoice_type']) ? $this->settings['checkout']['invoice_type'] : 'gross',
+            'payment_period' => isset($this->settings['checkout']['payment_period']) ? (int)$this->settings['checkout']['payment_period'] : 14
         ];
 
         if ($order['payment_type'] == 'paypal') {
