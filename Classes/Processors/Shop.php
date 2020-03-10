@@ -274,6 +274,7 @@ class Shop {
             return false;
 
         $customer = $this->api->getCustomer();
+        $client = $this->api->getClient();
 
         $mail = new Mailer();
         $mail->setTemplate('OrderCreateClient.twig');
@@ -281,6 +282,7 @@ class Shop {
         $mail->setSubject('Ihre Bestellung '.$order['number']);
         $mail->setData([
             'order' => $order,
+            'client' => $client,            
             'customer' => $customer
         ]);
         $mail->loadShopAttachments();
@@ -291,11 +293,11 @@ class Shop {
         $adminmail->setSubject('Vinou-Bestellung '.$order['number']);
         $adminmail->setData([
             'order' => $order,
+            'client' => $client,
             'customer' => $customer
         ]);
         $send = $adminmail->send();
-
-        $client = Session::getValue('client');
+        
         if (!$client) {
             $client = $order['client'];
             $pwreset = $this->api->getPasswordHash(['mail' => $order['client']['mail']]);

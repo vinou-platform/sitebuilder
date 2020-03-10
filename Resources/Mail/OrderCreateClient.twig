@@ -76,12 +76,12 @@
 				<td style="border: 1px solid #999999;" valign="top">{{loop.index}}</td>
 				<td style="border: 1px solid #999999;" valign="top">{{item.quantity}}&nbsp;x&nbsp;{{item.item.name}}<br>
 					(Artikelnummer: {{item.item.articlenumber}}{% if item.item.bottlesize > 0 %}, Flaschengröße: {{item.item.bottlesize * 1000}}ml{% endif %}{% if item.item.place %}, Lage: {{item.item.place}}{% endif %})</td>
-				<td style="border: 1px solid #999999;" valign="top">{{item.item.gross|number_format(2, ',', '.')}}&nbsp;EUR</td>
-				<td style="border: 1px solid #999999;" valign="top">{{(item.item.gross * item.quantity)|number_format(2, ',', '.')}}&nbsp;EUR</td>
+				<td style="border: 1px solid #999999;" valign="top">{{(item.gross / item.quantity)|number_format(2, ',', '.')}}&nbsp;EUR</td>
+				<td style="border: 1px solid #999999;" valign="top">{{item.gross|number_format(2, ',', '.')}}&nbsp;EUR</td>
 			</tr>
-			{% set net = net + (item.item.net * item.quantity) %}
-			{% set tax = tax + (item.item.tax * item.quantity) %}
-			{% set gross = gross + (item.item.gross * item.quantity) %}
+			{% set net = net + (item.net) %}
+			{% set tax = tax + (item.tax) %}
+			{% set gross = gross + (item.gross) %}
 			{% if loop.last %}
 				{% set index = loop.index + 1 %}
 			{% endif %}
