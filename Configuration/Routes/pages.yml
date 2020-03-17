@@ -23,5 +23,13 @@ imprint:
 disclaimer:
   pageTitle: 'Disclaimer'
 
+sitemap:
+  template: 'sitemap.twig'
+  pageTitle: 'Sitemap'
+  dataProcessing:
+    sitemap:
+      processor: 'sitemap'
+      function: renderSitemap
+
 sitemap.xml:
   type: 'sitemap'
