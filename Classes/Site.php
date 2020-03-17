@@ -8,9 +8,10 @@ use \Vinou\ApiConnector\Session\Session;
 use \Vinou\SiteBuilder\Router\DynamicRoutes;
 use \Vinou\SiteBuilder\Tools\Render;
 use \Vinou\SiteBuilder\Processors\External;
-use \Vinou\SiteBuilder\Processors\Shop;
-use \Vinou\SiteBuilder\Processors\Mailer;
 use \Vinou\SiteBuilder\Processors\Files;
+use \Vinou\SiteBuilder\Processors\Mailer;
+use \Vinou\SiteBuilder\Processors\Shop;
+use \Vinou\SiteBuilder\Processors\Sitemap;
 
 /**
  * Site
@@ -32,6 +33,7 @@ class Site {
         $this->render = new Render();
 
         $this->render->connect();
+        $this->routeConfig = new DynamicRoutes($this->router, $this->render);
 
         $this->loadDefaultProcessors();
 
@@ -43,7 +45,6 @@ class Site {
             $this->render->renderPage('404.twig',$options);
         });
 
-        $this->routeConfig = new DynamicRoutes($this->router, $this->render);
 
         $this->sendCorsHeaders();
     }
@@ -92,6 +93,12 @@ class Site {
         );
         $this->render->loadProcessor(
             'external', new External()
+        );
+        $this->render->loadProcessor(
+            'sitemap', new Sitemap(
+                $this->routeConfig,
+                $this->render->api
+            )
         );
     }
 

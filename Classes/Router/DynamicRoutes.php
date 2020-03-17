@@ -3,6 +3,7 @@ namespace Vinou\SiteBuilder\Router;
 
 use \Vinou\ApiConnector\Tools\Helper;
 use \Vinou\SiteBuilder\Tools\Render;
+use \Vinou\SiteBuilder\Processors\Sitemap;
 
 /**
  * Dynamic Routes
@@ -12,9 +13,9 @@ use \Vinou\SiteBuilder\Tools\Render;
 class DynamicRoutes {
 	private $router;
 	private $render;
-	private $configuration = [];
 	private $loadDefaults = true;
 	private $routeStorage = null;
+	public $configuration = [];
 	public $routeFile = null;
 
 	function __construct($router, $render) {
@@ -37,7 +38,6 @@ class DynamicRoutes {
 			$this->loadAdditionalRoutes();
 
 		$this->generateRoutes();
-
 	}
 
 	public function setDefaults($status) {
@@ -119,7 +119,7 @@ class DynamicRoutes {
 
 				case 'sitemap':
 					$this->router->{$method}($pattern, function() use ($configuration) {
-						$this->render->renderSitemap($configuration);
+						$this->render->processors['sitemap']->renderSitemapXML($configuration);
 					});
 					break;
 
