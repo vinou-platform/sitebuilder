@@ -551,6 +551,20 @@ class Render {
 		}
 	}
 
+    public function loadUrlParams($arguments, $options = NULL) {
+        if (isset($options['urlKeys'])) {
+            if (count($options['urlKeys']) > count($arguments))
+                $arguments = array_merge($arguments, array_fill(0, count($options['urlKeys']) - count($arguments), null));
+
+            if (count($options['urlKeys']) < count($arguments))
+                $options['urlKeys'] = array_merge($options['urlKeys'], array_fill(0, count($arguments) - count($options['urlKeys']), null));
+
+            $this->renderArr['urlParams'] = array_combine($options['urlKeys'],$arguments);
+        }
+        else
+            $this->renderArr['urlParams'] = $arguments;
+    }
+
 	public function renderPage($template = 'Default.twig',$options = NULL){
 		$view = $this->initTwig(isset($options['twig']) ? $options['twig'] : NULL);
 		$template = $view->loadTemplate($template);
