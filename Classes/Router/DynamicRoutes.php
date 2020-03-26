@@ -133,6 +133,8 @@ class DynamicRoutes {
 							$this->render->dataProcessing($options['dataProcessing'],func_get_args());
 						if (isset($options['postProcessing']))
 							$this->render->postProcessing($options['postProcessing'],func_get_args());
+
+						$this->render->loadUrlParams(func_get_args(), $options);
 						$this->render->renderPage($template,$options);
 					});
 					break;
