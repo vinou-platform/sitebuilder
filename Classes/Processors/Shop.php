@@ -398,6 +398,25 @@ class Shop {
 
     }
 
+    public function sendClientDeclinationNotification($data = NULL) {
+
+        if (!isset($data['mail']))
+            return false;
+
+        $mail = new Mailer();
+        $mail->setTemplate('ClientDeclinationNotification.twig');
+        $mail->setReceiver($data['mail']);
+        $mail->setSubject('Account abgelehnt auf '.$_SERVER['SERVER_NAME']);
+        $mail->setData([
+            'customer' => $this->api->getCustomer(),
+            'domain' => $_SERVER['SERVER_NAME'],
+            'settings' => $this->settings
+        ]);
+
+        return $mail->send();
+
+    }
+
     public function sendPasswordResetMail($data = NULL) {
 
         if (isset($data['hash']) && isset($data['mail'])) {
