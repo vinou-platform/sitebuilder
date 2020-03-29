@@ -8,16 +8,11 @@ use \Vinou\ApiConnector\FileHandler\Images;
 use \Vinou\ApiConnector\FileHandler\Pdf;
 use \Vinou\ApiConnector\Tools\Helper;
 use \Vinou\ApiConnector\Tools\Redirect;
-use \Thepixeldeveloper\Sitemap\Urlset;
-use \Thepixeldeveloper\Sitemap\Url;
-use \Thepixeldeveloper\Sitemap\Drivers\XmlWriterDriver;
-use \Thepixeldeveloper\Sitemap\Extensions\Image;
 use \Gumlet\ImageResize;
 use \Gumlet\ImageResizeException;
 
 class Render {
 
-    private $processors = [];
 	protected $templateRootPath = 'Resources/';
 	protected $templateDirectories = ['Templates/','Partials/','Layouts/'];
 	protected $layout = 'default.twig';
@@ -26,6 +21,7 @@ class Render {
 	protected $pathsegments;
     protected $options;
     protected $config;
+    public $processors = [];
     public $templateStorages = [];
 	public $renderArr = [];
 	public $translation = NULL;
@@ -95,7 +91,7 @@ class Render {
         } else {
             $this->api = new Api ();
 
-            if ($this->api->status != 'connected') {
+            if (!$this->api->connected) {
                 $this->renderPage('error.twig', [
                     'pageTitle' => 'No Connection'
                 ]);
@@ -555,6 +551,20 @@ class Render {
 		}
 	}
 
+    public function loadUrlParams($arguments, $options = NULL) {
+        if (isset($options['urlKeys'])) {
+            if (count($options['urlKeys']) > count($arguments))
+                $arguments = array_merge($arguments, array_fill(0, count($options['urlKeys']) - count($arguments), null));
+
+            if (count($options['urlKeys']) < count($arguments))
+                $options['urlKeys'] = array_merge($options['urlKeys'], array_fill(0, count($arguments) - count($options['urlKeys']), null));
+
+            $this->renderArr['urlParams'] = array_combine($options['urlKeys'],$arguments);
+        }
+        else
+            $this->renderArr['urlParams'] = $arguments;
+    }
+
 	public function renderPage($template = 'Default.twig',$options = NULL){
 		$view = $this->initTwig(isset($options['twig']) ? $options['twig'] : NULL);
 		$template = $view->loadTemplate($template);
@@ -582,89 +592,6 @@ class Render {
 			$this->renderArr['pageTitle'] = $options;
 		}
 	}
-
-    public function renderSitemap($routes) {
-
-        header("Content-type: text/xml");
-
-        $date = new \DateTime();
-
-        $urlset = new Urlset();
-
-        foreach ($routes as $url => $routeConfig) {
-            if (!isset($routeConfig['sitemap']))
-                continue;
-
-            $url = $url == '/' ? '/' : '/' . $url;
-            $protocol = strpos($_SERVER['SERVER_PROTOCOL'],'https') ? 'https://' : 'http://';
-            $url = $protocol . $_SERVER['HTTP_HOST'] . $url;
-            $config = $routeConfig['sitemap'];
-
-            preg_match_all("/{(.+?)}/", $url, $matches);
-            if (count($matches[1]) > 0) {
-                if (isset($config['function'])) {
-                    $function = $config['function'];
-                    $dataKey = isset($config['dataKey']) ? $config['dataKey'] : 'data';
-                    $postData = isset($config['params']) ? $config['params'] : [];
-                    $result = $this->api->{$function}($postData);
-                    $data = isset($result[$dataKey]) ? $result[$dataKey] : $result;
-
-                    if (isset($result['pagination'])) {
-                        $start = $result['pagination']['current'] + 1;
-                        $end = $result['pagination']['total'];
-
-                        for ($i = $start; $i <= $end ; $i++) {
-                            $postData['page'] = $i;
-                            $pageResult = $this->api->{$function}($postData);
-                            $page = isset($pageResult[$dataKey]) ? $pageResult[$dataKey] : $pageResult;
-                            $data = array_merge($data, $page);
-                        }
-                    }
-
-                    foreach ($data as $entry) {
-                        $createUrl = true;
-                        $entryUrl = $url;
-                        foreach ($matches[1] as $fieldName) {
-                            if (isset($entry[$fieldName]))
-                                $entryUrl = str_replace('{'.$fieldName.'}', $entry[$fieldName], $entryUrl);
-                            else
-                                $createUrl = false;
-                        }
-
-                        if ($createUrl) {
-
-                            $entryDate = isset($entry['chstamp']) ? new \DateTime($entry['chstamp']) : $date;
-                            $siteMapUrl = new Url($entryUrl);
-                            $siteMapUrl->setLastMod($entryDate);
-                            $siteMapUrl->setChangeFreq('weekly');
-                            $siteMapUrl->setPriority('0.8');
-
-                            if ($entry['image'] != '') {
-                                $image = new Image('https://api.vinou.de'.$entry['image']);
-                                $siteMapUrl->addExtension($image);
-                            }
-
-                            $urlset->add($siteMapUrl);
-                        }
-                    }
-                }
-            } else {
-                $priority = $url == '/' ? '1.0' : '0.6';
-                $changeFreq = $url == '/' ? 'daily' : 'monthly';
-                $siteMapUrl = new Url($url);
-                $siteMapUrl->setLastMod($date);
-                $siteMapUrl->setChangeFreq($changeFreq);
-                $siteMapUrl->setPriority($priority);
-
-                $urlset->add($siteMapUrl);
-            }
-        }
-
-        $driver = new XmlWriterDriver();
-        $urlset->accept($driver);
-
-        echo $driver->output();
-    }
 
 	public function redirect($target) {
         if (strncmp($target,'http',4) === 0)
