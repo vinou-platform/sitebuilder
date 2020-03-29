@@ -7,4 +7,14 @@ additionalContent:
   # Area to define content that will be rendered on each page
 
 settings:
+  client:
+    pages:
+      register: '/client/register'
+      activation: '/client/activate'
+      declination: '/client/declined'
+      lostPassword: '/client/declined'
+      resetPassword: '/client/resetPassword'
+      login: '/client/login'
+      logout: '/client/logout'
+      profile: '/client/profile'
   # Area to define render settings
