@@ -1,0 +1,51 @@
+{% extends "Layouts/Default.html" %}
+{% block mailcontent %}
+	<h3>Hallo {{('general.gender.' ~ client.gender)|translate}} {{client.first_name}} {{client.last_name}},</h3>
+
+	<p>Wir haben Deine Registrierung wie folgt erhalten:</p>
+
+	<table border="0" cellspacing="0" cellpadding="0" class="regular-table">
+		<tr>
+			<td><strong>{{'client.field.username'|translate}}</strong></td>
+			<td>{{client.username}}</td>
+		</tr>
+		<tr>
+			<td><strong>{{'client.field.type'|translate}}</strong></td>
+			<td>{{('client.types.' ~ client.type)|translate}}</td>
+		</tr>
+		<tr>
+			<td><strong>{{'general.fields.gender'|translate}}</strong></td>
+			<td>{{('general.gender.' ~ client.gender)|translate}}</td>
+		</tr>
+		<tr>
+			<td><strong>{{'client.field.contactname'|translate}}</strong></td>
+			<td>{{client.first_name}} {{client.last_name}}</td>
+		</tr>
+		{% if client.company %}
+			<tr>
+				<td><strong>{{'client.field.company'|translate}}</strong></td>
+				<td>{{client.company}}</td>
+			</tr>
+		{% endif %}
+		<tr>
+			<td><strong>{{'client.field.address'|translate}}</strong></td>
+			<td>
+				{{client.address}}<br>
+				{% if client.address_supplement %}{{client.address_supplement}}<br>{% endif %}
+				{{client.zip}} {{client.city}}
+			</td>
+		</tr>
+		{% if client.phone %}
+			<tr>
+				<td><strong>{{'client.field.phone'|translate}}</strong></td>
+				<td>{{client.phone}}</td>
+			</tr>
+		{% endif %}
+		<tr>
+			<td><strong>{{'client.field.mail'|translate}}</strong></td>
+			<td>{{client.mail}}</td>
+		</tr>
+	</table>
+
+	<p><strong>Deine Registrierung wird von uns geprüft. Nach Freigabe durch uns erhälst Du eine Bestätigungsemail und kannst danach den internen Bereich frei nutzen.</strong></p>
+{% endblock %}

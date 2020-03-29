@@ -283,7 +283,8 @@ class Shop {
         $mail->setData([
             'order' => $order,
             'client' => $client,            
-            'customer' => $customer
+            'customer' => $customer,
+            'settings' => $this->settings
         ]);
         $mail->loadShopAttachments();
         $send = $mail->send();
@@ -294,7 +295,8 @@ class Shop {
         $adminmail->setData([
             'order' => $order,
             'client' => $client,
-            'customer' => $customer
+            'customer' => $customer,
+            'settings' => $this->settings
         ]);
         $send = $adminmail->send();
         
@@ -315,7 +317,8 @@ class Shop {
             $accountmail->setData([
                 'client' => $client,
                 'domain' => $_SERVER['SERVER_NAME'],
-                'customer' => $customer
+                'customer' => $customer,
+                'settings' => $this->settings
             ]);
             $accountsend = $accountmail->send();
         }
@@ -333,12 +336,66 @@ class Shop {
             $mail->setData([
                 'client' => $data,
                 'customer' => $this->api->getCustomer(),
-                'domain' => $_SERVER['SERVER_NAME']
+                'domain' => $_SERVER['SERVER_NAME'],
+                'settings' => $this->settings
             ]);
             return $mail->send();
         }
 
         return false;
+    }
+
+    public function sendClientApprovementMail($data = NULL) {
+
+        if (!isset($this->settings['registration']['approvementEmail']))
+            throw new Exception("no approvementEmail defined in settings", 1);
+
+        if (isset($data['lostpassword_hash']) && isset($data['mail'])) {
+            $adminMail = new Mailer();
+            $adminMail->setTemplate('ClientApprovement.twig');
+            $adminMail->setReceiver($this->settings['registration']['approvementEmail']);
+            $adminMail->setSubject('Neue Registrierung auf '.$_SERVER['SERVER_NAME']);
+            $adminMail->setData([
+                'client' => $data,
+                'customer' => $this->api->getCustomer(),
+                'domain' => $_SERVER['SERVER_NAME'],
+                'settings' => $this->settings
+            ]);
+
+            $clientMail = new Mailer();
+            $clientMail->setTemplate('ClientApprovementNotification.twig');
+            $clientMail->setReceiver($data['mail']);
+            $clientMail->setSubject('Dein Account auf '.$_SERVER['SERVER_NAME']);
+            $clientMail->setData([
+                'client' => $data,
+                'customer' => $this->api->getCustomer(),
+                'domain' => $_SERVER['SERVER_NAME'],
+                'settings' => $this->settings
+            ]);
+
+            return $adminMail->send() && $clientMail->send();
+        }
+
+        return false;
+    }
+
+    public function sendClientActivationNotification($data = NULL) {
+
+        if (!isset($data['mail']))
+            return false;
+
+        $mail = new Mailer();
+        $mail->setTemplate('ClientActivationNotification.twig');
+        $mail->setReceiver($data['mail']);
+        $mail->setSubject('Account aktiviert auf '.$_SERVER['SERVER_NAME']);
+        $mail->setData([
+            'customer' => $this->api->getCustomer(),
+            'domain' => $_SERVER['SERVER_NAME'],
+            'settings' => $this->settings
+        ]);
+
+        return $mail->send();
+
     }
 
     public function sendPasswordResetMail($data = NULL) {
@@ -351,7 +408,8 @@ class Shop {
             $mail->setData([
                 'client' => $data,
                 'customer' => $this->api->getCustomer(),
-                'domain' => $_SERVER['SERVER_NAME']
+                'domain' => $_SERVER['SERVER_NAME'],
+                'settings' => $this->settings
             ]);
             return $mail->send();
         }
