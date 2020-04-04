@@ -381,7 +381,7 @@ class Shop {
 
     public function sendClientActivationNotification($data = NULL) {
 
-        if (!isset($data['mail']))
+        if (!isset($data['mail']) || isset($data['error']))
             return false;
 
         $mail = new Mailer();
