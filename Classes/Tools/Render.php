@@ -218,7 +218,7 @@ class Render {
 		$loader = new \Twig_Loader_Filesystem($this->templateStorages);
 
         $settings = [
-            'cache' => defined('VINOU_CACHE') ? VINOU_CACHE : Helper::getNormDocRoot().'Cache',
+            'cache' => defined('VINOU_CACHE') ? VINOU_CACHE : Helper::getNormDocRoot().'Cache/Twig',
             'debug' => defined('VINOU_DEBUG') ? VINOU_DEBUG : false
         ];
 
@@ -266,6 +266,11 @@ class Render {
                 $image['src'] = str_replace(Helper::getNormDocRoot(), '/', $targetFile);
             }
             return $image;
+        }));
+
+        $twig->addFilter( new \Twig_SimpleFilter('pdf', function ($pdfsrc, $chstamp = NULL) use($options) {
+            $pdf = Pdf::storeApiPDF($pdfsrc, $chstamp);
+            return $pdf;
         }));
 
         $twig->addFilter( new \Twig_SimpleFilter('region', function ($region_id) {
