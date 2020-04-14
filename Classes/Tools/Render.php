@@ -118,28 +118,31 @@ class Render {
     }
 
     public function dataProcessing($options = NULL, $data = []) {
+
         if (!is_array($options))
             return false;
 
         foreach ($options as $key => $option) {
+            $functionData = $data;
+
             if (is_string($option)) {
                 $function = $option;
-                $result = call_user_func_array([$this->api, $function], $data);
+                $result = call_user_func_array([$this->api, $function], $functionData);
             }
             else if (is_array($option) && isset($option['function'])) {
                 $function = $option['function'];
                 unset($option['function']);
 
-                if (isset($option['params'])) $data = array_merge($data,$option['params']);
+                if (isset($option['params'])) $functionData = array_merge($functionData,$option['params']);
 
                 if (isset($option['postParams']) && !empty($_POST)) {
                     $allowedKeys = explode(',', $option['postParams']);
                     foreach ($_POST as $postKey => $postValue) {
                         if (in_array($postKey, $allowedKeys)) {
-                            if (isset($data[$postKey]) && is_array($data[$postKey]))
-                                $data[$postKey] = array_merge($data[$postKey],$postValue);
+                            if (isset($functionData[$postKey]) && is_array($functionData[$postKey]))
+                                $functionData[$postKey] = array_merge($functionData[$postKey],$postValue);
                             else
-                                $data[$postKey] = $postValue;
+                                $functionData[$postKey] = $postValue;
                         }
                     }
                 }
@@ -148,10 +151,10 @@ class Render {
                     $allowedKeys = explode(',', $option['getParams']);
                     foreach ($_GET as $getKey => $getValue) {
                         if (in_array($getKey, $allowedKeys)) {
-                            if (isset($data[$getKey]) && is_array($data[$getKey]))
-                                $data[$getKey] = array_merge($data[$getKey],$getValue);
+                            if (isset($functionData[$getKey]) && is_array($functionData[$getKey]))
+                                $functionData[$getKey] = array_merge($functionData[$getKey],$getValue);
                             else
-                                $data[$getKey] = $getValue;
+                                $functionData[$getKey] = $getValue;
                         }
                     }
                 }
@@ -161,24 +164,24 @@ class Render {
                     foreach ($dataToUse as $dataKey) {
                         if (isset($this->renderArr[$dataKey]) && $this->renderArr[$dataKey]) {
                             if (is_array($this->renderArr[$dataKey]))
-                                $data = array_merge($data,$this->renderArr[$dataKey]);
+                                $functionData = array_merge($functionData,$this->renderArr[$dataKey]);
                             else
-                                array_push($data,$this->renderArr[$dataKey]);
+                                array_push($functionData,$this->renderArr[$dataKey]);
                         }
                     }
                 }
 
                 if (isset($option['class']))
-                    $result = call_user_func_array([$option['class'], $function], $data);
+                    $result = call_user_func_array([$option['class'], $function], $functionData);
                 elseif (isset($option['processor'])) {
 
                     if (!isset($this->processors[$option['processor']]))
                         throw new \Exception('data processor does not exists');
 
-                    $result = $this->processors[$option['processor']]->{$function}($data);
+                    $result = $this->processors[$option['processor']]->{$function}($functionData);
                 }
                 else
-                    $result = $this->api->{$function}($data);
+                    $result = $this->api->{$function}($functionData);
             }
             else
                 throw new \Exception('dataProcessing for this route could not be solved');
