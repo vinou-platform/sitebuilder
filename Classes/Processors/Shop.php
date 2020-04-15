@@ -94,9 +94,19 @@ class Shop {
             'payment_period' => isset($this->settings['checkout']['payment_period']) ? (int)$this->settings['checkout']['payment_period'] : 14
         ];
 
-        if ($order['payment_type'] == 'paypal') {
-            $order['return_url'] = Helper::getCurrentHost() . '/checkout/paypal/finish';
-            $order['cancel_url'] = Helper::getCurrentHost() . '/checkout/paypal/cancel';
+        // Specific order settings dependending on payment_type
+        switch ($order['payment_type']) {
+            case 'prepaid':
+                $order['payment_period'] = 0;
+                break;
+
+            case 'paypal':
+                $order['return_url'] = Helper::getCurrentHost() . '/checkout/paypal/finish';
+                $order['cancel_url'] = Helper::getCurrentHost() . '/checkout/paypal/cancel';
+                break;
+
+            default:
+                break;
         }
 
         $note = Session::getValue('note');
