@@ -97,7 +97,7 @@ class Shop {
         // Specific order settings dependending on payment_type
         switch ($order['payment_type']) {
             case 'prepaid':
-                $order['payment_period'] = 0;
+                $order['payment_period'] = 1;
                 break;
 
             case 'paypal':
