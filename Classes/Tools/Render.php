@@ -245,7 +245,7 @@ class Render {
             return $response;
         }));
 
-        $twig->addFilter( new \Twig_SimpleFilter('image', function ($imagesrc, $chstamp, $dimension = NULL) use($options) {
+        $twig->addFilter( new \Twig_SimpleFilter('image', function ($imagesrc, $chstamp = NULL, $dimension = NULL) use($options) {
             $image = Images::storeApiImage($imagesrc, $chstamp);
             $extension = pathinfo($image['src'], PATHINFO_EXTENSION);
             if ($extension != 'svg' && !is_null($dimension)) {
