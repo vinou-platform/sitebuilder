@@ -69,6 +69,7 @@ class Mailer {
 		$this->initTwig();
 
 		foreach ($this->mails as $mail) {
+
 			$mailcontent = $this->render($mail['template'], $mail['data']);
 			$this->mailer->setFrom($this->fromMail, $this->fromName, 0);
 			$this->mailer->addReplyTo($this->fromMail);
@@ -318,6 +319,21 @@ class Mailer {
 
 		$this->mailer->Username = $config['username'];
 		$this->mailer->Password = $config['password'];
+
+	}
+
+	public function testSMTPConfig() {
+
+		$this->mailer->setFrom($this->fromMail, $this->fromName, 0);
+
+		if ($this->mailer->smtpConnect()) {
+		    $this->mailer->smtpClose();
+		   	return "Connected";
+		}
+		else {
+			var_dump($this->mailer);
+			return $this->mailer->ErrorInfo;
+		}
 
 	}
 
