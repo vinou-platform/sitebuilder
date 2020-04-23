@@ -232,6 +232,8 @@ class Render {
             $settings['debug'] = $config['debug'];
 
 		$twig = new \Twig_Environment($loader, $settings);
+        $twig->addExtension(new \Twig_Extensions_Extension_Intl());
+
 
 		// This line enables debugging and is included to activate dump()
 		$twig->addExtension(new \Twig_Extension_Debug());
