@@ -1,10 +1,10 @@
 {% extends "Layouts/Default.html" %}
 {% block mailcontent %}
 	<h3>Vielen Dank!</h3>
-	<p>Wir haben Ihre Bestellung wie folgt erhalten.<br><br></p>
+	<p>Wir haben Deine Bestellung wie folgt erhalten.<br><br></p>
 
 	{% if order.payment_type == 'prepaid' %}
-	<p><b>Sie haben als Zahlungsart Vorkasse gewählt. Bitte berücksichtigen Sie, dass bis zum Zahlungseingang die Ware nicht versendet wird.</b></p>
+	<p><b>Du hast als Zahlungsart Vorkasse gewählt. Bitte berücksichtige, dass bis zum Zahlungseingang die Ware nicht versendet wird.</b></p>
 	{% endif %}
 
 	<table border="0" cellspacing="0" cellpadding="10" style="border: 1px solid #999999; border-collapse: collapse; width: 100%">
@@ -57,7 +57,7 @@
 		</tr>
 		<tr>
 			<td colspan="4" style="border: 1px solid #999999;">
-				<p><b>Ihre Nachricht an uns:</b><br>
+				<p><b>Deine Nachricht an uns:</b><br>
 				{{order.note}}<br></p>
 			</td>
 		</tr>
@@ -119,7 +119,7 @@
 	</table>
 
 	{% if order.payment_type == 'prepaid' %}
-		<p class="text-align: center"><br><b>Bitte überweisen Sie den fälligen Gesamtbetrag von {{gross|number_format(2, ',', '.')}}&nbsp;EUR auf folgendes Konto:<b><br><br></b></b>
+		<p class="text-align: center"><br><b>Bitte überweise den fälligen Gesamtbetrag von {{gross|number_format(2, ',', '.')}}&nbsp;EUR auf folgendes Konto:<b><br><br></b></b>
 		<table border="0" cellspacing="0" cellpadding="10" style="border: 1px solid #999999; border-collapse: collapse; width: 100%">
 			<tr>
 				<td colspan="2" style="border: 1px solid #999999;">IBAN:</td>
@@ -146,6 +146,6 @@
 			<br><b>Bis zum erhalt der Zahlung verbleibt die Ware im Weingut.</b>
 		</p>
 	{% else %}
-		<p>Ihre Bestellung wird schnellstmöglich bearbeitet.</p>
+		<p>Deine Bestellung wird schnellstmöglich bearbeitet.</p>
 	{% endif %}
 {% endblock %}
