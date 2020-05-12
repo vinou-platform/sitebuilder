@@ -2,7 +2,7 @@
 {% block mailcontent %}
 	<h3>Hallo {{client.first_name}} {{client.last_name}},</h3>
 	<p>
-		Wir haben deine Registrierung erhalten. Bitte bestätige deinen Account mit dem folgenden link<br><br>
+		Wir haben Deine Registrierung erhalten. Bitte bestätige Deinen Account mit dem folgenden link<br><br>
 		<a href="https://{{domain}}{{settings.client.pages.activation}}?mail={{client.mail}}&hash={{client.lostpassword_hash}}" class="button">Aktivierung bestätigen</a>
 	</p>
 {% endblock %}
