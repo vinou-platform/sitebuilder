@@ -547,6 +547,14 @@ class Render {
             return $link;
         }, array('pre_escape' => 'html', 'is_safe' => array('html'))));
 
+        $twig->addFilter( new \Twig_SimpleFilter('getBundle', function ($id) {
+            return $this->api->getBundle($id);
+        }));
+
+        $twig->addFilter( new \Twig_SimpleFilter('getWinery', function ($id) {
+            return $this->api->getWinery($id);
+        }));
+
 		return $twig;
 	}
 
