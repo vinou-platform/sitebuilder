@@ -332,6 +332,13 @@ class Render {
             return gettype($var);
         }));
 
+        $twig->addFilter( new \Twig_SimpleFilter('addProperty', function ($array, $property, $value) {
+            foreach ($array as &$entry) {
+                $entry[$property] = $value;
+            }
+            return $array;
+        }));
+
         $twig->addFilter( new \Twig_SimpleFilter('http', function ($src) {
             if (strpos($src,'://'))
                 return $src;
