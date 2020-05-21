@@ -8,6 +8,7 @@ use \Vinou\ApiConnector\Session\Session;
 use \Vinou\SiteBuilder\Router\DynamicRoutes;
 use \Vinou\SiteBuilder\Tools\Render;
 use \Vinou\SiteBuilder\Processors\External;
+use \Vinou\SiteBuilder\Processors\Formatter;
 use \Vinou\SiteBuilder\Processors\Files;
 use \Vinou\SiteBuilder\Processors\Mailer;
 use \Vinou\SiteBuilder\Processors\Shop;
@@ -99,6 +100,9 @@ class Site {
                 $this->routeConfig,
                 $this->render->api
             )
+        );
+        $this->render->loadProcessor(
+            'formatter', new Formatter()
         );
     }
 

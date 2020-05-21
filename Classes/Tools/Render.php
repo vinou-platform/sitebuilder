@@ -133,6 +133,9 @@ class Render {
                 $function = $option['function'];
                 unset($option['function']);
 
+                if (array_key_exists('useRouteData', $option) && !$option['useRouteData'])
+                    $functionData = [];
+
                 if (isset($option['params'])) $functionData = array_merge($functionData,$option['params']);
 
                 if (isset($option['postParams']) && !empty($_POST)) {
@@ -160,13 +163,17 @@ class Render {
                 }
 
                 if (isset($option['useData'])) {
-                    $dataToUse = explode(',', $option['useData']);
+                    if (is_array($option['useData']))
+                        $dataToUse = $option['useData'];
+                    else
+                        $dataToUse = explode(',', $option['useData']);
+
                     foreach ($dataToUse as $dataKey) {
                         if (isset($this->renderArr[$dataKey]) && $this->renderArr[$dataKey]) {
-                            if (is_array($this->renderArr[$dataKey]))
-                                $functionData = array_merge($functionData,$this->renderArr[$dataKey]);
+                            if (isset($functionData[$dataKey]))
+                                $functionData[$dataKey] = array_merge($functionData[$dataKey],$this->renderArr[$dataKey]);
                             else
-                                array_push($functionData,$this->renderArr[$dataKey]);
+                                $functionData[$dataKey] = $this->renderArr[$dataKey];
                         }
                     }
                 }
