@@ -14,11 +14,15 @@ class Formatter {
 	public function mergeData($data) {
 		$returnArr = [];
 		foreach ($data as $key => $subdata) {
+
 			switch (gettype($subdata)) {
 
 				case 'array':
 					if (array_key_exists('data', $subdata))
 						$subdata = $subdata['data'];
+
+					if (empty($subdata) || is_null($subdata))
+						continue;
 
 					foreach ($subdata as $entry) {
 						if (is_array($entry) && array_key_exists('data', $entry))
