@@ -163,18 +163,34 @@ class Render {
                 }
 
                 if (isset($option['useData'])) {
+
+                    // maybe @deprecated useData should alway be an array but all processor stuff has to be modified :-( because each data will get a key and that will change data structure completely
+
                     if (is_array($option['useData']))
                         $dataToUse = $option['useData'];
-                    else
+                    elseif (strpos($option['useData'],','))
                         $dataToUse = explode(',', $option['useData']);
+                    else
+                        $dataToUse = $option['useData'];
 
-                    foreach ($dataToUse as $dataKey) {
-                        if (isset($this->renderArr[$dataKey]) && $this->renderArr[$dataKey]) {
-                            if (isset($functionData[$dataKey]))
-                                $functionData[$dataKey] = array_merge($functionData[$dataKey],$this->renderArr[$dataKey]);
-                            else
-                                $functionData[$dataKey] = $this->renderArr[$dataKey];
+                    // append multiple data as associative array with data key as index
+                    if (is_array($dataToUse)) {
+                        foreach ($dataToUse as $dataKey) {
+                            if (isset($this->renderArr[$dataKey]) && $this->renderArr[$dataKey]) {
+                                if (isset($functionData[$dataKey]))
+                                    $functionData[$dataKey] = array_merge($functionData[$dataKey],$this->renderArr[$dataKey]);
+                                else
+                                    $functionData[$dataKey] = $this->renderArr[$dataKey];
+                            }
                         }
+                    }
+
+                    // merge single data directly into function data
+                    else {
+                        if (is_array($this->renderArr[$dataToUse]))
+                            $functionData = array_merge($functionData, $this->renderArr[$dataToUse]);
+                        else
+                            array_push($functionData, $this->renderArr[$dataToUse]);
                     }
                 }
 
