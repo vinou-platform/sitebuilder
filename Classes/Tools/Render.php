@@ -585,6 +585,32 @@ class Render {
             return $this->api->getWinery($id);
         }));
 
+        $twig->addFilter( new \Twig_SimpleFilter('basePrice', function ($price, $unit) {
+            $factor = [
+                'g' => 100,
+                'kg' => 1,
+                'ml' => 100,
+                'l' => 1
+            ];
+            $price = number_format($price,2,',','.');
+            $suffix = isset($factor[$unit]) && $factor[$unit] > 1 ? $factor[$unit] . ' '  : '';
+            $suffix .=  $this->translation['units'][$unit];
+            return '€ ' . $price . ' / ' . $suffix;
+        }));
+
+        $twig->addFilter( new \Twig_SimpleFilter('nl2p', function ($string) {
+
+            $arr=explode("\n",$string);
+            $out='';
+
+            for($i=0;$i<count($arr);$i++) {
+                if(strlen(trim($arr[$i]))>0)
+                    $out.='<p>'.trim($arr[$i]).'</p>';
+            }
+            return $out;
+
+        }, array('pre_escape' => 'html', 'is_safe' => array('html'))));
+
 		return $twig;
 	}
 
