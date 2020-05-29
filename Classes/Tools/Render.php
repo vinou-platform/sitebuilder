@@ -611,6 +611,29 @@ class Render {
 
         }, array('pre_escape' => 'html', 'is_safe' => array('html'))));
 
+        $twig->addFilter( new \Twig_SimpleFilter('pageTitle', function ($object) {
+
+            $relevantFields = ['articlenumber', 'name', 'title'];
+            $lowFields = ['vintage'];
+
+            $return = '';
+            foreach ($relevantFields as $field) {
+                if (isset($object[$field]) && !empty($object[$field]) && !is_null($object[$field]))
+                    $return .= $object[$field] . ' ';
+            }
+
+            $lowString = '';
+            foreach ($lowFields as $field) {
+                if (isset($object[$field]) && !empty($object[$field]) && !is_null($object[$field]))
+                    $lowString .= $object[$field] . ' ';
+            }
+
+            if (strlen($lowString) > 0)
+                $return .= '(' . trim($lowString) . ')';
+
+            return trim($return);
+        }));
+
 		return $twig;
 	}
 
