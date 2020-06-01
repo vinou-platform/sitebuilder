@@ -28,6 +28,7 @@ class Render {
     public $regions = [];
     public $countries = [];
 	public $api;
+    public $local = false;
 
 	public function __construct($options = NULL) {
 		is_null($options) ?: $this->options = $options;
@@ -37,6 +38,11 @@ class Render {
 
 		if (defined('PAGE_DEFAULTLANG'))
 			$this->defaultlang = PAGE_DEFAULTLANG;
+
+        if (defined('VINOU_LOCAL'))
+            $this->local = VINOU_LOCAL;
+
+        $this->renderArr['local'] = $this->local;
 
 		$this->defaultPageData();
 	}
@@ -194,28 +200,43 @@ class Render {
                     }
                 }
 
-                if (isset($option['class']))
-                    $result = call_user_func_array([$option['class'], $function], $functionData);
+                // initialize class for data processing
+                if (isset($option['class'])) {
+                    $class = new $option['class'];
+                    if (is_subclass_of($class, '\Vinou\SiteBuilder\Processors\AbstractProcessor'))
+                        $class->loadApi($this->api);
+                }
                 elseif (isset($option['processor'])) {
 
                     if (!isset($this->processors[$option['processor']]))
                         throw new \Exception('data processor does not exists');
 
-                    $result = $this->processors[$option['processor']]->{$function}($functionData);
+                    $class = $this->processors[$option['processor']];
                 }
                 else
-                    $result = $this->api->{$function}($functionData);
+                    $class = $this->api;
+
+                // execute function in data processor if exists
+                if (!method_exists($class, $function))
+                    throw new \Exception('function does not exists in called procesor');
+
+                else
+                    $result = $class->{$function}($functionData);
             }
             else
                 throw new \Exception('dataProcessing for this route could not be solved');
 
             $selector = isset($option['key']) ? $option['key'] : $key;
 
-            if (isset($result[$selector])) {
-                $this->renderArr[$key] = $result[$selector];
-            }
+            if (isset($result[$selector]))
+                $return = $result[$selector];
             else
-                $this->renderArr[$key] = $result;
+                $return = $result;
+
+            if (isset($option['loadOnlyFirst']) && $option['loadOnlyFirst'] && is_array($return))
+                $return = array_shift($return);
+
+            $this->renderArr[$key] = $return;
 
             if (isset($result['clusters'])) {
                 $this->renderArr['clusters'] = $result['clusters'];
