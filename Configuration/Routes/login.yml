@@ -1,7 +1,15 @@
+client:
+  pageTitle: 'Kundenbereich'
+  public: true
+  sitemap: true
+  type: redirect
+  redirect: '/client/login'
+
 client/login:
   template: 'Client/login.twig'
   pageTitle: 'Login'
   public: true
+  sitemap: true
   method: all
   dataProcessing:
     login:
@@ -29,7 +37,7 @@ client/profile:
   dataProcessing:
     update:
       function: editClient
-      postParams: gender,first_name,last_name,address,address_supplement,zip,city,phone,mail,username,password,submitted,redirect
+      postParams: gender,first_name,last_name,address,address_supplement,zip,city,countrycode,phone,mail,username,password,submitted,redirect
 
 client/orders:
   template: 'Client/orders.twig'
@@ -50,13 +58,21 @@ client/register:
   template: 'Client/register.twig'
   pageTitle: 'Registrieren'
   public: true
+  sitemap: true
   twig:
     cache: false
   method: all
   dataProcessing:
+    captcha:
+      processor: mailer
+      function: loadCaptcha
+      params:
+        bgcolor: '100,0,0'
+        width: 167
+        height: 46
     register:
       function: registerClient
-      postParams: gender,company,first_name,last_name,address,address_supplement,zip,city,phone,mail,username,password,password_repeat,submitted,redirect
+      postParams: gender,company,first_name,last_name,address,address_supplement,zip,city,countrycode,phone,mail,username,password,password_repeat,submitted,redirect,captcha
     registerMail:
       processor: 'shop'
       function: 'sendClientRegisterMail'
@@ -78,6 +94,7 @@ client/lostpassword:
   template: 'Client/lostpassword.twig'
   pageTitle: 'Passwort vergessen'
   public: true
+  sitemap: true
   twig:
     cache: false
   method: all
@@ -98,6 +115,9 @@ client/resetPassword:
     cache: false
   method: all
   dataProcessing:
+    validation:
+      function: validatePasswordHash
+      getParams: mail,hash
     reset:
       function: resetPassword
       postParams: mail,hash,password,password_repeat
