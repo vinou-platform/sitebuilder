@@ -309,7 +309,7 @@ class Mailer {
 
 		$config = $this->config['smtp'];
 		$this->mailer->isSMTP();
-		$this->mailer->SMTPDebug = 2;
+		$this->mailer->SMTPDebug = 0;
 		$this->mailer->Host = $config['host'];
 		$this->mailer->Port = $config['port'];
 
@@ -335,7 +335,6 @@ class Mailer {
 		   	return "Connected";
 		}
 		else {
-			var_dump($this->mailer);
 			return $this->mailer->ErrorInfo;
 		}
 
