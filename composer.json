@@ -1,6 +1,6 @@
 {
     "name": "vinou/site-builder",
-    "version": "1.2.7",
+    "version": "1.2.8",
     "type": "library",
     "description": "PHP library to generate template based webpages with dynamic content from the Vinou Plattform",
     "keywords": [
