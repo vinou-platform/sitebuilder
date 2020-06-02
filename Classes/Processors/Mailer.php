@@ -309,13 +309,17 @@ class Mailer {
 
 		$config = $this->config['smtp'];
 		$this->mailer->isSMTP();
-		$this->mailer->SMTPDebug = 0;
+		$this->mailer->SMTPDebug = 2;
 		$this->mailer->Host = $config['host'];
 		$this->mailer->Port = $config['port'];
 
 		if (isset($config['encrypt']))
 			$this->mailer->SMTPSecure = $config['encrypt'];
-		$this->mailer->SMTPAuth = true;
+
+		$this->mailer->SMTPAuth = isset($config['auth']) ? $config['auth'] : true;
+
+		if (isset($config['authType']))
+			$this->mailer->AuthType = $config['authType'];
 
 		$this->mailer->Username = $config['username'];
 		$this->mailer->Password = $config['password'];
