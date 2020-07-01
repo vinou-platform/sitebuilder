@@ -36,6 +36,8 @@ class Shop {
 
     public function loadBilling() {
         $billing = Session::getValue('billing');
+        if (!$billing)
+            $billing = [];
 
         if (!empty($_POST) && isset($_POST['newsletter']) && $_POST['newsletter'] == 1) {
             $billing['newsletter'] = 1;
