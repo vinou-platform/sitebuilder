@@ -35,19 +35,30 @@ class Shop {
     }
 
     public function loadBilling() {
-        if (!empty($_POST) && isset($_POST['billing'])) {
-            Session::setValue('billing',$_POST['billing']);
+        $billing = Session::getValue('billing');
 
-            if (isset($_POST['enabledelivery']) && (bool)$_POST['enabledelivery']) {
-                if (isset($_POST['redirect']['delivery']))
-                    Redirect::internal($_POST['redirect']['delivery']);
-                else
-                    throw new \Exception('no url was set for delivery as hidden input');
-            }
-
-            $this->checkSubmitRedirect();
+        if (!empty($_POST) && isset($_POST['newsletter']) && $_POST['newsletter'] == 1) {
+            $billing['newsletter'] = 1;
         }
-        return Session::getValue('billing');
+
+        if (!empty($_POST) && isset($_POST['billing'])) {
+            $billing = array_merge($billing, $_POST['billing']);
+        }
+
+        Session::setValue('billing',$billing);
+
+        if (isset($_POST['enabledelivery']) && (bool)$_POST['enabledelivery']) {
+            if (isset($_POST['redirect']['delivery']))
+                Redirect::internal($_POST['redirect']['delivery']);
+            else
+                throw new \Exception('no url was set for delivery as hidden input');
+        }
+
+        $this->checkSubmitRedirect();
+
+
+        return $billing;
+
     }
 
     public function loadDelivery() {
@@ -219,8 +230,10 @@ class Shop {
     }
 
     public function checkSubmitRedirect() {
-        if (isset($_POST['submitted']) && (bool)$_POST['submitted'] && isset($_POST['redirect']['standard']))
+        if (!empty($_POST) && isset($_POST['submitted']) && (bool)$_POST['submitted'] && isset($_POST['redirect']['standard']))
             Redirect::internal($_POST['redirect']['standard']);
+
+        return false;
     }
 
     public function validateBasket() {
