@@ -36,16 +36,18 @@ class Shop {
 
     public function loadBilling() {
         $billing = Session::getValue('billing');
+
         if (!$billing)
             $billing = [];
 
-        if (!empty($_POST) && isset($_POST['newsletter']) && $_POST['newsletter'] == 1) {
-            $billing['newsletter'] = 1;
-        }
+        if (empty($_POST))
+            return $billing;
 
-        if (!empty($_POST) && isset($_POST['billing'])) {
+        if (isset($_POST['newsletter']) && $_POST['newsletter'] == 1)
+            $billing['newsletter'] = 1;
+
+        if (isset($_POST['billing']))
             $billing = array_merge($billing, $_POST['billing']);
-        }
 
         Session::setValue('billing',$billing);
 
@@ -56,20 +58,28 @@ class Shop {
                 throw new \Exception('no url was set for delivery as hidden input');
         }
 
-        $this->checkSubmitRedirect();
-
+        $this->checkSubmitRedirect('billing');
 
         return $billing;
 
     }
 
     public function loadDelivery() {
-        if (!empty($_POST) && isset($_POST['delivery'])) {
-            Session::setValue('delivery',$_POST['delivery']);
+        $delivery = Session::getValue('delivery');
+        if (!$delivery)
+            $delivery = [];
 
-            $this->checkSubmitRedirect();
-        }
-        return Session::getValue('delivery');
+        if (empty($_POST))
+            return $delivery;
+
+        if (isset($_POST['delivery']))
+            $delivery = array_merge($delivery, $_POST['delivery']);
+
+        Session::setValue('delivery',$delivery);
+
+        $this->checkSubmitRedirect('delivery');
+
+        return $delivery;
     }
 
     public function loadPayment() {
@@ -231,8 +241,15 @@ class Shop {
         }
     }
 
-    public function checkSubmitRedirect() {
-        if (!empty($_POST) && isset($_POST['submitted']) && (bool)$_POST['submitted'] && isset($_POST['redirect']['standard']))
+    public function checkSubmitRedirect($checkPostField = false) {
+
+        if (empty($_POST))
+            return false;
+
+        if ($checkPostField && !isset($_POST[$checkPostField]))
+            return false;
+
+        if (isset($_POST['submitted']) && (bool)$_POST['submitted'] && isset($_POST['redirect']['standard']))
             Redirect::internal($_POST['redirect']['standard']);
 
         return false;
