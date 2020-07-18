@@ -118,6 +118,7 @@ client/resetPassword:
     validation:
       function: validatePasswordHash
       getParams: mail,hash
+      postParams: mail,hash
     reset:
       function: resetPassword
       postParams: mail,hash,password,password_repeat
