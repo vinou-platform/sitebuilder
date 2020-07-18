@@ -89,6 +89,7 @@ client/activate:
     activate:
       function: activateClient
       getParams: mail,hash
+      postParams: mail,hash
 
 client/lostpassword:
   template: 'Client/lostpassword.twig'
