@@ -67,53 +67,90 @@
 			<td style="border: 1px solid #999999;"><b>Einzelpreis</b></td>
 			<td style="border: 1px solid #999999;"><b>Preis</b></td>
 		</tr>
-		{% set net = 0 %}
-		{% set tax = 0 %}
-		{% set gross = 0 %}
 		{% set index = 0 %}
 		{% for item in order.positions %}
-			<tr>
-				<td style="border: 1px solid #999999;" valign="top">{{loop.index}}</td>
-				<td style="border: 1px solid #999999;" valign="top">{{item.quantity}}&nbsp;x&nbsp;{{item.item.name}}<br>
-					(Artikelnummer: {{item.item.articlenumber}}{% if item.item.bottlesize > 0 %}, Flaschengröße: {{item.item.bottlesize * 1000}}ml{% endif %}{% if item.item.place %}, Lage: {{item.item.place}}{% endif %})</td>
-				<td style="border: 1px solid #999999;" valign="top">{{(item.gross / item.quantity)|number_format(2, ',', '.')}}&nbsp;EUR</td>
-				<td style="border: 1px solid #999999;" valign="top">{{item.gross|number_format(2, ',', '.')}}&nbsp;EUR</td>
-			</tr>
-			{% set net = net + (item.net) %}
-			{% set tax = tax + (item.tax) %}
-			{% set gross = gross + (item.gross) %}
-			{% if loop.last %}
-				{% set index = loop.index + 1 %}
+			{% set index = loop.index %}
+			{% if item.item_type == 'wine' %}
+				<tr>
+					<td style="border: 1px solid #999999;" valign="top">{{index}}</td>
+					<td style="border: 1px solid #999999;" valign="top">
+						{{item.quantity}}&nbsp;x&nbsp;{% if item.item.vintage > 0 %}{{item.item.vintage}} {% endif %}{{item.item.name}}{% if item.item.taste_id > 0 %} {{('tastes.' ~ item.item.taste_id)|translate}}{% endif %}<br>
+						<span class="small">{{('wine.field.articlenumber')|translate}}: {{item.item.articlenumber}}{% if item.item.bottlesize > 0 %}, {{('wine.field.bottlesize')|translate}}: {{item.item.bottlesize|number_format(2, ',', '.')|trim('0', 'right')|trim(',', 'right')}} l{% endif %}{% if item.item.place %}, {{('wine.field.place')|translate}}: {{item.item.place}}{% endif %}</span></td>
+					<td style="border: 1px solid #999999;" valign="top">{{(item.gross / item.quantity)|number_format(2, ',', '.')}}&nbsp;EUR</td>
+					<td style="border: 1px solid #999999;" valign="top">{{item.gross|number_format(2, ',', '.')}}&nbsp;EUR</td>
+				</tr>
+			{% elseif item.item_type == 'bundle' %}
+				<tr>
+					<td style="border: 1px solid #999999;" valign="top">{{index}}</td>
+					<td style="border: 1px solid #999999;" valign="top">
+						{{item.quantity}}&nbsp;x&nbsp;{{item.item.name}}<br>
+						<span class="small">{{('bundle.fields.articlenumber')|translate}}: {{item.item.articlenumber}}{% if item.item.size > 0 %}, {{('bundle.fields.size')|translate}}: {{item.item.size|number_format(2, ',', '.')|trim('0', 'right')|trim(',', 'right')}} {{item.item.unit}}{% endif %}</span></td>
+					<td style="border: 1px solid #999999;" valign="top">{{(item.gross / item.quantity)|number_format(2, ',', '.')}}&nbsp;EUR</td>
+					<td style="border: 1px solid #999999;" valign="top">{{item.gross|number_format(2, ',', '.')}}&nbsp;EUR</td>
+				</tr>
+			{% else %}
+				<tr>
+					<td style="border: 1px solid #999999;" valign="top">{{index}}</td>
+					<td style="border: 1px solid #999999;" valign="top">
+						{{item.quantity}}&nbsp;x&nbsp;{{item.item.name}}<br>
+						<span class="small">{{('product.field.articlenumber')|translate}}: {{item.item.articlenumber}}{% if item.item.size > 0 %}, {{('product.field.size')|translate}}: {{item.item.size|number_format(2, ',', '.')|trim('0', 'right')|trim(',', 'right')}} {{ item.item.unit }}{% endif %}</span></td>
+					<td style="border: 1px solid #999999;" valign="top">{{(item.gross / item.quantity)|number_format(2, ',', '.')}}&nbsp;EUR</td>
+					<td style="border: 1px solid #999999;" valign="top">{{item.gross|number_format(2, ',', '.')}}&nbsp;EUR</td>
+				</tr>
 			{% endif %}
 		{% endfor %}
 		{% if order.package %}
+			{% set index = index + 1 %}
 			<tr>
 				<td style="border: 1px solid #999999;">{{index}}</td>
 				<td style="border: 1px solid #999999;">Versand und Verpackung</td>
 				<td style="border: 1px solid #999999;">{{order.package.gross|number_format(2, ',', '.')}}&nbsp;EUR</td>
 				<td style="border: 1px solid #999999;">{{order.package.gross|number_format(2, ',', '.')}}&nbsp;EUR</td>
 			</tr>
-			{% set net = net + (order.package.net * 1) %}
-			{% set tax = tax + (order.package.tax * 1) %}
-			{% set gross = gross + (order.package.gross * 1) %}
+		{% endif %}
+		{% if order.campaigns|length > 0 %}
+			{% for campaign in order.campaigns %}
+				{% set index = index + 1 %}
+				<tr>
+					<td style="border: 1px solid #999999;">{{index}}</td>
+					<td style="border: 1px solid #999999;">Kampagne: {{campaign.name}}<br><span class="small">Eingelöster Rabatt-Code: {{campaign.item.hash}}, {% if campaign.item.rebate_type == 'percent' %}Prozentualer Rabatt: {{campaign.item.percent|number_format(2, ',', '.')}}%{% else %}Pauschalrabatt: {{campaign.item.gross|number_format(2, ',', '.')|trim('0', 'right')|trim(',', 'right')}} EUR{% endif %}</span>
+					</td>
+					<td style="border: 1px solid #999999;">{{campaign.gross|number_format(2, ',', '.')}}&nbsp;EUR</td>
+					<td style="border: 1px solid #999999;">{{campaign.gross|number_format(2, ',', '.')}}&nbsp;EUR</td>
+				</tr>
+			{% endfor %}
+		{% endif %}
+		{% if order.rebates|length > 0 %}
+			{% for rebate in order.rebates %}
+				{% set index = index + 1 %}
+				<tr>
+					<td style="border: 1px solid #999999;">{{index}}</td>
+					<td style="border: 1px solid #999999;">{{rebate.name}}</span>
+					</td>
+					<td style="border: 1px solid #999999;">{{rebate.gross|number_format(2, ',', '.')}}&nbsp;EUR</td>
+					<td style="border: 1px solid #999999;">{{rebate.gross|number_format(2, ',', '.')}}&nbsp;EUR</td>
+				</tr>
+			{% endfor %}
 		{% endif %}
 		<tr>
 			<td style="border: 1px solid #999999;" colspan="3">Gesamtsumme Netto</td>
-			<td style="border: 1px solid #999999;">{{net|number_format(2, ',', '.')}}&nbsp;EUR</td>
+			<td style="border: 1px solid #999999;">{{order.net|number_format(2, ',', '.')}}&nbsp;EUR</td>
 		</tr>
 		{% if customer.tax_free %}
 			<tr>
 				<td style="border: 1px solid #999999;" colspan="4">{{ 'customer.field.smallBusiness.description'|translate }}</td>
 			</tr>
 		{% else %}
-			<tr>
-				<td style="border: 1px solid #999999;" colspan="3">Mehrwertssteuer</td>
-				<td style="border: 1px solid #999999;">{{(tax)|number_format(2, ',', '.')}}&nbsp;EUR</td>
-			</tr>
+			{% for percent,taxEntry in order.taxrates %}
+				<tr>
+					<td style="border: 1px solid #999999;" colspan="3">Mehrwertsteuer {{percent}} %</td>
+					<td style="border: 1px solid #999999;">{{(taxEntry.tax)|number_format(2, ',', '.')}}&nbsp;EUR</td>
+				</tr>
+			{% endfor %}
 		{% endif %}
 		<tr>
 			<td style="border: 1px solid #999999;" colspan="3">Gesamtsumme Brutto</td>
-			<td style="border: 1px solid #999999;">{{gross|number_format(2, ',', '.')}}&nbsp;EUR</td>
+			<td style="border: 1px solid #999999;">{{order.gross|number_format(2, ',', '.')}}&nbsp;EUR</td>
 		</tr>
 
 	</table>
