@@ -61,7 +61,7 @@ class Ajax {
                 if ($this->result && $campaign && $this->result['uuid'] == $campaign['uuid'])
                 	$this->sendResult(false, 'campaign already activated');
                 else
-                	$this->sendResult($result);
+                	$this->sendResult($result, 'campaign could not be resolved');
                 break;
 
             case 'loadCampaign':
