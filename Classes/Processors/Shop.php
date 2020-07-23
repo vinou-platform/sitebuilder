@@ -34,6 +34,116 @@ class Shop {
         $this->client = Session::getValue('client');
     }
 
+    public function loadCampaign() {
+        return Session::getValue('campaign');
+    }
+
+    public function calcSum($data = null) {
+
+        $sum = [
+            'net' => 0,
+            'tax' => 0,
+            'gross' => 0,
+            'quantity' => 0
+        ];
+
+        if (!is_array($data))
+            return $sum;
+
+        $items = isset($data['basketItems']) ? $data['basketItems'] : $data;
+
+        foreach ($items as $item) {
+
+            $quantity = $item['quantity'];
+            $priceObject = $item['item'];
+            if ($this->client)
+                $priceObject = $item['item']['prices'][0];
+
+            $sum['net'] += $priceObject['net'] * $quantity;
+            $sum['tax'] += $priceObject['tax'] * $quantity;
+            $sum['gross'] += $priceObject['gross'] * $quantity;
+            $sum['quantity'] += $quantity;
+        }
+
+        return $sum;
+    }
+
+    public function arrangePositions($data = null) {
+
+        if (is_null($data))
+            return false;
+
+        $items = [];
+
+        if (isset($data['basket']) && count($data['basket']['basketItems']) > 0)
+            $items = array_merge($items, $data['basket']['basketItems']);
+
+        if (isset($data['package']) && !empty($data['package']))
+            array_push($items, [
+                'item_type' => 'package',
+                'item_id' => $data['package']['id'],
+                'quantity' => 1,
+                'item' => $data['package']
+            ]);
+
+        return $items;
+    }
+
+    public function campaignDiscount($items = null) {
+
+        $sessionCampaign = Session::getValue('campaign');
+        if (!$sessionCampaign)
+            return false;
+
+        $campaign = $this->api->findCampaign($sessionCampaign);
+        if (!$campaign)
+            return false;
+
+        if (is_null($items) || empty($items)) {
+            $basket = $this->api->getBasket();
+            if (!$basket)
+                return false;
+
+            $items = $this->arrangePositions([
+                'basket' => $basket,
+                'package' => $this->api->getBasketPackage()
+            ]);
+        }
+
+        $relItems = [];
+        $itemTypes = $campaign['item_types'];
+
+        foreach ($items as $item) {
+            if (in_array($item['item_type'], $itemTypes))
+                array_push($relItems, $item);
+        }
+
+        $sum = $this->calcSum($relItems);
+
+        if ($campaign['rebate_type'] == 'percent') {
+            $gross = number_format($campaign['percent'] * $sum['gross'] * -1 / 100, 2);
+            $net = number_format(($gross * 100) / (100 + $campaign['taxrate']), 2);
+
+            $discount = [
+                'gross' => $gross,
+                'net' => $net,
+                'tax' => number_format($gross - $net, 2)
+            ];
+        }
+
+        else {
+
+            $sumObject = $sum['gross'] < $campaign['gross'] ? $sum : $campaign;
+            $discount = [
+                'gross' => $sumObject['gross'],
+                'net' => $sumObject['net'],
+                'tax' => $sumObject['tax']
+            ];
+        }
+
+        return $discount;
+    }
+
     public function loadBilling() {
         $billing = Session::getValue('billing');
 
@@ -105,6 +215,16 @@ class Shop {
     }
 
     public function prepareSessionOrder() {
+
+        $campaign = Session::getValue('campaign');
+        if ($campaign && $campaign['id'] > 0) {
+            $this->api->addItemToBasket(['data' => [
+                'quantity' => 1,
+                'item_type' => 'campaign',
+                'item_id' => $campaign['id']
+            ]]);
+        }
+
         $order = [
             'source' => 'shop',
             'payment_type' => Session::getValue('payment'),
@@ -147,6 +267,7 @@ class Shop {
             Session::deleteValue('card');
             Session::deleteValue('billing');
             Session::deleteValue('delivery');
+            Session::deleteValue('campaign');
             Session::deleteValue('note');
             Session::deleteValue('order');
         }
@@ -324,7 +445,7 @@ class Shop {
         $mail->setSubject('Ihre Bestellung '.$order['number']);
         $mail->setData([
             'order' => $order,
-            'client' => $client,            
+            'client' => $client,
             'customer' => $customer,
             'settings' => $this->settings
         ]);
@@ -341,7 +462,7 @@ class Shop {
             'settings' => $this->settings
         ]);
         $send = $adminmail->send();
-        
+
         if (!$client) {
             $client = $order['client'];
             $pwreset = $this->api->getPasswordHash(['mail' => $order['client']['mail']]);
