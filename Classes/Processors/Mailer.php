@@ -376,7 +376,7 @@ class Mailer {
 		$loader = new \Twig_Loader_Filesystem($this->storage);
 
 		$this->renderer = new \Twig_Environment($loader, array(
-			'cache' => defined('VINOU_CACHE') ? VINOU_CACHE : Helper::getNormDocRoot().'Cache',
+			'cache' => defined('VINOU_CACHE') ? VINOU_CACHE : Helper::getNormDocRoot().'Cache/Twig',
 			'debug' => defined('VINOU_DEBUG') ? VINOU_DEBUG : false
 		));
 
