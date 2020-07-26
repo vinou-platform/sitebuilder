@@ -56,7 +56,7 @@ class Shop {
 
             $quantity = $item['quantity'];
             $priceObject = $item['item'];
-            if ($this->client)
+            if ($this->client && isset($item['item']['prices'][0]))
                 $priceObject = $item['item']['prices'][0];
 
             $sum['net'] += $priceObject['net'] * $quantity;
