@@ -44,6 +44,6 @@
 	</table>
 
 	<p style="text-align: center; font-size: 1.5em;"><strong>Was möchtest Du tun?</strong><br><br>
-		<a href="https://{{domain}}{{settings.client.pages.declination}}?mail={{client.mail}}" class="button disabled">Ablehnen</a>
-		<a href="https://{{domain}}{{settings.client.pages.activation}}?mail={{client.mail}}&hash={{client.lostpassword_hash}}" class="button">Bestätigen</a></p>
+		<a href="{{protocol}}{{domain}}{{settings.client.pages.declination}}?mail={{client.mail}}" class="button disabled">Ablehnen</a>
+		<a href="{{protocol}}{{domain}}{{settings.client.pages.activation}}?mail={{client.mail}}&hash={{client.lostpassword_hash}}" class="button">Bestätigen</a></p>
 {% endblock %}

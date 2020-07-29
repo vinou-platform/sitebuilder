@@ -367,6 +367,9 @@ class Mailer {
 		if (is_null($data))
 			$data = $this->data;
 
+		$data['domain'] = $_SERVER['SERVER_NAME'];
+		$data['protocol'] = strpos($_SERVER['SERVER_PROTOCOL'],'https') ? 'https://' : 'http://';
+
 		$twig = $this->renderer->loadTemplate($template);
 		return $twig->render($data);
 	}

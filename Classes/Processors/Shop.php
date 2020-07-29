@@ -479,7 +479,6 @@ class Shop {
             $accountmail->setSubject('Dein Account auf '.$_SERVER['SERVER_NAME']);
             $accountmail->setData([
                 'client' => $client,
-                'domain' => $_SERVER['SERVER_NAME'],
                 'customer' => $customer,
                 'settings' => $this->settings
             ]);
@@ -499,7 +498,6 @@ class Shop {
             $mail->setData([
                 'client' => $data,
                 'customer' => $this->api->getCustomer(),
-                'domain' => $_SERVER['SERVER_NAME'],
                 'settings' => $this->settings
             ]);
             return $mail->send();
@@ -521,7 +519,6 @@ class Shop {
             $adminMail->setData([
                 'client' => $data,
                 'customer' => $this->api->getCustomer(),
-                'domain' => $_SERVER['SERVER_NAME'],
                 'settings' => $this->settings
             ]);
 
@@ -532,7 +529,6 @@ class Shop {
             $clientMail->setData([
                 'client' => $data,
                 'customer' => $this->api->getCustomer(),
-                'domain' => $_SERVER['SERVER_NAME'],
                 'settings' => $this->settings
             ]);
 
@@ -553,7 +549,6 @@ class Shop {
         $mail->setSubject('Account aktiviert auf '.$_SERVER['SERVER_NAME']);
         $mail->setData([
             'customer' => $this->api->getCustomer(),
-            'domain' => $_SERVER['SERVER_NAME'],
             'settings' => $this->settings
         ]);
 
@@ -572,7 +567,6 @@ class Shop {
         $mail->setSubject('Account abgelehnt auf '.$_SERVER['SERVER_NAME']);
         $mail->setData([
             'customer' => $this->api->getCustomer(),
-            'domain' => $_SERVER['SERVER_NAME'],
             'settings' => $this->settings
         ]);
 
@@ -590,7 +584,6 @@ class Shop {
             $mail->setData([
                 'client' => $data,
                 'customer' => $this->api->getCustomer(),
-                'domain' => $_SERVER['SERVER_NAME'],
                 'settings' => $this->settings
             ]);
             return $mail->send();
