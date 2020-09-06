@@ -1,0 +1,27 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+	<meta charset="UTF-8">
+	<title>Example Vinou-SiteBuilder Project</title>
+	<meta name="viewport" content="user-scalable=0, initial-scale=1.0, maximum-scale=1.0, width=device-width">
+</head>
+<body>
+
+	<div id="page">
+		<section id="header">
+			<p>static content shown on each page</p>
+			<!-- additional header content modified via page template -->
+			{% block header %}
+
+			{% endblock %}
+		</section>
+		<section id="content">
+			<!-- main content defined in page template -->
+			{% block content %}
+
+			{% endblock %}
+		</section>
+	</div>
+
+</body>
+</html>

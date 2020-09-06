@@ -1,0 +1,18 @@
+# Vinou authentication settings
+vinou:
+  token: 'TOKEN_FOR_INSTANCE'
+  authid: 'AUTHID_FOR_VINOU_CUSTOMER'
+
+# optional additional functions directly called and piped into EACH PAGE
+# additionalContent:
+#   categories:
+#     function: getCategoriesAll
+#     params:
+#       orderBy: sorting ASC
+#   customer: getCustomer
+
+# optional settings that can be used within template
+settings:
+  cache:
+    image: true
+    pdf: true

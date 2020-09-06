@@ -1,0 +1,16 @@
+{% extends "Default.twig" %}
+
+{% block header %}
+	<p>Page Header on start page</p>
+{% endblock %}
+
+{% block content %}
+	<h1>Start Page</h1>
+
+	<p>These are all wines in my Vinou-Office</p>
+	<ul>
+	{% for wine in wines %}
+		{# Example partials call #}
+		{% include '/Wines/ListItem.twig' with {wine: wine} %}
+	{% endfor %}
+{% endblock %}

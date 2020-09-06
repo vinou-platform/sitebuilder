@@ -1,0 +1,33 @@
+smtp:
+  host: 'your.mailserver.com'
+  port: 587
+  encrypt: tls
+  username: USERNAME
+  password: 'PASSWORD'
+
+defaults:
+  fromName: 'Name each mail was signed with'
+  fromMail: 'Mailadress each mail was signed with'
+  receiver: 'mail@your.mailserver.com'
+  subject: 'Message subject'
+
+# # template options
+# template:
+#   rootDir: 'Resources/'
+#   directories: ['Mail/']
+
+# form configuration
+# forms:
+#   contact:
+#     subject: 'Subject for special form'
+#     fields: [firstname,lastname,email,message]
+#     template: 'Contact.twig'
+#     confirmation:
+#       subject: 'Confirmation subject'
+#       receiver: email
+#       template: 'ContactConfirmation.twig'
+
+# optional settings for Vinou shop usage
+# shop:
+#   attachments:
+#     file: 'Path/to/file.pdf'

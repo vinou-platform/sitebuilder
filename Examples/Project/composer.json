@@ -1,0 +1,16 @@
+{
+    "name": "your-vendor/your-site-package",
+    "description" : "Your Simple Vinou Site-Builder Site",
+    "require": {
+		"composer/installers": "*",
+        "oomphinc/composer-installers-extender": "*",
+        "vinou/translations": "2.*",
+        "vinou/api-connector": "1.*",
+        "vinou/site-builder": "1.*"
+    },
+    "config": {
+		"web-dir": "web",
+		"secure-http": false,
+		"preferred-install": "source"
+    }
+}

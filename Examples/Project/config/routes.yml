@@ -1,0 +1,7 @@
+/:
+  template: 'Start.twig'
+  pageTitle: 'Willkommen'
+  public: true
+  sitemap: true
+  dataProcessing:
+    wines: getWinesAll
