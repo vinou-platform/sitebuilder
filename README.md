@@ -4,6 +4,17 @@ The Vinou Site-Builder is a PHP library that easily combine a basic php routing 
 
 ### Table of contents
 
+- [Typical project structure](#typical-project-structure)
+- [Installation (typical)](#installation-via-typical-project-structure)
+- [Route configuration](#route-configuration)
+	1. [General route parameters](#1-general-route-parameters)
+	2. [Load sitemap configuration)](#2-load-sitemap-configuration-for-route)
+	3. [Use dataProcessing](#3-use-dataprocessing)
+	4. [Registered processors](#4-registered-processors)
+	5. [Register your own processor](#5-register-your-own-processor)
+- [Classlist](#classlist)
+- [Provider](#provider)
+
 ## Typical project structure
 
 |File            |Description       |
