@@ -26,7 +26,8 @@
         "phpmailer/phpmailer": "^6.0",
         "gregwar/captcha": "^1.1",
         "thepixeldeveloper/sitemap": "^5.1",
-        "gumlet/php-image-resize": "^1.9"
+        "gumlet/php-image-resize": "^1.9",
+        "vinou/api-connector": "2.*"
     },
     "autoload": {
         "psr-4": {
