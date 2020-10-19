@@ -134,10 +134,12 @@ class Shop {
         else {
 
             $sumObject = $sum['gross'] < $campaign['gross'] ? $sum : $campaign;
+            $multiplicator = $sumObject > 0 ? -1 : 1;
+
             $discount = [
-                'gross' => $sumObject['gross'],
-                'net' => $sumObject['net'],
-                'tax' => $sumObject['tax']
+                'gross' => number_format($multiplicator * $sumObject['gross'], 2),
+                'net' => number_format($multiplicator * $sumObject['net'], 2),
+                'tax' => number_format($multiplicator * $sumObject['tax'], 2)
             ];
         }
 
@@ -463,27 +465,28 @@ class Shop {
         ]);
         $send = $adminmail->send();
 
-        if (!$client) {
-            $client = $order['client'];
-            $pwreset = $this->api->getPasswordHash(['mail' => $order['client']['mail']]);
+        // // 2020-10-19 Deactivated due to gdpr reasons
+        // if (!$client) {
+        //     $client = $order['client'];
+        //     $pwreset = $this->api->getPasswordHash(['mail' => $order['client']['mail']]);
 
-            if (isset($pwreset['hash']))
-                $client['lostpassword_hash'] = $pwreset['hash'];
+        //     if (isset($pwreset['hash']))
+        //         $client['lostpassword_hash'] = $pwreset['hash'];
 
-            if (isset($pwreset['expire']))
-                $client['lostpassword_expire'] = $pwreset['expire'];
+        //     if (isset($pwreset['expire']))
+        //         $client['lostpassword_expire'] = $pwreset['expire'];
 
-            $accountmail = new Mailer();
-            $accountmail->setTemplate('NewAccountByOrder.twig');
-            $accountmail->setReceiver($order['client']['mail']);
-            $accountmail->setSubject('Dein Account auf '.$_SERVER['SERVER_NAME']);
-            $accountmail->setData([
-                'client' => $client,
-                'customer' => $customer,
-                'settings' => $this->settings
-            ]);
-            $accountsend = $accountmail->send();
-        }
+        //     $accountmail = new Mailer();
+        //     $accountmail->setTemplate('NewAccountByOrder.twig');
+        //     $accountmail->setReceiver($order['client']['mail']);
+        //     $accountmail->setSubject('Dein Account auf '.$_SERVER['SERVER_NAME']);
+        //     $accountmail->setData([
+        //         'client' => $client,
+        //         'customer' => $customer,
+        //         'settings' => $this->settings
+        //     ]);
+        //     $accountsend = $accountmail->send();
+        // }
 
         return $send;
     }

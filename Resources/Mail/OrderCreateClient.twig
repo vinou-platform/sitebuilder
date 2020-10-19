@@ -156,7 +156,7 @@
 	</table>
 
 	{% if order.payment_type == 'prepaid' %}
-		<p class="text-align: center"><br><b>Bitte überweise den fälligen Gesamtbetrag von {{gross|number_format(2, ',', '.')}}&nbsp;EUR auf folgendes Konto:<b><br><br></b></b>
+		<p class="text-align: center"><br><b>Bitte überweise den fälligen Gesamtbetrag von {{order.gross_cashback|number_format(2, ',', '.')}}&nbsp;EUR auf folgendes Konto:<b><br><br></b></b>
 		<table border="0" cellspacing="0" cellpadding="10" style="border: 1px solid #999999; border-collapse: collapse; width: 100%">
 			<tr>
 				<td colspan="2" style="border: 1px solid #999999;">IBAN:</td>
