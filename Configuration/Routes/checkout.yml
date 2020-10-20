@@ -1,15 +1,26 @@
-basket:
+warenkorb:
   template: 'Checkout/basket.twig'
-  pageTitle: 'Basket'
+  pageTitle: 'Warenkorb'
+  public: true
   dataProcessing:
     basket: getBasket
     package: getBasketPackage
+    campaign:
+      processor: shop
+      function: loadCampaign
+    campaignDiscount:
+      processor: shop
+      function: campaignDiscount
 
 checkout:
   template: 'Checkout/billing.twig'
-  pageTitle: 'Billing'
+  pageTitle: 'Rechnungsadresse'
+  public: true
   method: all
   dataProcessing:
+    precheck:
+      function: validateBasket
+      processor: shop
     billing:
       function: loadBilling
       processor: shop
@@ -17,11 +28,15 @@ checkout:
       function: loadDelivery
       processor: shop
 
-checkout/delivery:
+checkout/lieferanschrift:
   template: 'Checkout/delivery.twig'
-  pageTitle: 'Delivery'
+  pageTitle: 'Lieferanschrift'
+  public: true
   method: all
   dataProcessing:
+    precheck:
+      function: validateBilling
+      processor: shop
     billing:
       function: loadBilling
       processor: shop
@@ -29,22 +44,36 @@ checkout/delivery:
       function: loadDelivery
       processor: shop
 
-checkout/payment:
+checkout/zahlungsart:
   template: 'Checkout/payment.twig'
-  pageTitle: 'Payment'
+  pageTitle: 'Zahlungsart'
+  public: true
   method: all
   dataProcessing:
+    precheck:
+      function: validateBilling
+      processor: shop
     payment:
       function: loadPayment
       processor: shop
 
-checkout/summary:
+checkout/uebersicht:
   template: 'Checkout/summary.twig'
-  pageTitle: 'Order summary'
+  pageTitle: 'Bestellübersicht'
+  public: true
   method: all
   dataProcessing:
+    precheck:
+      function: validateOrder
+      processor: shop
     basket: getBasket
     package: getBasketPackage
+    campaign:
+      processor: shop
+      function: loadCampaign
+    campaignDiscount:
+      processor: shop
+      function: campaignDiscount
     billing:
       function: loadBilling
       processor: shop
@@ -58,10 +87,13 @@ checkout/summary:
       function: check
       processor: shop
 
-checkout/finish:
+checkout/abschliessen:
   template: 'Checkout/finish.twig'
-  pageTitle: 'Order finished'
+  pageTitle: 'Bestellung abgeschlossen'
   dataProcessing:
+    precheck:
+      function: validateOrder
+      processor: shop
     order:
       function: prepareSessionOrder
       processor: shop
@@ -79,3 +111,35 @@ checkout/finish:
       function: removeSessionData
       processor: shop
       useData: 'mail'
+
+checkout/paypal/finish:
+  template: 'Checkout/Paypal/finish.twig'
+  pageTitle: 'Bestellung abgeschlossen'
+  dataProcessing:
+    paypal:
+      function: finishPaypalPayment
+      getParams: pid,paymentId,token,PayerID
+      stopProcessing: true
+    addedOrder:
+      function: getSessionOrder
+    mail:
+      function: sendClientNotification
+      processor: shop
+      useData: 'addedOrder'
+    success:
+      function: removeSessionData
+      processor: shop
+      useData: 'mail'
+
+checkout/paypal/cancel:
+  template: 'Checkout/Paypal/cancel.twig'
+  pageTitle: 'Bestellung abgebrochen'
+  dataProcessing:
+    paypal:
+      function: cancelPaypalPayment
+    addedOrder:
+      function: getSessionOrder
+    success:
+      function: removeSessionData
+      processor: shop
+      useData: 'paypal'

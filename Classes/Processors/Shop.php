@@ -386,7 +386,11 @@ class Shop {
 
             $quantity = 0;
             foreach ($card as $item) {
-                $quantity = $quantity + $item['quantity'];
+                if ($item['item_type'] == 'bundle')
+                    $quantity = $quantity + $item['quantity'] * $item['item']['package_quantity'];
+                else
+                    $quantity = $quantity + $item['quantity'];
+                // $quantity = $quantity + $item['quantity'];
             }
 
             if ($quantity < $this->settings['minBasketSize'])
