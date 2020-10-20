@@ -71,19 +71,21 @@ class Sitemap {
 
                     $titleField = isset($config['titleField']) ? $config['titleField'] : 'name';
 
-                    foreach ($data as $entry) {
-                        foreach ($matches[1] as $fieldName) {
-                            if (isset($entry[$fieldName])) {
+                    if (is_array($data) && count($data) > 0) {
+                        foreach ($data as $entry) {
+                            foreach ($matches[1] as $fieldName) {
+                                if (isset($entry[$fieldName])) {
 
-                            	$suburl = str_replace('{'.$fieldName.'}', $entry[$fieldName], $url);
+                                	$suburl = str_replace('{'.$fieldName.'}', $entry[$fieldName], $url);
 
-                                $dataPage = [
-                                	'title' => isset($entry[$titleField]) ? $entry[$titleField] : false,
-                                	'url' => '/' . $suburl
-                                ];
+                                    $dataPage = [
+                                    	'title' => isset($entry[$titleField]) ? $entry[$titleField] : false,
+                                    	'url' => '/' . $suburl
+                                    ];
 
-                                $entries = array_merge_recursive($entries, $this->arrayToMap($suburl, '/', $dataPage));
+                                    $entries = array_merge_recursive($entries, $this->arrayToMap($suburl, '/', $dataPage));
 
+                                }
                             }
                         }
                     }
