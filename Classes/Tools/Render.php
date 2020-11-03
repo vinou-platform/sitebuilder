@@ -277,6 +277,7 @@ class Render {
 
 		$twig = new \Twig_Environment($loader, $settings);
         $twig->addExtension(new \Twig_Extensions_Extension_Intl());
+        $twig->addExtension(new \Twig_Extensions_Extension_Array());
 
 
 		// This line enables debugging and is included to activate dump()
