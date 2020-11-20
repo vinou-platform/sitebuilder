@@ -379,23 +379,14 @@ class Shop {
     }
 
     public function validateBasket() {
-        if (isset($this->settings['minBasketSize'])) {
-            $card = Session::getValue('card');
-            if (!$card)
-                Redirect::internal($this->settings['pages']['basket']);
+        $card = Session::getValue('card');
+        if (!$card)
+            Redirect::internal($this->settings['pages']['basket']);
 
-            $quantity = 0;
-            foreach ($card as $item) {
-                if ($item['item_type'] == 'bundle')
-                    $quantity = $quantity + $item['quantity'] * $item['item']['package_quantity'];
-                else
-                    $quantity = $quantity + $item['quantity'];
-                // $quantity = $quantity + $item['quantity'];
-            }
+        $quantity = self::calcCardQuantity($card);
+        if (!self::quantityIsAllowed($quantity, $this->settings))
+            Redirect::internal($this->settings['pages']['basket']);
 
-            if ($quantity < $this->settings['minBasketSize'])
-                Redirect::internal($this->settings['pages']['basket']);
-        }
         return true;
     }
 
@@ -597,5 +588,43 @@ class Shop {
         }
 
         return false;
+    }
+
+
+    public static function calcCardQuantity($card) {
+        $quantity = 0;
+        foreach ($card as $item) {
+            if ($item['item_type'] == 'bundle')
+                $quantity = $quantity + $item['quantity'] * $item['item']['package_quantity'];
+            else
+                $quantity = $quantity + $item['quantity'];
+        }
+        return $quantity;
+    }
+
+    public static function quantityIsAllowed($quantity, $settings, $retString = false) {
+
+        if (array_key_exists('minBasketSize', $settings) && $quantity < $settings['minBasketSize'])
+            return $retString ? 'minBasketSize' : false;
+
+        if (array_key_exists('packageSteps', $settings)) {
+            $steps = $settings['packageSteps'];
+            if (is_string($steps))
+                $steps = array_map('trim', explode(',', $steps));
+
+            if (array_key_exists('factor', $steps)) {
+                $factor = (int)$steps['factor'];
+                if ($quantity % $factor != 0)
+                    return $retString ? 'packageSteps' : false;
+
+                unset($steps['factor']);
+            }
+
+            if (count($steps) > 0 && !in_array($quantity, array_values($steps)))
+                return $retString ? 'packageSteps' : false;
+
+        }
+
+        return $retString ? 'valid' : true;
     }
 }
