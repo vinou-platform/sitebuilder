@@ -11,5 +11,4 @@
 
     $site = new \Vinou\SiteBuilder\Site ();
     $site->setRouteFile('routes.yml');
-    $site->setSettingsFile('settings.yml');
     $site->run();

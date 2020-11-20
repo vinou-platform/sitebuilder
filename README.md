@@ -203,6 +203,7 @@ your-route-with-processor:
 |Class                |Description          |
 |:--------------------|:--------------------|
 |\Vinou\SiteBuilder\Site|Main class of Sitebuilder that combines router and renderer|
+|\Vinou\SiteBuilder\Loader\Settings|Loading class to collect settings yaml files and load it into an array|
 |\Vinou\SiteBuilder\Tools\Render|Renderer that inits twig, delivers some twig filter and do the variable fill in stuff including data processing|
 |\Vinou\SiteBuilder\Router\DynamicRoutes|Read yaml files and configure bramus router with this yaml and do rendering|
 |\Vinou\SiteBuilder\Processors\AbstractProcessor|Abstract processor to easily use api in processor|
