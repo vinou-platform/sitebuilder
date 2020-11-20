@@ -16,8 +16,9 @@ class Ajax {
 	protected $errors = [];
 	protected $result = false;
 	protected $request = [];
+    protected $settings = [];
 
-	public function __construct() {
+	public function __construct($themeDir = null, $defaults = true) {
 
 		$this->api = new Api();
 
@@ -25,7 +26,20 @@ class Ajax {
 			$this->sendResult(false, 'could not create api connection');
 
 		$this->request = array_merge($_POST, (array)json_decode(trim(file_get_contents('php://input')), true));
+
+        $this->loadSettings($themeDir, $defaults);
 	}
+
+    public function loadSettings($dir, $defaults) {
+        $loader = new Loader\Settings($defaults);
+
+        if (!is_null($dir))
+            $loader->addByDirectory($dir);
+
+        $settings = $loader->load();
+
+        $this->settings = $settings['settings'];
+    }
 
 	public function run() {
 
@@ -36,7 +50,15 @@ class Ajax {
 	    unset($this->request['action']);
         switch ($action) {
             case 'get':
-                $this->sendResult($this->api->getBasket(), 'basket not found');
+                $result = $this->api->getBasket();
+                if (!$result)
+                    $this->sendResult(false, 'basket not found');
+                else {
+                    $result['quantity'] = Shop::calcCardQuantity($result['basketItems']);
+                    $result['valid'] = Shop::quantityIsAllowed($result['quantity'], $this->settings, true);
+                }
+
+                $this->sendResult($result);
                 break;
 
             case 'addItem':
