@@ -7,6 +7,7 @@ use \Vinou\ApiConnector\Tools\Helper;
 use \Vinou\ApiConnector\Session\Session;
 use \Vinou\SiteBuilder\Router\DynamicRoutes;
 use \Vinou\SiteBuilder\Tools\Render;
+use \Vinou\SiteBuilder\Loader;
 use \Vinou\SiteBuilder\Processors\External;
 use \Vinou\SiteBuilder\Processors\Formatter;
 use \Vinou\SiteBuilder\Processors\Files;
@@ -20,12 +21,11 @@ use \Vinou\SiteBuilder\Processors\Sitemap;
 class Site {
 
     protected $routeConfig;
-    protected $settingsFile = NULL;
     protected $router;
     protected $config = NULL;
     protected $settings = [];
     protected $themeID = NULL;
-    protected $themeRoot = NULL;
+    protected $themeDir = NULL;
     public $loadDefaults = true;
     public $render;
 
@@ -52,10 +52,6 @@ class Site {
 
     public function setRouteFile($file) {
         $this->routeConfig->setRouteFile($file);
-    }
-
-    public function setSettingsFile($file) {
-        $this->settingsFile = $file;
     }
 
     public function loadTemplates($rootDir, $folders = []) {
@@ -106,28 +102,6 @@ class Site {
         );
     }
 
-    private function loadDefaultSettings() {
-        $settingsFile = str_replace('Classes', 'Configuration', Helper::getClassPath(get_class($this))).'/settings.yml';
-        if (!is_null($this->themeID) && !is_null($this->themeDir)) {
-            $themeSettings = Helper::getNormDocRoot().$this->themeDir.'/Configuration/settings.yml';
-            if (is_file($themeSettings))
-                $settingsFile = $themeSettings;
-        }
-
-        $this->settings = spyc_load_file($settingsFile);
-    }
-
-    private function loadAdditionalSettings() {
-
-        $absFile = substr($this->settingsFile, 0, 1) == '/' ? $this->settingsFile : Helper::getNormDocRoot().VINOU_CONFIG_DIR.$this->settingsFile;
-        if (!is_file($absFile))
-            throw new \Exception('Settings file '.$absFile.' could not be resolved');
-
-        $additionalSettings = spyc_load_file($absFile);
-
-        $this->settings = is_null($this->settings) ? $additionalSettings : array_replace_recursive($this->settings, $additionalSettings);
-    }
-
     private function parseSettings() {
         if (is_null($this->settings))
             throw new \Exception('Settings parsing error');
@@ -146,13 +120,12 @@ class Site {
     }
 
     private function loadSettings() {
+        $loader = new Loader\Settings($this->loadDefaults);
 
-        if ($this->loadDefaults)
-            $this->loadDefaultSettings();
+        if (!is_null($this->themeDir))
+            $loader->addByDirectory($this->themeDir);
 
-        if (!is_null($this->settingsFile))
-            $this->loadAdditionalSettings();
-
+        $this->settings = $loader->load();
         $this->parseSettings();
         return;
     }
