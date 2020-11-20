@@ -8,6 +8,7 @@ use \Vinou\ApiConnector\FileHandler\Images;
 use \Vinou\ApiConnector\FileHandler\Pdf;
 use \Vinou\ApiConnector\Tools\Helper;
 use \Vinou\ApiConnector\Tools\Redirect;
+use \Vinou\SiteBuilder\Processors\Shop;
 use \Gumlet\ImageResize;
 use \Gumlet\ImageResizeException;
 
@@ -605,6 +606,10 @@ class Render {
 
         $twig->addFilter( new \Twig_SimpleFilter('getWinery', function ($id) {
             return $this->api->getWinery($id);
+        }));
+
+        $twig->addFilter( new \Twig_SimpleFilter('quantityIsAllowed', function ($quantity, $settings) {
+            return Shop::quantityIsAllowed($quantity, $settings, true);
         }));
 
         $twig->addFilter( new \Twig_SimpleFilter('basePrice', function ($price, $unit) {
