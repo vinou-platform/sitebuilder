@@ -33,8 +33,8 @@ class Mailer {
 	public $data = [];
 
 	public function __construct($api = null) {
-        if (!is_null($api))
-            $this->api = $api;
+		if (!is_null($api))
+			$this->api = $api;
 
 		$this->initMailer();
 		$this->loadDefaultTemplateStorage();
@@ -60,7 +60,7 @@ class Mailer {
 			return $this->mailer->ErrorInfo;
 		} else {
 			Session::deleteValue('captcha');
-		    return true;
+			return true;
 		}
 	}
 
@@ -185,38 +185,38 @@ class Mailer {
 
 	public function sendJSONForm() {
 		$inputJSON = file_get_contents('php://input');
-  		$data = json_decode($inputJSON, TRUE);
+		$data = json_decode($inputJSON, TRUE);
 
-  		if (!isset($data['data']))
-  			return false;
+		if (!isset($data['data']))
+			return false;
 
-  		$this->loadFormConfig($data, $data['data']);
+		$this->loadFormConfig($data, $data['data']);
 
 		return $this->sendMails();
-  	}
+	}
 
-  	public function loadFormConfig($config, $data) {
+	public function loadFormConfig($config, $data) {
 
-  		$formconfig = $this->validateFormConfig($config);
+		$formconfig = $this->validateFormConfig($config);
 
-  		$mail = [];
-  		$maildata = [];
+		$mail = [];
+		$maildata = [];
 
-  		if (isset($formconfig['subject'])) {
-  			$mail['subject'] = $formconfig['subject'];
+		if (isset($formconfig['subject'])) {
+			$mail['subject'] = $formconfig['subject'];
 			$maildata['title'] = $formconfig['subject'];
 		}
 
-  		if (isset($formconfig['receiver']))
-  			$mail['receiver'] = $formconfig['receiver'];
+		if (isset($formconfig['receiver']))
+			$mail['receiver'] = $formconfig['receiver'];
 
 
-  		if (isset($formconfig['template']))
-  			$mail['template'] = $formconfig['template'];
+		if (isset($formconfig['template']))
+			$mail['template'] = $formconfig['template'];
 
-  		if (isset($formconfig['disableCaptcha'])) {
-  			$this->useCaptcha = !$formconfig['disableCaptcha'];
-  		}
+		if (isset($formconfig['disableCaptcha'])) {
+			$this->useCaptcha = !$formconfig['disableCaptcha'];
+		}
 
 		$maildata['formdata'] = [];
 		foreach ($data as $field => $value) {
@@ -240,39 +240,39 @@ class Mailer {
 			];
 			array_push($this->mails, $confirmationmail);
 		}
-  	}
+	}
 
-  	public function validateFormConfig($config) {
-  		if (is_null($this->api))
-  			throw new \Exception('no api initialized');
+	public function validateFormConfig($config) {
+		if (is_null($this->api))
+			throw new \Exception('no api initialized');
 
-  		if (!isset($this->config['forms']))
-  			throw new \Exception('no forms are defined');
+		if (!isset($this->config['forms']))
+			throw new \Exception('no forms are defined');
 
-  		if (!isset($config['form']))
+		if (!isset($config['form']))
 			throw new \Exception('no form selected');
 
 		$formKey = $config['form'];
 
-  		if (!isset($this->config['forms'][$formKey]))
-  			throw new \Exception('a form with this key doesnt exists');
+		if (!isset($this->config['forms'][$formKey]))
+			throw new \Exception('a form with this key doesnt exists');
 
-  		$formconfig = $this->config['forms'][$formKey];
+		$formconfig = $this->config['forms'][$formKey];
 
-  		if (!isset($formconfig['fields']))
+		if (!isset($formconfig['fields']))
 			throw new \Exception('no param fields defined in form config');
 
 		return $formconfig;
-  	}
+	}
 
-  	public function validateMailConfig($config) {
-  		$required = ['subject', 'receiver', 'template'];
-  		foreach ($required as $field) {
-	  		if (!isset($config[$field]))
-	  			throw new \Exception('no '.$field.' defined');
-  		}
-  		return $config;
-  	}
+	public function validateMailConfig($config) {
+		$required = ['subject', 'receiver', 'template'];
+		foreach ($required as $field) {
+			if (!isset($config[$field]))
+				throw new \Exception('no '.$field.' defined');
+		}
+		return $config;
+	}
 
 	public function loadConfig() {
 		if (!is_file($this->configFile) && !is_file(Helper::getNormDocRoot().VINOU_CONFIG_DIR.$this->configFile))
@@ -291,10 +291,10 @@ class Mailer {
 				$this->setFrom($defaults['fromMail'], $defaults['fromName']);
 
 			if (isset($defaults['receiver']))
-  				$this->setReceiver($defaults['receiver']);
+				$this->setReceiver($defaults['receiver']);
 
-  			if (isset($defaults['subject']))
-  				$this->setSubject($defaults['subject']);
+			if (isset($defaults['subject']))
+				$this->setSubject($defaults['subject']);
 		}
 
 		if (isset($this->config['template'])) {
@@ -321,6 +321,16 @@ class Mailer {
 		if (isset($config['authType']))
 			$this->mailer->AuthType = $config['authType'];
 
+		if (isset($config['disableSSLCheck']) && $config['disableSSLCheck'] != false) {
+			$this->mailer->SMTPOptions = [
+				'ssl' => [
+					'verify_peer' => false,
+					'verify_peer_name' => false,
+					'allow_self_signed' => true
+				]
+			];
+		}
+
 		$this->mailer->Username = $config['username'];
 		$this->mailer->Password = $config['password'];
 
@@ -331,8 +341,8 @@ class Mailer {
 		$this->mailer->setFrom($this->fromMail, $this->fromName, 0);
 
 		if ($this->mailer->smtpConnect()) {
-		    $this->mailer->smtpClose();
-		   	return "Connected";
+			$this->mailer->smtpClose();
+			return "Connected";
 		}
 		else {
 			return $this->mailer->ErrorInfo;
@@ -385,11 +395,11 @@ class Mailer {
 
 		// This line enables debugging and is included to activate dump()
 		$this->renderer->addExtension(new \Twig_Extension_Debug());
-        $this->renderer->addExtension(new \Vinou\Translations\TwigExtension(isset($options['language']) ? $options['language'] : 'de'));
+		$this->renderer->addExtension(new \Vinou\Translations\TwigExtension(isset($options['language']) ? $options['language'] : 'de'));
 
-        $this->renderer->addFilter( new \Twig_SimpleFilter('base64image', function($url) {
-            return Helper::imageToBase64($url);
-        }));
+		$this->renderer->addFilter( new \Twig_SimpleFilter('base64image', function($url) {
+			return Helper::imageToBase64($url);
+		}));
 
 		return $this->renderer;
 	}
