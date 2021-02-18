@@ -27,7 +27,7 @@
         "gregwar/captcha": "^1.1",
         "thepixeldeveloper/sitemap": "^5.1",
         "gumlet/php-image-resize": "^1.9",
-        "vinou/api-connector": "2.*",
+        "vinou/api-connector": ">=2.1.0 <3.0.0",
         "vinou/translations": "3.*"
     },
     "autoload": {

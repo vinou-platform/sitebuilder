@@ -78,26 +78,23 @@ class Ajax {
                 break;
 
             case 'findCampaign':
-                $result = $this->api->findCampaign($this->request);
-                $campaign = Session::getValue('campaign');
-                if ($this->result && $campaign && $this->result['uuid'] == $campaign['uuid'])
-                	$this->sendResult(false, 'campaign already activated');
-                else
-                	$this->sendResult($result, 'campaign could not be resolved');
+                $result = $this->fetchCampaign();
+                $this->sendResult($result);
                 break;
 
             case 'loadCampaign':
-            	$result = $this->api->findCampaign($this->request);
-            	if ($result) {
-            		Session::setValue('campaign', $result);
-            		$this->sendResult($result);
-            	}
-            	else
-            		$this->sendResult(false, 'campaign could not be resolved');
+                $result = $this->fetchCampaign();
+                Session::setValue('campaign', $result['data']);
+                if ($result['summary'])
+                    Session::setValue('campaignDiscount', $result['summary']);
+
+                $this->sendResult($result);
             	break;
 
             case 'removeCampaign':
-            	$this->sendResult(Session::deleteValue('campaign'), 'campaign could not be deleted');
+                Session::deleteValue('campaign');
+                Session::deleteValue('campaignDiscount');
+            	$this->sendResult('success');
             	break;
 
             case 'campaignDiscount':
@@ -112,7 +109,29 @@ class Ajax {
 
 	}
 
-	private function sendResult($result, $errorMessage = null) {
+    private function fetchCampaign() {
+        $result = $this->api->findCampaign($this->request);
+        $campaign = Session::getValue('campaign');
+
+        if ($this->result && $campaign && $this->result['uuid'] == $campaign['uuid'])
+            $this->sendResult(false, 'campaign already activated');
+        else {
+            if (isset($result['code'])) {
+                $code = $result['code'];
+
+                if (isset($result['data']))
+                    $this->sendResult(false, $result['data'], $result);
+
+                if (isset($result['details']))
+                    $this->sendResult(false, $result['details'], $result);
+
+            }
+
+            return $result;
+        }
+    }
+
+	private function sendResult($result, $errorMessage = null, $rawResult = null) {
 
 		if (!$result) {
 			if (is_null($errorMessage))
@@ -125,7 +144,8 @@ class Ajax {
 	    	Render::sendJSON([
 	    		'info' => 'error',
 	    		'errors' => $this->errors,
-	    		'request' => $this->request
+	    		'request' => $this->request,
+                'result' => $rawResult
 	    	], 'error');
 	    else
 	    	Render::sendJSON($result);

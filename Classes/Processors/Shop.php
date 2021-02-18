@@ -89,61 +89,42 @@ class Shop {
         return $items;
     }
 
-    public function campaignDiscount($items = null) {
+    public function campaignDiscount($data = null) {
+        $items = [];
 
-        $sessionCampaign = Session::getValue('campaign');
-        if (!$sessionCampaign)
+        if (!isset($data['campaign']))
             return false;
 
-        $campaign = $this->api->findCampaign($sessionCampaign);
-        if (!$campaign)
+        if (isset($data['basket']) && count($data['basket']['basketItems']) > 0) {
+            foreach ($data['basket']['basketItems'] as &$item) {
+                $position = [
+                    'item_type' => $item['item_type'],
+                    'item_id' => $item['item_id'],
+                    'quantity' => $item['quantity'],
+                    'gross' => $item['quantity'] * $item['item']['gross'],
+                    'net' => $item['quantity'] * $item['item']['net'],
+                    'taxrate' => $item['item']['taxrate']
+                ];
+                $position['tax'] = $position['gross'] - $position['net'];
+                array_push($items, $position);
+            }
+        }
+        if (isset($data['package'])) {
+            $data['package']['item_type'] = 'package';
+            $data['package']['item_id'] = $data['package']['id'];
+            array_push($items, $data['package']);
+        }
+
+        $result = $this->api->findCampaign([
+            'hash' => $data['campaign']['hash'],
+            'items' => $items
+        ]);
+
+        if (!isset($result['summary']))
             return false;
 
-        if (is_null($items) || empty($items)) {
-            $basket = $this->api->getBasket();
-            if (!$basket)
-                return false;
-
-            $items = $this->arrangePositions([
-                'basket' => $basket,
-                'package' => $this->api->getBasketPackage()
-            ]);
-        }
-
-        $relItems = [];
-        $itemTypes = $campaign['item_types'];
-
-        foreach ($items as $item) {
-            if (in_array($item['item_type'], $itemTypes))
-                array_push($relItems, $item);
-        }
-
-        $sum = $this->calcSum($relItems);
-
-        if ($campaign['rebate_type'] == 'percent') {
-            $gross = number_format($campaign['percent'] * $sum['gross'] * -1 / 100, 2);
-            $net = number_format(($gross * 100) / (100 + $campaign['taxrate']), 2);
-
-            $discount = [
-                'gross' => $gross,
-                'net' => $net,
-                'tax' => number_format($gross - $net, 2)
-            ];
-        }
-
-        else {
-
-            $sumObject = $sum['gross'] < $campaign['gross'] ? $sum : $campaign;
-            $multiplicator = $sumObject > 0 ? -1 : 1;
-
-            $discount = [
-                'gross' => number_format($multiplicator * $sumObject['gross'], 2),
-                'net' => number_format($multiplicator * $sumObject['net'], 2),
-                'tax' => number_format($multiplicator * $sumObject['tax'], 2)
-            ];
-        }
-
-        return $discount;
+        Session::setValue('campaignDiscount', $result['summary']);
+        return $result['summary'];
     }
 
     public function loadBilling() {

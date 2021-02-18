@@ -11,6 +11,10 @@ warenkorb:
     campaignDiscount:
       processor: shop
       function: campaignDiscount
+      useData:
+        - basket
+        - package
+        - campaign
 
 checkout:
   template: 'Checkout/billing.twig'
@@ -74,6 +78,10 @@ checkout/uebersicht:
     campaignDiscount:
       processor: shop
       function: campaignDiscount
+      useData:
+        - basket
+        - package
+        - campaign
     billing:
       function: loadBilling
       processor: shop
