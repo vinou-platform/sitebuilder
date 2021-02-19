@@ -110,9 +110,17 @@ class Shop {
             }
         }
         if (isset($data['package'])) {
-            $data['package']['item_type'] = 'package';
-            $data['package']['item_id'] = $data['package']['id'];
-            array_push($items, $data['package']);
+            $package = $data['package'];
+            $position = [
+                'item_type' => 'package',
+                'item_id' => $package['id'],
+                'quantity' => 1,
+                'gross' => $package['gross'],
+                'tax' => $package['tax'],
+                'net' => $package['net'],
+                'taxrate' => $package['taxrate']
+            ];
+            array_push($items, $position);
         }
 
         $result = $this->api->findCampaign([
