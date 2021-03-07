@@ -11,6 +11,7 @@ use \Vinou\SiteBuilder\Loader;
 use \Vinou\SiteBuilder\Processors\External;
 use \Vinou\SiteBuilder\Processors\Formatter;
 use \Vinou\SiteBuilder\Processors\Files;
+use \Vinou\SiteBuilder\Processors\Instagram;
 use \Vinou\SiteBuilder\Processors\Mailer;
 use \Vinou\SiteBuilder\Processors\Shop;
 use \Vinou\SiteBuilder\Processors\Sitemap;
@@ -90,6 +91,9 @@ class Site {
         );
         $this->render->loadProcessor(
             'external', new External()
+        );
+        $this->render->loadProcessor(
+            'instagram', new Instagram()
         );
         $this->render->loadProcessor(
             'sitemap', new Sitemap(
