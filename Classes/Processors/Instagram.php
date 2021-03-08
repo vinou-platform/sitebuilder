@@ -61,17 +61,35 @@ class Instagram {
 		if (!$username)
 			return false;
 
-		$url = 'https://instagram.api.kartoffel-server.com/api/posts/' . urlencode($username);
+		$url = 'https://www.instagram.com/' . urlencode($username) . '/?__a=1';
 		$cacheFile = $this->cacheDir . '/' . $username . '.json';
 
 		if (!file_exists($cacheFile) || time() - filemtime($cacheFile) > 900 ) {
-			$result = $this->curlURL($url);
-			file_put_contents($cacheFile,$result);
+			$result = $this->formatInstagramResult($this->curlURL($url));
+			if (!!$result)
+				file_put_contents($cacheFile,$result);
+			return false;
 		}
 		else {
 			$result = file_get_contents($cacheFile);
 		}
 
 		return json_decode($result, true);
+	}
+
+	private function formatInstagramResult($result) {
+		$result = json_decode($result, true);
+		if (!(isset($result['graphql']) && isset($result['graphql']['user']) && isset($result['graphql']['user']['edge_owner_to_timeline_media'])))
+			return false;
+
+		else {
+			$nodes = [];
+			$rawNodes = $result['graphql']['user']['edge_owner_to_timeline_media']['edges'];
+			foreach ($rawNodes as $key => $node) {
+				array_push($nodes, $node['node']);
+			}
+			return json_encode($nodes);
+		}
+
 	}
 }
