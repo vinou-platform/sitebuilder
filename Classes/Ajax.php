@@ -108,7 +108,7 @@ class Ajax {
 
             case 'loadInstagramPosts':
                 $processor = new Instagram();
-                $this->sendResult($processor->loadPosts(), 'posts could not be fetched');
+                $this->sendResult($processor->loadTimelinePosts(), 'timeline posts could not be fetched');
                 break;
 
             default:

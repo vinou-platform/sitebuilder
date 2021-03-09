@@ -2,14 +2,51 @@
 namespace Vinou\SiteBuilder\Processors;
 
 use \Vinou\ApiConnector\Tools\Helper;
+use \GuzzleHttp\Client;
+use \GuzzleHttp\Psr7;
+use \GuzzleHttp\Psr7\Request;
+use \GuzzleHttp\Exception\ClientException;
+use \GuzzleHttp\Exception\RequestException;
+use \Monolog\Logger;
+use \Monolog\Handler\RotatingFileHandler;
 
 class Instagram {
 
 	public $data = [];
 	public $cacheDir = 'Cache/Instagram';
 
+	/**
+	 * @var boolean $enableLogging enable logging into log array
+	 */
+	public $enableLogging;
+
+	/**
+	 * @var array $log array to log processes
+	 */
+	public $log = [];
+
+	/**
+	 * @var object $httpClient guzzle object for client
+	 */
+	public $httpClient = null;
+
+	/**
+	 * @var boolean $crawlerDetect shows if a crawler was detected
+	 */
+	public $crawler = false;
+
+	/**
+	 * @var object $logger monolog object for logs
+	 */
+	public $logger = null;
+
 	public function __construct() {
 		$this->initCacheDir();
+		$this->httpClient = new Client([
+			'base_uri' => 'https://www.instagram.com/'
+		]);
+
+		$this->initLogging();
 	}
 
 	private function initCacheDir() {
@@ -18,78 +55,132 @@ class Instagram {
 			mkdir($this->cacheDir, 0777, true);
 	}
 
-	private function curlURL($url) {
+	private function initLogging() {
 
-		$ch = curl_init();
-		curl_setopt($ch, CURLOPT_RETURNTRANSFER, 1);
-		curl_setopt($ch, CURLOPT_URL, $url);
-		$result = curl_exec($ch);
-		$requestinfo = curl_getinfo($ch);
-		$httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
-		switch ($httpCode) {
-			case 200:
-				curl_close($ch);
-				return $result;
-				break;
-			case 401:
-				return [
-					'error' => 'unauthorized',
-					'info' => $requestinfo,
-					'response' => $result
-				];
-				break;
-			default:
-				return [
-					'error' => 'an error occured',
-					'info' => $requestinfo,
-					'response' => $result
-				];
-				break;
-		}
-		return false;
+		$logDirName = defined('VINOU_LOG_DIR') ? VINOU_LOG_DIR : 'logs/';
+
+		$logDir = Helper::getNormDocRoot() . $logDirName;
+
+        if (!is_dir($logDir))
+            mkdir($logDir, 0777, true);
+
+        $htaccess = $logDir .'/.htaccess';
+        if (!is_file($htaccess)) {
+            $content = 'Deny from all';
+            file_put_contents($htaccess, $content);
+        }
+
+		$loglevel = defined('VINOU_LOG_LEVEL') ? Logger::VINOU_LOG_LEVEL : Logger::ERROR;
+
+		if (defined('VINOU_DEBUG') && VINOU_DEBUG)
+			$loglevel = Logger::DEBUG;
+
+		$this->logger = new Logger('instagram');
+		$this->logger->pushHandler(new RotatingFileHandler($logDir.'instagram.log', 30, $loglevel));
 	}
 
-	public function loadPosts($params = false) {
-		$username = false;
+	private function curlInstagramAPI($data = []) {
 
-		if (defined('IG_USER'))
-			$username = IG_USER;
+		$headers = [
+			'User-Agent' => 'vinou-sitebuilder',
+			'Content-Type' => 'application/json',
+			'Origin' => ''.$_SERVER['SERVER_NAME']
+		];
 
-		if (is_array($params) && array_key_exists('username', $params))
-			$username = $params['username'];
 
-		if (!$username)
-			return false;
+		try {
+			$response = $this->httpClient->request(
+				'POST',
+				'graphql/query/',
+				[
+			    	'headers' => $headers,
+			    	'json' => $data
+				]
+			);
 
-		$url = 'https://www.instagram.com/' . urlencode($username) . '/?__a=1';
-		$cacheFile = $this->cacheDir . '/' . $username . '.json';
+			// insert status and response from successful request to logdata and logdata on dev devices
+			$logData = [
+				'Status' => 200,
+				'Response' => json_decode((string)$response->getBody(), true)
+			];
+			$this->logger->debug('api request', $logData);
 
-		if (!file_exists($cacheFile) || time() - filemtime($cacheFile) > 900 ) {
-			$result = $this->formatInstagramResult($this->curlURL($url));
-			if (!!$result)
-				file_put_contents($cacheFile,$result);
-			return false;
-		}
-		else {
-			$result = file_get_contents($cacheFile);
-		}
+			$result = json_decode((string)$response->getBody(), true);
+			return isset($result['data']) && !is_null($result['data']) ? $result['data'] : false;
 
-		return json_decode($result, true);
-	}
+		} catch (ClientException $e) {
 
-	private function formatInstagramResult($result) {
-		$result = json_decode($result, true);
-		if (!(isset($result['graphql']) && isset($result['graphql']['user']) && isset($result['graphql']['user']['edge_owner_to_timeline_media'])))
-			return false;
+			$statusCode = $e->getResponse()->getStatusCode();
 
-		else {
-			$nodes = [];
-			$rawNodes = $result['graphql']['user']['edge_owner_to_timeline_media']['edges'];
-			foreach ($rawNodes as $key => $node) {
-				array_push($nodes, $node['node']);
+			// insert status and response from error request
+			$logData = [
+				'ROUTE' => 'graphql/query/',
+				'Status' => $statusCode,
+				'Response' => json_decode((string)$e->getResponse()->getBody(), true)
+			];
+
+			switch ($statusCode) {
+
+				case '401':
+					// if only authorization is missing the error is only a warning
+					$this->logger->warning('unauthorized', $logData);
+					break;
+
+				case '429':
+					// if only authorization is missing the error is only a warning
+					$this->logger->error('too many requests', $logData);
+					break;
+
+				default:
+					// all other errors should be fixed immediatly
+					$this->logger->error('error', $logData);
+					break;
+
 			}
-			return json_encode($nodes);
-		}
 
+			return false;
+		}
 	}
+
+	public function loadTimelinePosts($postData = false, $force = false) {
+		if (defined('IG_USER'))
+			$postData['id'] = IG_USER;
+
+		if (!array_key_exists('id', $postData))
+			return false;
+
+		if (!array_key_exists('first', $postData))
+			$postData['first'] = 10;
+
+		$cacheFile = $this->cacheDir . '/' . $postData['id'] . '.json';
+		$postData = [
+			'query_hash' => '56a7068fea504063273cc2120ffd54f3',
+			'variables' => $postData
+		];
+
+		if (!file_exists($cacheFile) || time() - filemtime($cacheFile) > 900 || $force ) {
+
+			$data = $this->curlInstagramAPI($postData);
+			if (!is_array($data) || !array_key_exists('user',$data))
+				return false;
+
+			$data = $data['user'];
+
+			if (array_key_exists('edge_owner_to_timeline_media', $data)) {
+				$result = [];
+				$rawNodes = $data['edge_owner_to_timeline_media']['edges'];
+				foreach ($rawNodes as $key => $node) {
+					array_push($result, $node['node']);
+				}
+				file_put_contents($cacheFile,json_encode($result));
+			}
+			else
+				return false;
+		}
+		else
+			$result = json_decode(file_get_contents($cacheFile), true);
+
+		return $result;
+	}
+
 }
