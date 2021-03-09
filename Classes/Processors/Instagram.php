@@ -177,8 +177,12 @@ class Instagram {
 			else
 				return false;
 		}
-		else
-			$result = json_decode(file_get_contents($cacheFile), true);
+		else {
+			if (file_exists($cacheFile))
+				$result = json_decode(file_get_contents($cacheFile), true);
+			else
+				return false;
+		}
 
 		return $result;
 	}
