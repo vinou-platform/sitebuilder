@@ -7,6 +7,7 @@ use \GuzzleHttp\Psr7;
 use \GuzzleHttp\Psr7\Request;
 use \GuzzleHttp\Exception\ClientException;
 use \GuzzleHttp\Exception\RequestException;
+use \GuzzleHttp\Cookie\CookieJar;
 use \Monolog\Logger;
 use \Monolog\Handler\RotatingFileHandler;
 
