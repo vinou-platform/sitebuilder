@@ -40,9 +40,16 @@ class Instagram {
 	 */
 	public $logger = null;
 
+	/**
+	 * @var object $cookieJar cookieJar from guzzle
+	 */
+	public $cookieJar = null;
+
+
 	public function __construct() {
 		$this->initCacheDir();
 		$this->httpClient = new Client([
+			'cookies' => true,
 			'base_uri' => 'https://www.instagram.com/'
 		]);
 
@@ -79,6 +86,14 @@ class Instagram {
 		$this->logger->pushHandler(new RotatingFileHandler($logDir.'instagram.log', 30, $loglevel));
 	}
 
+	private function simulateCookies($sessionId = null) {
+		if ($sessionId) {
+			$this->cookieJar = CookieJar::fromArray([
+	    		'sessionid' => '46219023860%3A3XI9NgEWbraaAk%3A29'
+			], 'instagram.com');
+		}
+	}
+
 	private function curlInstagramAPI($data = []) {
 
 		$headers = [
@@ -94,6 +109,7 @@ class Instagram {
 				'graphql/query/',
 				[
 			    	'headers' => $headers,
+			    	'cookies' => $this->cookieJar,
 			    	'json' => $data
 				]
 			);
@@ -174,7 +190,8 @@ class Instagram {
 				}
 				file_put_contents($cacheFile,json_encode($result));
 			}
-			else
+
+			if (!file_exists($cacheFile))
 				return false;
 		}
 		else
