@@ -168,6 +168,11 @@ class Instagram {
 		if (!array_key_exists('first', $postData))
 			$postData['first'] = 10;
 
+		if (array_key_exists('sessionid', $postData)) {
+			$this->simulateCookies($postData['sessionid']);
+			unset($postData['sessionid']);
+		}
+
 		$cacheFile = $this->cacheDir . '/' . $postData['id'] . '.json';
 		$postData = [
 			'query_hash' => '56a7068fea504063273cc2120ffd54f3',
