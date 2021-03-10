@@ -2,7 +2,6 @@
 namespace Vinou\SiteBuilder;
 
 use \Vinou\SiteBuilder\Tools\Render;
-use \Vinou\SiteBuilder\Processors\Instagram;
 use \Vinou\SiteBuilder\Processors\Shop;
 use \Vinou\ApiConnector\Api;
 use \Vinou\ApiConnector\Session\Session;
@@ -104,11 +103,6 @@ class Ajax {
             case 'campaignDiscount':
                 $processor = new Shop($this->api);
                 $this->sendResult($processor->campaignDiscount(), 'discount could not be fetched');
-                break;
-
-            case 'loadInstagramPosts':
-                $processor = new Instagram();
-                $this->sendResult($processor->loadTimelinePosts(), 'timeline posts could not be fetched');
                 break;
 
             default:
