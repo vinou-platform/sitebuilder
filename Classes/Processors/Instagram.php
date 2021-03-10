@@ -86,10 +86,11 @@ class Instagram {
 		$this->logger->pushHandler(new RotatingFileHandler($logDir.'instagram.log', 30, $loglevel));
 	}
 
-	private function simulateCookies($sessionId = null) {
-		if ($sessionId) {
+	private function simulateCookies($sessionid = null) {
+		if ($sessionid || defined('IG_SESSION')) {
+			$id = defined('IG_SESSION') ? IG_SESSION : $sessionid;
 			$this->cookieJar = CookieJar::fromArray([
-	    		'sessionid' => '46219023860%3A3XI9NgEWbraaAk%3A29'
+	    		'sessionid' => $id
 			], 'instagram.com');
 		}
 	}
