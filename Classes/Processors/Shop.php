@@ -192,6 +192,19 @@ class Shop {
         return Session::getValue('payment');
     }
 
+    public function initPaymentByPage() {
+        $paymentType = Session::getValue('payment');
+        $pages = $this->settings['pages'];
+        if (array_key_exists($paymentType, $pages) && array_key_exists('init', $pages[$paymentType]))
+            Redirect::internal($pages[$paymentType]['init']);
+
+        return true;
+    }
+
+    public function loadStripeData() {
+        return Session::getValue('stripe');
+    }
+
     public function check() {
         if (!empty($_POST)) {
             if (!isset($_POST['cop']) || !isset($_POST['disclaimer']))
@@ -235,8 +248,18 @@ class Shop {
                 break;
 
             case 'paypal':
-                $order['return_url'] = Helper::getCurrentHost() . '/checkout/paypal/finish';
-                $order['cancel_url'] = Helper::getCurrentHost() . '/checkout/paypal/cancel';
+                $order['return_url'] = Helper::getCurrentHost() . $this->settings['pages']['paypal']['finish'];
+                $order['cancel_url'] = Helper::getCurrentHost() . $this->settings['pages']['paypal']['cancel'];
+                break;
+
+            case 'card':
+                $order['return_url'] = Helper::getCurrentHost() . $this->settings['pages']['card']['finish'];
+                $order['cancel_url'] = Helper::getCurrentHost() . $this->settings['pages']['card']['cancel'];
+                break;
+
+            case 'debit':
+                $order['return_url'] = Helper::getCurrentHost() . $this->settings['pages']['debit']['finish'];
+                $order['cancel_url'] = Helper::getCurrentHost() . $this->settings['pages']['debit']['cancel'];
                 break;
 
             default:
