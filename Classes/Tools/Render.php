@@ -219,7 +219,7 @@ class Render {
 
                 // execute function in data processor if exists
                 if (!method_exists($class, $function))
-                    throw new \Exception('function does not exists in called procesor');
+                    throw new \Exception('function ' . $function . ' does not exists in called procesor (' . get_class($class) . ')');
 
                 else
                     $result = $class->{$function}($functionData);
