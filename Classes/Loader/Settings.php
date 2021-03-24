@@ -2,12 +2,15 @@
 namespace Vinou\SiteBuilder\Loader;
 
 use \Vinou\ApiConnector\Tools\Helper;
+use \Vinou\ApiConnector\Tools\ServiceLocator;
 
 class Settings {
 
 	protected $files = [];
+	protected $settingsService = null;
 
 	function __construct($default = true) {
+		$this->settingsService = ServiceLocator::get('Settings');
 		$this->loadDefaultFile();
 	}
 
@@ -48,6 +51,10 @@ class Settings {
 		for ($i=0; $i < count($this->files); $i++) {
 			$fileSettings = spyc_load_file($this->files[$i]);
 			$settings = array_replace_recursive($settings, $fileSettings);
+		}
+
+		foreach ($settings as $key => $value) {
+			$this->settingsService->set($key, $value);
 		}
 		return $settings;
 	}
