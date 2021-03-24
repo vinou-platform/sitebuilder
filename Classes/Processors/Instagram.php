@@ -7,6 +7,7 @@ use \GuzzleHttp\Psr7;
 use \GuzzleHttp\Psr7\Request;
 use \GuzzleHttp\Exception\ClientException;
 use \GuzzleHttp\Exception\RequestException;
+use \GuzzleHttp\Cookie\CookieJar;
 use \Monolog\Logger;
 use \Monolog\Handler\RotatingFileHandler;
 
@@ -26,9 +27,9 @@ class Instagram {
 	public $log = [];
 
 	/**
-	 * @var object $instagram instagram scraper object for client
+	 * @var object $httpClient guzzle object for client
 	 */
-	public $instagram = null;
+	public $httpClient = null;
 
 	/**
 	 * @var boolean $crawlerDetect shows if a crawler was detected
@@ -40,9 +41,18 @@ class Instagram {
 	 */
 	public $logger = null;
 
+	/**
+	 * @var object $cookieJar cookieJar from guzzle
+	 */
+	public $cookieJar = null;
+
+
 	public function __construct() {
 		$this->initCacheDir();
-		$this->instagram = new \InstagramScraper\Instagram(new \GuzzleHttp\Client());
+		$this->httpClient = new Client([
+			'cookies' => true,
+			'base_uri' => 'https://www.instagram.com/'
+		]);
 
 		$this->initLogging();
 	}
@@ -77,46 +87,124 @@ class Instagram {
 		$this->logger->pushHandler(new RotatingFileHandler($logDir.'instagram.log', 30, $loglevel));
 	}
 
-	public function loadTimelinePosts($params, $force = false) {
+	private function simulateCookies($sessionid = null) {
+		if ($sessionid || defined('IG_SESSION')) {
+			$id = defined('IG_SESSION') ? IG_SESSION : $sessionid;
+			$this->cookieJar = CookieJar::fromArray([
+	    		'sessionid' => $id
+			], 'instagram.com');
+		}
+	}
 
-		if (!isset($params['username']) && !defined('IG_USER'))
+	private function curlInstagramAPI($data = []) {
+
+		$headers = [
+			'User-Agent' => 'vinou-sitebuilder',
+			'Content-Type' => 'application/json',
+			'Origin' => ''.$_SERVER['SERVER_NAME']
+		];
+
+
+		try {
+			$response = $this->httpClient->request(
+				'POST',
+				'graphql/query/',
+				[
+			    	'headers' => $headers,
+			    	'cookies' => $this->cookieJar,
+			    	'json' => $data
+				]
+			);
+
+			// insert status and response from successful request to logdata and logdata on dev devices
+			$logData = [
+				'Status' => 200,
+				'Response' => json_decode((string)$response->getBody(), true)
+			];
+			$this->logger->debug('api request', $logData);
+
+			$result = json_decode((string)$response->getBody(), true);
+			return isset($result['data']) && !is_null($result['data']) ? $result['data'] : false;
+
+		} catch (ClientException $e) {
+
+			$statusCode = $e->getResponse()->getStatusCode();
+
+			// insert status and response from error request
+			$logData = [
+				'ROUTE' => 'graphql/query/',
+				'Status' => $statusCode,
+				'Response' => json_decode((string)$e->getResponse()->getBody(), true)
+			];
+
+			switch ($statusCode) {
+
+				case '401':
+					// if only authorization is missing the error is only a warning
+					$this->logger->warning('unauthorized', $logData);
+					break;
+
+				case '429':
+					// if only authorization is missing the error is only a warning
+					$this->logger->error('too many requests', $logData);
+					break;
+
+				default:
+					// all other errors should be fixed immediatly
+					$this->logger->error('error', $logData);
+					break;
+
+			}
+
+			return false;
+		}
+	}
+
+	public function loadTimelinePosts($postData = false, $force = false) {
+		if (defined('IG_USER'))
+			$postData['id'] = IG_USER;
+
+		if (!array_key_exists('id', $postData))
 			return false;
 
-		$user = isset($params['username']) ? $params['username'] : user;
-		$cacheFile = $this->cacheDir . '/' . $user . '.json';
-		$cacheData = file_exists($cacheFile) ? json_decode(file_get_contents($cacheFile), true) : false;
+		if (!array_key_exists('first', $postData))
+			$postData['first'] = 10;
 
-		// return cacheData if file lifetime is short enough
-		// IMPORTANT do this alway before instagram request to prevent Instagram API timeouts
-		if ($cacheData && time() - filemtime($cacheFile) < 900 && !$force)
-			return $cacheData;
-
-		$response = $this->instagram->getPaginateMedias($user);
-
-		// return cache data if no medias are found;
-		if (!isset($response['medias']))
-			return $cacheData;
-
-		$posts = [];
-		foreach ($response['medias'] as $post) {
-			array_push($posts, [
-				'id' => $post->getId(),
-				'shortCode' => $post->getShortCode(),
-				'taken' => $post->getCreatedTime(),
-				'type' => $post->getType(),
-				'link' => $post->getLink(),
-				'imageLowResolutionUrl' => $post->getImageLowResolutionUrl(),
-				'imageThumbnailUrl' => $post->getImageThumbnailUrl(),
-				'imageStandardResolutionUrl' => $post->getImageStandardResolutionUrl(),
-				'imageHighResolutionUrl' => $post->getImageHighResolutionUrl(),
-				'squareImages' => $post->getSquareImages(),
-				'caption' => $post->getCaption()
-			]);
+		if (array_key_exists('sessionid', $postData)) {
+			$this->simulateCookies($postData['sessionid']);
+			unset($postData['sessionid']);
 		}
 
-		// write new cache file if everything is okay
-		file_put_contents($cacheFile,json_encode($posts, true));
-		return $posts;
+		$cacheFile = $this->cacheDir . '/' . $postData['id'] . '.json';
+		$postData = [
+			'query_hash' => '56a7068fea504063273cc2120ffd54f3',
+			'variables' => $postData
+		];
+
+		if (!file_exists($cacheFile) || time() - filemtime($cacheFile) > 900 || $force ) {
+
+			$data = $this->curlInstagramAPI($postData);
+			if (!is_array($data) || !array_key_exists('user',$data))
+				return false;
+
+			$data = $data['user'];
+
+			if (array_key_exists('edge_owner_to_timeline_media', $data)) {
+				$result = [];
+				$rawNodes = $data['edge_owner_to_timeline_media']['edges'];
+				foreach ($rawNodes as $key => $node) {
+					array_push($result, $node['node']);
+				}
+				file_put_contents($cacheFile,json_encode($result));
+			}
+
+			if (!file_exists($cacheFile))
+				return false;
+		}
+		else
+			$result = json_decode(file_get_contents($cacheFile), true);
+
+		return $result;
 	}
 
 }
