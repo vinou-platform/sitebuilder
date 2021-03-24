@@ -639,4 +639,10 @@ class Shop {
 
         return $retString ? 'valid' : true;
     }
+
+
+    public function showAllSettings () {
+        $settingsService = \Vinou\ApiConnector\Tools\ServiceLocator::get('Settings');
+        return $settingsService->getAll();
+    }
 }

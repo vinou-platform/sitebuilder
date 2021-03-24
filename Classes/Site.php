@@ -4,6 +4,7 @@ namespace Vinou\SiteBuilder;
 use \Bramus\Router\Router;
 use \Vinou\ApiConnector\Api;
 use \Vinou\ApiConnector\Tools\Helper;
+use \Vinou\ApiConnector\Tools\ServiceLocator;
 use \Vinou\ApiConnector\Session\Session;
 use \Vinou\SiteBuilder\Router\DynamicRoutes;
 use \Vinou\SiteBuilder\Tools\Render;
@@ -27,12 +28,14 @@ class Site {
     protected $settings = [];
     protected $themeID = NULL;
     protected $themeDir = NULL;
+    public $settingsService = null;
     public $loadDefaults = true;
     public $render;
 
     function __construct() {
         $this->router = new Router();
         $this->render = new Render();
+        $this->settingsService = ServiceLocator::get('Settings');
 
         $this->render->connect();
         $this->routeConfig = new DynamicRoutes($this->router, $this->render);
