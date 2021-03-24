@@ -3,6 +3,7 @@ namespace Vinou\SiteBuilder\Processors;
 
 use \Vinou\ApiConnector\Api;
 use \Vinou\ApiConnector\Session\Session;
+use \Vinou\ApiConnector\Services\ServiceLocator;
 use \Vinou\ApiConnector\Tools\Helper;
 use \Vinou\ApiConnector\Tools\Redirect;
 use \Vinou\SiteBuilder\Processors\Mailer;
@@ -13,6 +14,7 @@ use \Vinou\SiteBuilder\Processors\Mailer;
 class Shop {
 
     protected $api;
+    protected $settingsService = null;
     protected $settings = false;
     protected $client = false;
 
@@ -22,6 +24,7 @@ class Shop {
         else
             $this->api = $api;
 
+        $this->settingsService = ServiceLocator::get('Settings');
         $this->loadSettings();
         $this->loadClient();
     }
@@ -642,7 +645,6 @@ class Shop {
 
 
     public function showAllSettings () {
-        $settingsService = \Vinou\ApiConnector\Tools\ServiceLocator::get('Settings');
-        return $settingsService->getAll();
+        return $this->settingsService->getAll();
     }
 }

@@ -227,12 +227,10 @@ class Render {
             else
                 throw new \Exception('dataProcessing for this route could not be solved');
 
+            $return = $result;
             $selector = isset($option['key']) ? $option['key'] : $key;
-
             if (isset($result[$selector]))
                 $return = $result[$selector];
-            else
-                $return = $result;
 
             if (isset($option['loadOnlyFirst']) && $option['loadOnlyFirst'] && is_array($return))
                 $return = array_shift($return);

@@ -2,7 +2,7 @@
 namespace Vinou\SiteBuilder\Loader;
 
 use \Vinou\ApiConnector\Tools\Helper;
-use \Vinou\ApiConnector\Tools\ServiceLocator;
+use \Vinou\ApiConnector\Services\ServiceLocator;
 
 class Settings {
 
