@@ -229,17 +229,21 @@ class Render {
 
             $return = $result;
             $selector = isset($option['key']) ? $option['key'] : $key;
+
             if (isset($result[$selector]))
                 $return = $result[$selector];
+
+            // override return with complete result if force setting is given
+            if (isset($option['forceLoadAll']) && $option['forceLoadAll'])
+                $return = $result;
 
             if (isset($option['loadOnlyFirst']) && $option['loadOnlyFirst'] && is_array($return))
                 $return = array_shift($return);
 
             $this->renderArr[$key] = $return;
 
-            if (isset($result['clusters'])) {
+            if (isset($result['clusters']))
                 $this->renderArr['clusters'] = $result['clusters'];
-            }
 
             if (isset($option['stopProcessing']) && $option['stopProcessing'] && !$result)
                 break;
@@ -606,8 +610,8 @@ class Render {
             return $this->api->getWinery($id);
         }));
 
-        $twig->addFilter( new \Twig_SimpleFilter('quantityIsAllowed', function ($quantity, $settings) {
-            return Shop::quantityIsAllowed($quantity, $settings, true);
+        $twig->addFilter( new \Twig_SimpleFilter('quantityIsAllowed', function ($quantity) {
+            return Shop::quantityIsAllowed($quantity, true);
         }));
 
         $twig->addFilter( new \Twig_SimpleFilter('basePrice', function ($price, $unit) {

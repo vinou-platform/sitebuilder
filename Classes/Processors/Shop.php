@@ -25,15 +25,7 @@ class Shop {
             $this->api = $api;
 
         $this->settingsService = ServiceLocator::get('Settings');
-        $this->loadSettings();
-        $this->loadClient();
-    }
-
-    public function loadSettings() {
-        $this->settings = Session::getValue('settings');
-    }
-
-    public function loadClient() {
+        $this->settings = $this->settingsService->get('settings');
         $this->client = Session::getValue('client');
     }
 
@@ -399,7 +391,7 @@ class Shop {
             Redirect::internal($this->settings['pages']['basket']);
 
         $quantity = self::calcCardQuantity($card);
-        if (!self::quantityIsAllowed($quantity, $this->settings))
+        if (!self::quantityIsAllowed($quantity))
             Redirect::internal($this->settings['pages']['basket']);
 
         return true;
@@ -617,7 +609,9 @@ class Shop {
         return $quantity;
     }
 
-    public static function quantityIsAllowed($quantity, $settings, $retString = false) {
+    public static function quantityIsAllowed($quantity, $retString = false) {
+
+        $settings = (ServiceLocator::get('Settings'))->get('settings');
 
         if (array_key_exists('minBasketSize', $settings) && $quantity < $settings['minBasketSize'])
             return $retString ? 'minBasketSize' : false;

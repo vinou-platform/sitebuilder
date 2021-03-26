@@ -5,6 +5,7 @@ use \Vinou\SiteBuilder\Tools\Render;
 use \Vinou\SiteBuilder\Processors\Shop;
 use \Vinou\ApiConnector\Api;
 use \Vinou\ApiConnector\Session\Session;
+use \Vinou\ApiConnector\Services\ServiceLocator;
 
 /**
 * Ajax
@@ -13,10 +14,10 @@ use \Vinou\ApiConnector\Session\Session;
 class Ajax {
 
     protected $api = null;
+    protected $settingsService = null;
     protected $errors = [];
     protected $result = false;
     protected $request = [];
-    protected $settings = [];
 
     public function __construct($themeDir = null, $defaults = true) {
 
@@ -27,6 +28,7 @@ class Ajax {
 
         $this->request = array_merge($_POST, (array)json_decode(trim(file_get_contents('php://input')), true));
 
+        $this->settingsService = ServiceLocator::get('Settings');
         $this->loadSettings($themeDir, $defaults);
     }
 
@@ -36,9 +38,7 @@ class Ajax {
         if (!is_null($dir))
             $loader->addByDirectory($dir);
 
-        $settings = $loader->load();
-
-        $this->settings = $settings['settings'];
+        $loader->load();
     }
 
     public function run() {
@@ -55,7 +55,7 @@ class Ajax {
                     $this->sendResult(false, 'basket not found');
                 else {
                     $result['quantity'] = Shop::calcCardQuantity($result['basketItems']);
-                    $result['valid'] = Shop::quantityIsAllowed($result['quantity'], $this->settings, true);
+                    $result['valid'] = Shop::quantityIsAllowed($result['quantity'], true);
                 }
 
                 $this->sendResult($result);
@@ -103,6 +103,10 @@ class Ajax {
             case 'campaignDiscount':
                 $processor = new Shop($this->api);
                 $this->sendResult($processor->campaignDiscount(), 'discount could not be fetched');
+                break;
+
+            case 'settings':
+                $this->sendResult($this->settingsService->get('settings'), 'settings could not be loaded');
                 break;
 
             default:

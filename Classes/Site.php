@@ -4,7 +4,7 @@ namespace Vinou\SiteBuilder;
 use \Bramus\Router\Router;
 use \Vinou\ApiConnector\Api;
 use \Vinou\ApiConnector\Tools\Helper;
-use \Vinou\ApiConnector\Tools\ServiceLocator;
+use \Vinou\ApiConnector\Services\ServiceLocator;
 use \Vinou\ApiConnector\Session\Session;
 use \Vinou\SiteBuilder\Router\DynamicRoutes;
 use \Vinou\SiteBuilder\Tools\Render;
@@ -22,127 +22,121 @@ use \Vinou\SiteBuilder\Processors\Sitemap;
  */
 class Site {
 
-    protected $routeConfig;
-    protected $router;
-    protected $config = NULL;
-    protected $settings = [];
-    protected $themeID = NULL;
-    protected $themeDir = NULL;
-    public $settingsService = null;
-    public $loadDefaults = true;
-    public $render;
+	protected $routeConfig;
+	protected $router;
+	protected $config = NULL;
+	protected $themeID = NULL;
+	protected $themeDir = NULL;
+	public $settingsService = null;
+	public $loadDefaults = true;
+	public $render;
 
-    function __construct() {
-        $this->router = new Router();
-        $this->render = new Render();
-        $this->settingsService = ServiceLocator::get('Settings');
+	function __construct() {
+		$this->router = new Router();
+		$this->render = new Render();
+		$this->settingsService = ServiceLocator::get('Settings');
 
-        $this->render->connect();
-        $this->routeConfig = new DynamicRoutes($this->router, $this->render);
+		$this->render->connect();
+		$this->routeConfig = new DynamicRoutes($this->router, $this->render);
 
-        $this->loadDefaultProcessors();
+		$this->router->set404(function() {
+			header('HTTP/1.1 404 Not Found');
+			$options = [
+				'pageTitle' => '404 Page Not Found'
+			];
+			$this->render->renderPage('404.twig',$options);
+		});
 
-        $this->router->set404(function() {
-            header('HTTP/1.1 404 Not Found');
-            $options = [
-                'pageTitle' => '404 Page Not Found'
-            ];
-            $this->render->renderPage('404.twig',$options);
-        });
+		$this->sendCorsHeaders();
+	}
 
+	public function run() {
+		$this->initialize();
+		$this->render->loadDefaultStorages();
 
-        $this->sendCorsHeaders();
-    }
+		if (isset($this->config['load']['defaultRoutes']))
+			$this->routeConfig->setDefaults($this->config['load']['defaultRoutes']);
 
-    public function setRouteFile($file) {
-        $this->routeConfig->setRouteFile($file);
-    }
+		$this->routeConfig->init();
+		$this->router->run();
+	}
 
-    public function loadTemplates($rootDir, $folders = []) {
-        $this->render->addTemplateStorages($rootDir, $folders);
-    }
+	public function setRouteFile($file) {
+		$this->routeConfig->setRouteFile($file);
+	}
 
-    public function loadTheme($themeID, $themeDir) {
-        $this->themeID = $themeID;
-        $this->themeDir = $themeDir;
-        $themeFolders = ['Layouts/', 'Partials/', 'Templates/'];
-        $this->render->loadDefaultStorages();
-        $this->render->addTemplateStorages($themeDir.'Resources/', $themeFolders);
-        $this->routeConfig->setRouteStorage($themeDir.'Configuration/Routes/');
-    }
+	public function loadTemplates($rootDir, $folders = []) {
+		$this->render->addTemplateStorages($rootDir, $folders);
+	}
 
-    public function run() {
-        $this->loadSettings();
-        $this->render->loadDefaultStorages();
+	public function loadTheme($themeID, $themeDir) {
+		$this->themeID = $themeID;
+		$this->themeDir = $themeDir;
+		$themeFolders = ['Layouts/', 'Partials/', 'Templates/'];
+		$this->render->loadDefaultStorages();
+		$this->render->addTemplateStorages($themeDir.'Resources/', $themeFolders);
+		$this->routeConfig->setRouteStorage($themeDir.'Configuration/Routes/');
+	}
 
-        if (isset($this->config['load']['defaultRoutes']))
-            $this->routeConfig->setDefaults($this->config['load']['defaultRoutes']);
+	private function initialize() {
+		$loader = new Loader\Settings($this->loadDefaults);
 
-        $this->routeConfig->init();
-        $this->router->run();
-    }
+		if (!is_null($this->themeDir))
+			$loader->addByDirectory($this->themeDir);
 
-    private function loadDefaultProcessors() {
-        $this->render->loadProcessor(
-            'shop', new Shop($this->render->api)
-        );
-        $this->render->loadProcessor(
-            'mailer', new Mailer($this->render->api)
-        );
-        $this->render->loadProcessor(
-            'files', new Files()
-        );
-        $this->render->loadProcessor(
-            'external', new External()
-        );
-        $this->render->loadProcessor(
-            'instagram', new Instagram()
-        );
-        $this->render->loadProcessor(
-            'sitemap', new Sitemap(
-                $this->routeConfig,
-                $this->render->api
-            )
-        );
-        $this->render->loadProcessor(
-            'formatter', new Formatter()
-        );
-    }
+		$loader->load();
 
-    private function parseSettings() {
-        if (is_null($this->settings))
-            throw new \Exception('Settings parsing error');
+		$config = $this->settingsService->get('system');
+		if (is_array($config))
+			$this->config = $config;
 
-        if (isset($this->settings['system']))
-            $this->config = $this->settings['system'];
+		$additionalContent = $this->settingsService->get('additionalContent');
+		if (is_array($additionalContent))
+			$this->render->dataProcessing($additionalContent);
 
-        if (isset($this->settings['additionalContent']))
-            $this->render->dataProcessing($this->settings['additionalContent']);
+		$settings = $this->settingsService->get('settings');
+		if (is_array($settings)) {
+			$this->render->renderArr['settings'] = $settings;
+			$this->render->setConfig($settings);
+			Session::setValue('settings', $settings);
+		}
 
-        if (isset($this->settings['settings'])) {
-            $this->render->renderArr['settings'] = $this->settings['settings'];
-            $this->render->setConfig($this->settings['settings']);
-            Session::setValue('settings', $this->settings['settings']);
-        }
-    }
+		$this->loadDefaultProcessors();
+	}
 
-    private function loadSettings() {
-        $loader = new Loader\Settings($this->loadDefaults);
+	private function loadDefaultProcessors() {
+		$this->render->loadProcessor(
+			'shop', new Shop($this->render->api)
+		);
+		$this->render->loadProcessor(
+			'mailer', new Mailer($this->render->api)
+		);
+		$this->render->loadProcessor(
+			'files', new Files()
+		);
+		$this->render->loadProcessor(
+			'external', new External()
+		);
+		$this->render->loadProcessor(
+			'instagram', new Instagram()
+		);
+		$this->render->loadProcessor(
+			'sitemap', new Sitemap(
+				$this->routeConfig,
+				$this->render->api
+			)
+		);
+		$this->render->loadProcessor(
+			'formatter', new Formatter()
+		);
+	}
 
-        if (!is_null($this->themeDir))
-            $loader->addByDirectory($this->themeDir);
-
-        $this->settings = $loader->load();
-        $this->parseSettings();
-        return;
-    }
-
-    private function sendCorsHeaders() {
-        header("Access-Control-Allow-Origin: *");
-        header("Access-Control-Allow-Headers: X-Requested-With,content-type, Authorization, Content-Type, Accept");
-        header("Access-Control-Allow-Methods: GET,HEAD,PUT,PATCH,POST,DELETE");
-        header("Cache-Control: no-store, no-cache, must-revalidate, max-age=0");
-        header("Cache-Control: post-check=0, pre-check=0", false);
-        header("Pragma: no-cache");
-    }
+	private function sendCorsHeaders() {
+		header("Access-Control-Allow-Origin: *");
+		header("Access-Control-Allow-Headers: X-Requested-With,content-type, Authorization, Content-Type, Accept");
+		header("Access-Control-Allow-Methods: GET,HEAD,PUT,PATCH,POST,DELETE");
+		header("Cache-Control: no-store, no-cache, must-revalidate, max-age=0");
+		header("Cache-Control: post-check=0, pre-check=0", false);
+		header("Pragma: no-cache");
+	}
 }
