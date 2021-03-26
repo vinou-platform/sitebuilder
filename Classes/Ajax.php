@@ -88,8 +88,8 @@ class Ajax {
 
             case 'loadCampaign':
                 $result = $this->api->findCampaign($this->request);
-                if ($result) {
-                    Session::setValue('campaign', $result);
+                if ($result && isset($result['data'])) {
+                    Session::setValue('campaign', $result['data']);
                     $this->sendResult($result);
                 }
                 else
