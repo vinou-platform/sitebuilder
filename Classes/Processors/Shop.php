@@ -160,7 +160,25 @@ class Shop {
 
     }
 
+    public function loadDeliveryType() {
+        $type = Session::getValue('delivery_type');
+        if (!$type)
+            $type = 'address';
+
+        if (empty($_POST))
+            return $type;
+
+        if (isset($_POST['delivery_type']))
+            return Session::setValue('delivery_type', $_POST['delivery_type']);
+
+        return $type;
+    }
+
     public function loadDelivery() {
+        $type = Session::getValue('delivery_type');
+        if ($type == 'none')
+            return null;
+
         $delivery = Session::getValue('delivery');
         if (!$delivery)
             $delivery = [];
@@ -230,11 +248,13 @@ class Shop {
             'basket' => Session::getValue('basket'),
             'billing_type' => 'client',
             'billing' => Session::getValue('billing'),
-            'delivery_type' => 'address',
-            'delivery' => Session::getValue('delivery') ?? Session::getValue('billing'),
+            'delivery_type' => Session::getValue('delivery_type'),
             'invoice_type' => isset($this->settings['checkout']['invoice_type']) ? $this->settings['checkout']['invoice_type'] : 'gross',
             'payment_period' => isset($this->settings['checkout']['payment_period']) ? (int)$this->settings['checkout']['payment_period'] : 14
         ];
+
+        if ($order['delivery_type'] != 'none')
+            $order['delivery'] = Session::getValue('delivery') ?? Session::getValue('billing');
 
         // Specific order settings dependending on payment_type
         switch ($order['payment_type']) {
@@ -276,6 +296,7 @@ class Shop {
             Session::deleteValue('card');
             Session::deleteValue('billing');
             Session::deleteValue('delivery');
+            Session::deleteValue('delivery_type');
             Session::deleteValue('campaign');
             Session::deleteValue('note');
             Session::deleteValue('order');
@@ -349,9 +370,10 @@ class Shop {
                 unset($order['billing_type']);
             }
 
-            unset($order['delivery_type']);
-            if (!$order['delivery']) {
-                $order['delivery'] = $order['billing'];
+            if ($order['delivery_type'] != 'none') {
+                unset($order['delivery_type']);
+                if (!$order['delivery'])
+                    $order['delivery'] = $order['billing'];
             }
         }
         return $order;
@@ -442,11 +464,12 @@ class Shop {
 
         $customer = $this->api->getCustomer();
         $client = $this->api->getClient();
+        $subjectSuffix = $order['delivery_type'] == 'none' ? ' (Click & Collect)' : ' (Lieferung)';
 
         $mail = new Mailer();
         $mail->setTemplate('OrderCreateClient.twig');
         $mail->setReceiver($order['client']['mail']);
-        $mail->setSubject('Ihre Bestellung '.$order['number']);
+        $mail->setSubject('Deine Bestellung '. $order['number'] . $subjectSuffix);
         $mail->setData([
             'order' => $order,
             'client' => $client,
@@ -458,7 +481,7 @@ class Shop {
 
         $adminmail = new Mailer();
         $adminmail->setTemplate('OrderCreateClientNotification.twig');
-        $adminmail->setSubject('Vinou-Bestellung '.$order['number']);
+        $adminmail->setSubject('Bestellung '. $order['number'] . $subjectSuffix);
         $adminmail->setData([
             'order' => $order,
             'client' => $client,

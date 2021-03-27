@@ -32,16 +32,20 @@
 				</p>
 			</td>
 			<td style="border: 1px solid #999999;" colspan="2">
-				<p><b>Die Lieferung erfolgt an:</b><br>
-					{% if order.delivery.company and order.delivery.company != '' %}Firma: {{order.delivery.company}}<br>{% endif %}
-					{% if order.delivery_type == 'address' %}
-						Name: {{order.delivery.first_name}} {{order.delivery.last_name}} <br>
-					{% else %}
-						Name: {{order.delivery.first_name}} {{order.delivery.last_name}} <br>
-					{% endif %}
-					Straße: {{order.delivery.address}}<br>
-					PLZ/Ort: {{order.delivery.zip}} {{order.delivery.city}} <br>
-				</p>
+				{% if order.delivery_type == 'none' %}
+					<p><strong>Click & Collect - Abholung</strong></p>
+				{% else %}
+					<p><b>Die Lieferung erfolgt an:</b><br>
+						{% if order.delivery.company and order.delivery.company != '' %}Firma: {{order.delivery.company}}<br>{% endif %}
+						{% if order.delivery_type == 'address' %}
+							Name: {{order.delivery.first_name}} {{order.delivery.last_name}} <br>
+						{% else %}
+							Name: {{order.delivery.first_name}} {{order.delivery.last_name}} <br>
+						{% endif %}
+						Straße: {{order.delivery.address}}<br>
+						PLZ/Ort: {{order.delivery.zip}} {{order.delivery.city}} <br>
+					</p>
+				{% endif %}
 			</td>
 		</tr>
 		<tr>

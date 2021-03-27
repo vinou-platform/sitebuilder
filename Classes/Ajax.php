@@ -74,6 +74,7 @@ class Ajax {
                 break;
 
             case 'findPackage':
+                Session::setValue('delivery_type','address');
                 $this->sendResult($this->api->getBasketPackage());
                 break;
 
@@ -96,6 +97,13 @@ class Ajax {
                     $this->sendResult(false, 'campaign could not be resolved');
                 break;
 
+            case 'setDeliveryType':
+                if (isset($this->request['delivery_type']))
+                    $this->sendResult(Session::setValue('delivery_type', $this->request['delivery_type']));
+                else
+                    $this->sendResult(false, 'delivery type could not be set');
+                break;
+
             case 'removeCampaign':
                 $this->sendResult(Session::deleteValue('campaign'), 'campaign could not be deleted');
                 break;
@@ -106,7 +114,11 @@ class Ajax {
                 break;
 
             case 'settings':
-                $this->sendResult($this->settingsService->get('settings'), 'settings could not be loaded');
+                $settings = $this->settingsService->get('settings');
+                if (!$settings)
+                    $this->sendResult(false, 'delivery type could not be set');
+                else
+                    $this->sendResult(array_merge($settings,['delivery_type' => Session::getValue('delivery_type')]));
                 break;
 
             default:
