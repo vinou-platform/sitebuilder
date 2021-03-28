@@ -768,17 +768,38 @@ class Render {
     	$this->defaultlang = $key;
     }
 
-    public static function sendJSON($data, $type = 'regular') {
+    public static function sendJSON($data) {
+        header('Cache-Control: no-cache, must-revalidate');
+        header('Content-type: application/json');
+        header('HTTP/1.1 200 OK');
+
+        echo json_encode($data);
+        exit();
+    }
+
+    public static function sendJSONError($data, $httpCode = 500) {
         header('Cache-Control: no-cache, must-revalidate');
         header('Content-type: application/json');
 
-        switch ($type) {
-            case 'error':
-                header('HTTP/1.0 400 Bad Request');
+        switch ($httpCode) {
+
+            case 400:
+                header('HTTP/1.0 400 Not Found');
                 break;
+
+            case 403:
+                header('HTTP/1.0 403 Unauthorized');
+                break;
+
+            case 409:
+                header('HTTP/1.0 409 Bad Request');
+                break;
+
             default:
-                header('HTTP/1.1 200 OK');
+                header('HTTP/1.0 500 Internal Server Error');
+                break;
         }
+
         echo json_encode($data);
         exit();
     }

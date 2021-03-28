@@ -52,7 +52,7 @@ class Ajax {
             case 'get':
                 $result = $this->api->getBasket();
                 if (!$result)
-                    $this->sendResult(false, 'basket not found');
+                    $this->sendResult(false, 'basket not found', 400);
                 else {
                     $result['quantity'] = Shop::calcCardQuantity($result['basketItems']);
                     $result['valid'] = Shop::quantityIsAllowed($result['quantity'], true);
@@ -79,22 +79,15 @@ class Ajax {
                 break;
 
             case 'findCampaign':
-                $result = $this->api->findCampaign($this->request);
-                $campaign = Session::getValue('campaign');
-                if ($this->result && $campaign && $this->result['uuid'] == $campaign['uuid'])
-                    $this->sendResult(false, 'campaign already activated');
-                else
-                    $this->sendResult($result, 'campaign could not be resolved');
+                $result = $this->validateCampaign();
+                $this->sendResult($result, 'campaign could not be resolved', 400);
                 break;
 
             case 'loadCampaign':
-                $result = $this->api->findCampaign($this->request);
-                if ($result && isset($result['data'])) {
+                $result = $this->validateCampaign();
+                if (isset($result['data']))
                     Session::setValue('campaign', $result['data']);
-                    $this->sendResult($result);
-                }
-                else
-                    $this->sendResult(false, 'campaign could not be resolved');
+                $this->sendResult($result, 'campaign could not be resolved', 400);
                 break;
 
             case 'setDeliveryType':
@@ -110,7 +103,7 @@ class Ajax {
 
             case 'campaignDiscount':
                 $processor = new Shop($this->api);
-                $this->sendResult($processor->campaignDiscount(), 'discount could not be fetched');
+                $this->sendResult($processor->campaignDiscount(), 'discount could not be fetched', 400);
                 break;
 
             case 'settings':
@@ -128,7 +121,20 @@ class Ajax {
 
     }
 
-    private function sendResult($result, $errorMessage = null) {
+    private function validateCampaign() {
+        $result = $this->api->findCampaign($this->request);
+        $campaign = Session::getValue('campaign');
+
+        if ($result && isset($result['code']))
+            $this->sendResult(false, isset($result['data']) ? $result['data'] : $result['details']);
+
+        else if ($result && $campaign && $result['data']['uuid'] == $campaign['uuid'])
+            $this->sendResult(false, 'campaign already activated');
+
+        return $result;
+    }
+
+    private function sendResult($result, $errorMessage = null, $errorCode = 409) {
 
         if (!$result) {
             if (is_null($errorMessage))
@@ -138,11 +144,11 @@ class Ajax {
         }
 
         if (count($this->errors) > 0)
-            Render::sendJSON([
+            Render::sendJSONError([
                 'info' => 'error',
                 'errors' => $this->errors,
                 'request' => $this->request
-            ], 'error');
+            ], $errorCode);
         else
             Render::sendJSON($result);
 
