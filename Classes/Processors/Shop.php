@@ -169,8 +169,9 @@ class Shop {
             return $type;
 
         if (isset($_POST['delivery_type']))
-            return Session::setValue('delivery_type', $_POST['delivery_type']);
+            $type = $_POST['delivery_type'];
 
+        Session::setValue('delivery_type', $type);
         return $type;
     }
 
