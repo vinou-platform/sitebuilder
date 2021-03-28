@@ -227,11 +227,14 @@ class Render {
             else
                 throw new \Exception('dataProcessing for this route could not be solved');
 
+            $return = $result;
             $selector = isset($option['key']) ? $option['key'] : $key;
 
             if (isset($result[$selector]))
                 $return = $result[$selector];
-            else
+
+            // override return with complete result if force setting is given
+            if (isset($option['forceLoadAll']) && $option['forceLoadAll'])
                 $return = $result;
 
             if (isset($option['loadOnlyFirst']) && $option['loadOnlyFirst'] && is_array($return))
@@ -239,9 +242,8 @@ class Render {
 
             $this->renderArr[$key] = $return;
 
-            if (isset($result['clusters'])) {
+            if (isset($result['clusters']))
                 $this->renderArr['clusters'] = $result['clusters'];
-            }
 
             if (isset($option['stopProcessing']) && $option['stopProcessing'] && !$result)
                 break;
@@ -608,8 +610,8 @@ class Render {
             return $this->api->getWinery($id);
         }));
 
-        $twig->addFilter( new \Twig_SimpleFilter('quantityIsAllowed', function ($quantity, $settings) {
-            return Shop::quantityIsAllowed($quantity, $settings, true);
+        $twig->addFilter( new \Twig_SimpleFilter('quantityIsAllowed', function ($quantity) {
+            return Shop::quantityIsAllowed($quantity, true);
         }));
 
         $twig->addFilter( new \Twig_SimpleFilter('basePrice', function ($price, $unit) {
@@ -766,17 +768,38 @@ class Render {
     	$this->defaultlang = $key;
     }
 
-    public static function sendJSON($data, $type = 'regular') {
+    public static function sendJSON($data) {
+        header('Cache-Control: no-cache, must-revalidate');
+        header('Content-type: application/json');
+        header('HTTP/1.1 200 OK');
+
+        echo json_encode($data);
+        exit();
+    }
+
+    public static function sendJSONError($data, $httpCode = 500) {
         header('Cache-Control: no-cache, must-revalidate');
         header('Content-type: application/json');
 
-        switch ($type) {
-            case 'error':
-                header('HTTP/1.0 400 Bad Request');
+        switch ($httpCode) {
+
+            case 400:
+                header('HTTP/1.0 400 Not Found');
                 break;
+
+            case 403:
+                header('HTTP/1.0 403 Unauthorized');
+                break;
+
+            case 409:
+                header('HTTP/1.0 409 Bad Request');
+                break;
+
             default:
-                header('HTTP/1.1 200 OK');
+                header('HTTP/1.0 500 Internal Server Error');
+                break;
         }
+
         echo json_encode($data);
         exit();
     }

@@ -5,6 +5,7 @@ use \Vinou\SiteBuilder\Tools\Render;
 use \Vinou\SiteBuilder\Processors\Shop;
 use \Vinou\ApiConnector\Api;
 use \Vinou\ApiConnector\Session\Session;
+use \Vinou\ApiConnector\Services\ServiceLocator;
 
 /**
 * Ajax
@@ -13,10 +14,10 @@ use \Vinou\ApiConnector\Session\Session;
 class Ajax {
 
     protected $api = null;
+    protected $settingsService = null;
     protected $errors = [];
     protected $result = false;
     protected $request = [];
-    protected $settings = [];
 
     public function __construct($themeDir = null, $defaults = true) {
 
@@ -27,6 +28,7 @@ class Ajax {
 
         $this->request = array_merge($_POST, (array)json_decode(trim(file_get_contents('php://input')), true));
 
+        $this->settingsService = ServiceLocator::get('Settings');
         $this->loadSettings($themeDir, $defaults);
     }
 
@@ -36,9 +38,7 @@ class Ajax {
         if (!is_null($dir))
             $loader->addByDirectory($dir);
 
-        $settings = $loader->load();
-
-        $this->settings = $settings['settings'];
+        $loader->load();
     }
 
     public function run() {
@@ -52,10 +52,10 @@ class Ajax {
             case 'get':
                 $result = $this->api->getBasket();
                 if (!$result)
-                    $this->sendResult(false, 'basket not found');
+                    $this->sendResult(false, 'basket not found', 400);
                 else {
                     $result['quantity'] = Shop::calcCardQuantity($result['basketItems']);
-                    $result['valid'] = Shop::quantityIsAllowed($result['quantity'], $this->settings, true);
+                    $result['valid'] = Shop::quantityIsAllowed($result['quantity'], true);
                 }
 
                 $this->sendResult($result);
@@ -74,26 +74,27 @@ class Ajax {
                 break;
 
             case 'findPackage':
+                Session::setValue('delivery_type','address');
                 $this->sendResult($this->api->getBasketPackage());
                 break;
 
             case 'findCampaign':
-                $result = $this->api->findCampaign($this->request);
-                $campaign = Session::getValue('campaign');
-                if ($this->result && $campaign && $this->result['uuid'] == $campaign['uuid'])
-                    $this->sendResult(false, 'campaign already activated');
-                else
-                    $this->sendResult($result, 'campaign could not be resolved');
+                $result = $this->validateCampaign();
+                $this->sendResult($result, 'campaign could not be resolved', 400);
                 break;
 
             case 'loadCampaign':
-                $result = $this->api->findCampaign($this->request);
-                if ($result && isset($result['data'])) {
+                $result = $this->validateCampaign();
+                if (isset($result['data']))
                     Session::setValue('campaign', $result['data']);
-                    $this->sendResult($result);
-                }
+                $this->sendResult($result, 'campaign could not be resolved', 400);
+                break;
+
+            case 'setDeliveryType':
+                if (isset($this->request['delivery_type']))
+                    $this->sendResult(Session::setValue('delivery_type', $this->request['delivery_type']));
                 else
-                    $this->sendResult(false, 'campaign could not be resolved');
+                    $this->sendResult(false, 'delivery type could not be set');
                 break;
 
             case 'removeCampaign':
@@ -102,7 +103,15 @@ class Ajax {
 
             case 'campaignDiscount':
                 $processor = new Shop($this->api);
-                $this->sendResult($processor->campaignDiscount(), 'discount could not be fetched');
+                $this->sendResult($processor->campaignDiscount(), 'discount could not be fetched', 400);
+                break;
+
+            case 'settings':
+                $settings = $this->settingsService->get('settings');
+                if (!$settings)
+                    $this->sendResult(false, 'delivery type could not be set');
+                else
+                    $this->sendResult(array_merge($settings,['delivery_type' => Session::getValue('delivery_type')]));
                 break;
 
             default:
@@ -112,7 +121,20 @@ class Ajax {
 
     }
 
-    private function sendResult($result, $errorMessage = null) {
+    private function validateCampaign() {
+        $result = $this->api->findCampaign($this->request);
+        $campaign = Session::getValue('campaign');
+
+        if ($result && isset($result['code']))
+            $this->sendResult(false, isset($result['data']) ? $result['data'] : $result['details']);
+
+        else if ($result && $campaign && $result['data']['uuid'] == $campaign['uuid'])
+            $this->sendResult(false, 'campaign already activated');
+
+        return $result;
+    }
+
+    private function sendResult($result, $errorMessage = null, $errorCode = 409) {
 
         if (!$result) {
             if (is_null($errorMessage))
@@ -122,11 +144,11 @@ class Ajax {
         }
 
         if (count($this->errors) > 0)
-            Render::sendJSON([
+            Render::sendJSONError([
                 'info' => 'error',
                 'errors' => $this->errors,
                 'request' => $this->request
-            ], 'error');
+            ], $errorCode);
         else
             Render::sendJSON($result);
 

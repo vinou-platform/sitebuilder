@@ -3,6 +3,7 @@ namespace Vinou\SiteBuilder\Processors;
 
 use \Vinou\ApiConnector\Api;
 use \Vinou\ApiConnector\Session\Session;
+use \Vinou\ApiConnector\Services\ServiceLocator;
 use \Vinou\ApiConnector\Tools\Helper;
 use \Vinou\ApiConnector\Tools\Redirect;
 use \Vinou\SiteBuilder\Processors\Mailer;
@@ -13,6 +14,7 @@ use \Vinou\SiteBuilder\Processors\Mailer;
 class Shop {
 
     protected $api;
+    protected $settingsService = null;
     protected $settings = false;
     protected $client = false;
 
@@ -22,15 +24,8 @@ class Shop {
         else
             $this->api = $api;
 
-        $this->loadSettings();
-        $this->loadClient();
-    }
-
-    public function loadSettings() {
-        $this->settings = Session::getValue('settings');
-    }
-
-    public function loadClient() {
+        $this->settingsService = ServiceLocator::get('Settings');
+        $this->settings = $this->settingsService->get('settings');
         $this->client = Session::getValue('client');
     }
 
@@ -165,7 +160,26 @@ class Shop {
 
     }
 
+    public function loadDeliveryType() {
+        $type = Session::getValue('delivery_type');
+        if (!$type)
+            $type = 'address';
+
+        if (empty($_POST))
+            return $type;
+
+        if (isset($_POST['delivery_type']))
+            $type = $_POST['delivery_type'];
+
+        Session::setValue('delivery_type', $type);
+        return $type;
+    }
+
     public function loadDelivery() {
+        $type = Session::getValue('delivery_type');
+        if ($type == 'none')
+            return null;
+
         $delivery = Session::getValue('delivery');
         if (!$delivery)
             $delivery = [];
@@ -235,11 +249,13 @@ class Shop {
             'basket' => Session::getValue('basket'),
             'billing_type' => 'client',
             'billing' => Session::getValue('billing'),
-            'delivery_type' => 'address',
-            'delivery' => Session::getValue('delivery') ?? Session::getValue('billing'),
+            'delivery_type' => Session::getValue('delivery_type'),
             'invoice_type' => isset($this->settings['checkout']['invoice_type']) ? $this->settings['checkout']['invoice_type'] : 'gross',
             'payment_period' => isset($this->settings['checkout']['payment_period']) ? (int)$this->settings['checkout']['payment_period'] : 14
         ];
+
+        if ($order['delivery_type'] != 'none')
+            $order['delivery'] = Session::getValue('delivery') ?? Session::getValue('billing');
 
         // Specific order settings dependending on payment_type
         switch ($order['payment_type']) {
@@ -281,6 +297,7 @@ class Shop {
             Session::deleteValue('card');
             Session::deleteValue('billing');
             Session::deleteValue('delivery');
+            Session::deleteValue('delivery_type');
             Session::deleteValue('campaign');
             Session::deleteValue('note');
             Session::deleteValue('order');
@@ -354,9 +371,10 @@ class Shop {
                 unset($order['billing_type']);
             }
 
-            unset($order['delivery_type']);
-            if (!$order['delivery']) {
-                $order['delivery'] = $order['billing'];
+            if ($order['delivery_type'] != 'none') {
+                unset($order['delivery_type']);
+                if (!$order['delivery'])
+                    $order['delivery'] = $order['billing'];
             }
         }
         return $order;
@@ -396,7 +414,7 @@ class Shop {
             Redirect::internal($this->settings['pages']['basket']);
 
         $quantity = self::calcCardQuantity($card);
-        if (!self::quantityIsAllowed($quantity, $this->settings))
+        if (!self::quantityIsAllowed($quantity))
             Redirect::internal($this->settings['pages']['basket']);
 
         return true;
@@ -447,11 +465,12 @@ class Shop {
 
         $customer = $this->api->getCustomer();
         $client = $this->api->getClient();
+        $subjectSuffix = $order['delivery_type'] == 'none' ? ' (Click & Collect)' : ' (Lieferung)';
 
         $mail = new Mailer();
         $mail->setTemplate('OrderCreateClient.twig');
         $mail->setReceiver($order['client']['mail']);
-        $mail->setSubject('Ihre Bestellung '.$order['number']);
+        $mail->setSubject('Deine Bestellung '. $order['number'] . $subjectSuffix);
         $mail->setData([
             'order' => $order,
             'client' => $client,
@@ -463,7 +482,7 @@ class Shop {
 
         $adminmail = new Mailer();
         $adminmail->setTemplate('OrderCreateClientNotification.twig');
-        $adminmail->setSubject('Vinou-Bestellung '.$order['number']);
+        $adminmail->setSubject('Bestellung '. $order['number'] . $subjectSuffix);
         $adminmail->setData([
             'order' => $order,
             'client' => $client,
@@ -614,7 +633,9 @@ class Shop {
         return $quantity;
     }
 
-    public static function quantityIsAllowed($quantity, $settings, $retString = false) {
+    public static function quantityIsAllowed($quantity, $retString = false) {
+
+        $settings = (ServiceLocator::get('Settings'))->get('settings');
 
         if (array_key_exists('minBasketSize', $settings) && $quantity < $settings['minBasketSize'])
             return $retString ? 'minBasketSize' : false;
@@ -638,5 +659,10 @@ class Shop {
         }
 
         return $retString ? 'valid' : true;
+    }
+
+
+    public function showAllSettings () {
+        return $this->settingsService->getAll();
     }
 }
