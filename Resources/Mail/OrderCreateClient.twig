@@ -4,22 +4,47 @@
 	<p>Wir haben Deine Bestellung wie folgt erhalten.<br><br></p>
 
 	{% if order.payment_type == 'prepaid' %}
-	<p><b>Du hast als Zahlungsart Vorkasse gewählt. Bitte berücksichtige, dass bis zum Zahlungseingang die Ware nicht versendet wird.</b></p>
+		<p><b>Du hast als Zahlungsart Vorkasse gewählt.<br>Bitte überweise den fälligen Gesamtbetrag von {{order.gross_cashback|number_format(2, ',', '.')}}&nbsp;EUR auf folgendes Konto:</b><br><br></p>
+		<table border="0" cellspacing="0" cellpadding="10" style="width: 100%">
+			<tr style="background-color: #EFEFEF;">
+				<td width="150">IBAN:</td>
+				<td>{{customer.settings.bank.iban}}</td>
+			</tr>
+			<tr style="background-color: #DDDDDD;">
+				<td width="150">BIC:</td>
+				<td>{{customer.settings.bank.bic}}</td>
+			</tr>
+			<tr style="background-color: #EFEFEF;">
+				<td width="150">Kreditinstitut:</td>
+				<td>{{customer.settings.bank.bankname}}</td>
+			</tr>
+			<tr style="background-color: #DDDDDD;">
+				<td width="150">Kontoinhaber:</td>
+				<td>{{customer.settings.bank.owner}}</td>
+			</tr>
+			<tr style="background-color: #EFEFEF;">
+				<td width="150">Verwendungszweck:</td>
+				<td>{{order.number}}</td>
+			</tr>
+		</table>
+		<p>
+			<br><b>Bis zum erhalt der Zahlung verbleibt die Ware im Weingut.</b>
+		</p>
 	{% endif %}
 
-	<table border="0" cellspacing="0" cellpadding="10" style="border: 1px solid #999999; border-collapse: collapse; width: 100%">
+	<table border="0" cellspacing="0" style="width: 100%">
 		<tr>
-			<td colspan="2" style="border: 1px solid #999999;">
+			<td width="50%">
 				<p><b>Bestellnummer:</b><br>
 				{{order.number}}</p>
 			</td>
-			<td colspan="2" style="border: 1px solid #999999;">
+			<td width="50%">
 				<p><b>Kundennumer:</b><br>
-				{{order.billing.number}}</p>
+				{{order.client.number}}</p>
 			</td>
 		</tr>
 		<tr>
-			<td style="border: 1px solid #999999;" colspan="2">
+			<td width="50%">
 				<p><b>Rechnungsadresse:</b><br>
 					{% if order.billing_type == 'address' %}
 						{% if order.billing.company and order.billing.company != '' %}Firma: {{order.billing.company}}<br>{% endif %}
@@ -36,7 +61,7 @@
 					{% if order.client.phone and order.client.phone != '' %}Telefon: {{order.client.phone}}<br>{% endif %}
 				</p>
 			</td>
-			<td style="border: 1px solid #999999;" colspan="2">
+			<td width="50%">
 				{% if order.delivery_type == 'none' %}
 					<p><strong>Click & Collect - Abholung</strong><br>Du holst Deine Bestellung zu den regulären Öffnungszeiten oder nach telefonischer Vereinbarung bei uns ab.</p>
 				{% else %}
@@ -54,139 +79,147 @@
 			</td>
 		</tr>
 		<tr>
-			<td colspan="4" style="border: 1px solid #999999;">
+			<td colspan="2">
 				<p><b>Zahlungsart:</b><br>
 				{{('order.paymenttypes.' ~ order.payment_type)|translate}}</p>
 			</td>
 		</tr>
-		<tr>
-			<td colspan="4" style="border: 1px solid #999999;">
-				<p><b>Deine Nachricht an uns:</b><br>
-				{{order.note}}<br></p>
-			</td>
-		</tr>
-		<tr>
-			<td style="border: 1px solid #999999;"><b>Position</b></td>
-			<td style="border: 1px solid #999999;"><b>Artikel</b></td>
-			<td style="border: 1px solid #999999;"><b>Einzelpreis</b></td>
-			<td style="border: 1px solid #999999;"><b>Preis</b></td>
+		{% if order.note %}
+			<tr>
+				<td colspan="2">
+					<p><b>Deine Nachricht an uns:</b><br>
+					{{order.note}}<br></p>
+				</td>
+			</tr>
+		{% endif %}
+	</table>
+	{% set color = '#EFEFEF' %}
+	<table border="0" cellspacing="0" cellpadding="10" style="width: 100%;">
+		<tr style="background-color: {{color}}">
+			<td><b>Position</b></td>
+			<td><b>Artikel</b></td>
+			<td align="right"><b>Einzelpreis</b></td>
+			<td align="right"><b>Preis</b></td>
 		</tr>
 		{% set index = 0 %}
 		{% for item in order.positions %}
 			{% set index = loop.index %}
-			{% if item.item_type == 'wine' %}
-				<tr>
-					<td style="border: 1px solid #999999;" valign="top">{{index}}</td>
-					<td style="border: 1px solid #999999;" valign="top">
-						{{item.quantity}}&nbsp;x&nbsp;{% if item.item.vintage > 0 %}{{item.item.vintage}} {% endif %}{{item.item.name}}{% if item.item.taste_id > 0 %} {{('tastes.' ~ item.item.taste_id)|translate}}{% endif %}<br>
-						<span class="small">{{('wine.field.articlenumber')|translate}}: {{item.item.articlenumber}}{% if item.item.bottlesize > 0 %}, {{('wine.field.bottlesize')|translate}}: {{item.item.bottlesize|number_format(2, ',', '.')|trim('0', 'right')|trim(',', 'right')}} l{% endif %}{% if item.item.place %}, {{('wine.field.place')|translate}}: {{item.item.place}}{% endif %}</span></td>
-					<td style="border: 1px solid #999999;" valign="top">{{(item.gross / item.quantity)|number_format(2, ',', '.')}}&nbsp;EUR</td>
-					<td style="border: 1px solid #999999;" valign="top">{{item.gross|number_format(2, ',', '.')}}&nbsp;EUR</td>
-				</tr>
-			{% elseif item.item_type == 'bundle' %}
-				<tr>
-					<td style="border: 1px solid #999999;" valign="top">{{index}}</td>
-					<td style="border: 1px solid #999999;" valign="top">
-						{{item.quantity}}&nbsp;x&nbsp;{{item.item.name}}<br>
-						<span class="small">{{('bundle.fields.articlenumber')|translate}}: {{item.item.articlenumber}}{% if item.item.size > 0 %}, {{('bundle.fields.size')|translate}}: {{item.item.size|number_format(2, ',', '.')|trim('0', 'right')|trim(',', 'right')}} {{item.item.unit}}{% endif %}</span></td>
-					<td style="border: 1px solid #999999;" valign="top">{{(item.gross / item.quantity)|number_format(2, ',', '.')}}&nbsp;EUR</td>
-					<td style="border: 1px solid #999999;" valign="top">{{item.gross|number_format(2, ',', '.')}}&nbsp;EUR</td>
-				</tr>
+			{% if color == '#EFEFEF' %}
+				{% set color = '#DDDDDD' %}
 			{% else %}
-				<tr>
-					<td style="border: 1px solid #999999;" valign="top">{{index}}</td>
-					<td style="border: 1px solid #999999;" valign="top">
-						{{item.quantity}}&nbsp;x&nbsp;{{item.item.name}}<br>
-						<span class="small">{{('product.field.articlenumber')|translate}}: {{item.item.articlenumber}}{% if item.item.size > 0 %}, {{('product.field.size')|translate}}: {{item.item.size|number_format(2, ',', '.')|trim('0', 'right')|trim(',', 'right')}} {{ item.item.unit }}{% endif %}</span></td>
-					<td style="border: 1px solid #999999;" valign="top">{{(item.gross / item.quantity)|number_format(2, ',', '.')}}&nbsp;EUR</td>
-					<td style="border: 1px solid #999999;" valign="top">{{item.gross|number_format(2, ',', '.')}}&nbsp;EUR</td>
-				</tr>
+				{% set color = '#EFEFEF' %}
 			{% endif %}
+
+			<tr style="background-color: {{color}}">
+				<td valign="top">{{index}}</td>
+				<td valign="top">
+					{% if item.item_type == 'product' %}
+						{{item.quantity}}&nbsp;x&nbsp;{{item.item.name}}<br>
+						<span class="small">{{('product.field.articlenumber')|translate}}: {{item.item.articlenumber}}{% if item.item.size > 0 %}, {{('product.field.size')|translate}}: {{item.item.size|number_format(2, ',', '.')|trim('0', 'right')|trim(',', 'right')}} {{ item.item.unit }}{% endif %}</span>
+					{% elseif item.item_type == 'bundle' %}
+						{{item.quantity}}&nbsp;x&nbsp;{{item.item.name}}<br>
+						<span class="small">{{('bundle.fields.articlenumber')|translate}}: {{item.item.articlenumber}}{% if item.item.size > 0 %}, {{('bundle.fields.size')|translate}}: {{item.item.size|number_format(2, ',', '.')|trim('0', 'right')|trim(',', 'right')}} {{item.item.unit}}{% endif %}</span>
+					{% else %}
+						{{item.quantity}}&nbsp;x&nbsp;{% if item.item.vintage > 0 %}{{item.item.vintage}} {% endif %}{{item.item.name}}{% if item.item.taste_id > 0 %} {{('tastes.' ~ item.item.taste_id)|translate}}{% endif %}<br>
+						<span class="small">{{('wine.field.articlenumber')|translate}}: {{item.item.articlenumber}}{% if item.item.bottlesize > 0 %}, {{('wine.field.bottlesize')|translate}}: {{item.item.bottlesize|number_format(2, ',', '.')|trim('0', 'right')|trim(',', 'right')}} l{% endif %}{% if item.item.place %}, {{('wine.field.place')|translate}}: {{item.item.place}}{% endif %}</span>
+					{% endif %}
+				</td>
+				<td valign="top" align="right">{{(item.gross / item.quantity)|number_format(2, ',', '.')}}&nbsp;EUR</td>
+				<td valign="top" align="right">{{item.gross|number_format(2, ',', '.')}}&nbsp;EUR</td>
+			</tr>
 		{% endfor %}
 		{% if order.package %}
 			{% set index = index + 1 %}
-			<tr>
-				<td style="border: 1px solid #999999;">{{index}}</td>
-				<td style="border: 1px solid #999999;">Versand und Verpackung</td>
-				<td style="border: 1px solid #999999;">{{order.package.gross|number_format(2, ',', '.')}}&nbsp;EUR</td>
-				<td style="border: 1px solid #999999;">{{order.package.gross|number_format(2, ',', '.')}}&nbsp;EUR</td>
+			{% if color == '#EFEFEF' %}
+				{% set color = '#DDDDDD' %}
+			{% else %}
+				{% set color = '#EFEFEF' %}
+			{% endif %}
+			<tr style="background-color: {{color}}">
+				<td>{{index}}</td>
+				<td>Versand und Verpackung</td>
+				<td align="right">{{order.package.gross|number_format(2, ',', '.')}}&nbsp;EUR</td>
+				<td align="right">{{order.package.gross|number_format(2, ',', '.')}}&nbsp;EUR</td>
 			</tr>
 		{% endif %}
 		{% if order.campaigns|length > 0 %}
 			{% for campaign in order.campaigns %}
 				{% set index = index + 1 %}
-				<tr>
-					<td style="border: 1px solid #999999;">{{index}}</td>
-					<td style="border: 1px solid #999999;">Kampagne: {{campaign.name}}<br><span class="small">Eingelöster Rabatt-Code: {{campaign.item.hash}}, {% if campaign.item.rebate_type == 'percent' %}Prozentualer Rabatt: {{campaign.item.percent|number_format(2, ',', '.')}}%{% else %}Pauschalrabatt: {{campaign.item.gross|number_format(2, ',', '.')|trim('0', 'right')|trim(',', 'right')}} EUR{% endif %}</span>
+				{% if color == '#EFEFEF' %}
+					{% set color = '#DDDDDD' %}
+				{% else %}
+					{% set color = '#EFEFEF' %}
+				{% endif %}
+				<tr style="background-color: {{color}}">
+					<td>{{index}}</td>
+					<td>Kampagne: {{campaign.name}}<br><span class="small">Eingelöster Rabatt-Code: {{campaign.item.hash}}, {% if campaign.item.rebate_type == 'percent' %}Prozentualer Rabatt: {{campaign.item.percent|number_format(2, ',', '.')}}%{% else %}Pauschalrabatt: {{campaign.item.gross|number_format(2, ',', '.')|trim('0', 'right')|trim(',', 'right')}} EUR{% endif %}</span>
 					</td>
-					<td style="border: 1px solid #999999;">{{campaign.gross|number_format(2, ',', '.')}}&nbsp;EUR</td>
-					<td style="border: 1px solid #999999;">{{campaign.gross|number_format(2, ',', '.')}}&nbsp;EUR</td>
+					<td align="right">{{campaign.gross|number_format(2, ',', '.')}}&nbsp;EUR</td>
+					<td align="right">{{campaign.gross|number_format(2, ',', '.')}}&nbsp;EUR</td>
 				</tr>
 			{% endfor %}
 		{% endif %}
 		{% if order.rebates|length > 0 %}
 			{% for rebate in order.rebates %}
 				{% set index = index + 1 %}
-				<tr>
-					<td style="border: 1px solid #999999;">{{index}}</td>
-					<td style="border: 1px solid #999999;">{{rebate.name}}</span>
+				{% if color == '#EFEFEF' %}
+					{% set color = '#DDDDDD' %}
+				{% else %}
+					{% set color = '#EFEFEF' %}
+				{% endif %}
+				<tr style="background-color: {{color}}">
+					<td>{{index}}</td>
+					<td>{{rebate.name}}</span>
 					</td>
-					<td style="border: 1px solid #999999;">{{rebate.gross|number_format(2, ',', '.')}}&nbsp;EUR</td>
-					<td style="border: 1px solid #999999;">{{rebate.gross|number_format(2, ',', '.')}}&nbsp;EUR</td>
+					<td align="right">{{rebate.gross|number_format(2, ',', '.')}}&nbsp;EUR</td>
+					<td align="right">{{rebate.gross|number_format(2, ',', '.')}}&nbsp;EUR</td>
 				</tr>
 			{% endfor %}
 		{% endif %}
-		<tr>
-			<td style="border: 1px solid #999999;" colspan="3">Gesamtsumme Netto</td>
-			<td style="border: 1px solid #999999;">{{order.net|number_format(2, ',', '.')}}&nbsp;EUR</td>
+		{% if color == '#EFEFEF' %}
+			{% set color = '#DDDDDD' %}
+		{% else %}
+			{% set color = '#EFEFEF' %}
+		{% endif %}
+		<tr style="background-color: {{color}};">
+			<td colspan="3" style="border-top: 3px solid #666666;">Gesamtsumme Netto</td>
+			<td style="border-top: 3px solid #666666;" align="right"><b>{{order.net|number_format(2, ',', '.')}}&nbsp;EUR</b></td>
 		</tr>
 		{% if customer.tax_free %}
-			<tr>
-				<td style="border: 1px solid #999999;" colspan="4">{{ 'customer.field.smallBusiness.description'|translate }}</td>
+			{% if color == '#EFEFEF' %}
+				{% set color = '#DDDDDD' %}
+			{% else %}
+				{% set color = '#EFEFEF' %}
+			{% endif %}
+			<tr style="background-color: {{color}}">
+				<td colspan="4">{{ 'customer.field.smallBusiness.description'|translate }}</td>
 			</tr>
 		{% else %}
 			{% for percent,taxEntry in order.taxrates %}
-				<tr>
-					<td style="border: 1px solid #999999;" colspan="3">Mehrwertsteuer {{percent}} %</td>
-					<td style="border: 1px solid #999999;">{{(taxEntry.tax)|number_format(2, ',', '.')}}&nbsp;EUR</td>
+				{% if color == '#EFEFEF' %}
+					{% set color = '#DDDDDD' %}
+				{% else %}
+					{% set color = '#EFEFEF' %}
+				{% endif %}
+				<tr style="background-color: {{color}}">
+					<td colspan="3">Mehrwertsteuer {{percent}} %</td>
+					<td align="right">{{(taxEntry.tax)|number_format(2, ',', '.')}}&nbsp;EUR</td>
 				</tr>
 			{% endfor %}
 		{% endif %}
-		<tr>
-			<td style="border: 1px solid #999999;" colspan="3">Gesamtsumme Brutto</td>
-			<td style="border: 1px solid #999999;">{{order.gross|number_format(2, ',', '.')}}&nbsp;EUR</td>
+		{% if color == '#EFEFEF' %}
+			{% set color = '#DDDDDD' %}
+		{% else %}
+			{% set color = '#EFEFEF' %}
+		{% endif %}
+		<tr style="background-color: {{color}}">
+			<td colspan="3"><b>Gesamtsumme Brutto</b></td>
+			<td align="right"><b>{{order.gross|number_format(2, ',', '.')}}&nbsp;EUR</b></td>
 		</tr>
 
 	</table>
 
-	{% if order.payment_type == 'prepaid' %}
-		<p class="text-align: center"><br><b>Bitte überweise den fälligen Gesamtbetrag von {{order.gross_cashback|number_format(2, ',', '.')}}&nbsp;EUR auf folgendes Konto:<b><br><br></b></b>
-		<table border="0" cellspacing="0" cellpadding="10" style="border: 1px solid #999999; border-collapse: collapse; width: 100%">
-			<tr>
-				<td colspan="2" style="border: 1px solid #999999;">IBAN:</td>
-				<td colspan="2" style="border: 1px solid #999999;">{{customer.settings.bank.iban}}</td>
-			</tr>
-			<tr>
-				<td colspan="2" style="border: 1px solid #999999;">BIC:</td>
-				<td colspan="2" style="border: 1px solid #999999;">{{customer.settings.bank.bic}}</td>
-			</tr>
-			<tr>
-				<td colspan="2" style="border: 1px solid #999999;">Kreditinstitut:</td>
-				<td colspan="2" style="border: 1px solid #999999;">{{customer.settings.bank.bankname}}</td>
-			</tr>
-			<tr>
-				<td colspan="2" style="border: 1px solid #999999;">Kontoinhaber:</td>
-				<td colspan="2" style="border: 1px solid #999999;">{{customer.settings.bank.owner}}</td>
-			</tr>
-			<tr>
-				<td colspan="2" style="border: 1px solid #999999;">Verwendungszweck:</td>
-				<td colspan="2" style="border: 1px solid #999999;">{{order.number}}</td>
-			</tr>
-		</table>
-		<p>
-			<br><b>Bis zum erhalt der Zahlung verbleibt die Ware im Weingut.</b>
-		</p>
-	{% else %}
+	{% if order.payment_type != 'prepaid' %}
 		<p>Deine Bestellung wird schnellstmöglich bearbeitet.</p>
 	{% endif %}
 {% endblock %}
