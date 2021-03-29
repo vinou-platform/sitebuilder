@@ -2,10 +2,19 @@
 {% block mailcontent %}
 	<h1>{{title}}</h1>
 
-	<table cellpadding="4" cellspacing="0" border="1">
+	{% set oddbg = 'background-color: #EFEFEF;' %}
+	{% set evenbg = 'background-color: #DDDDDD;' %}
+
+	<table border="0" cellpadding="10" cellspacing="0" style="width: 100%">
+		{% set background = evenbg %}
 		{% for label,value in formdata %}
-			<tr>
-				<td><b>{{label}}:</b></td>
+			{% if background == oddbg %}
+				{% set background = evenbg %}
+			{% else %}
+				{% set background = oddbg %}
+			{% endif %}
+			<tr style="{{background}}">
+				<td width="150"><b>{{label|capitalize}}:</b></td>
 				<td>{{value}}</td>
 			</tr>
 		{% endfor %}
