@@ -1,48 +1,48 @@
 {% extends "Layouts/Default.html" %}
 {% block mailcontent %}
+
+	{% set oddbg = 'background-color: #EFEFEF;' %}
+	{% set evenbg = 'background-color: #DDDDDD;' %}
+
 	<h3>Hallo {{('general.gender.' ~ client.gender)|translate}} {{client.first_name}} {{client.last_name}},</h3>
 
 	<p>Wir haben Deine Registrierung wie folgt erhalten:</p>
 
-	<table border="0" cellspacing="0" cellpadding="0" class="regular-table">
-		<tr>
-			<td><strong>{{'client.field.username'|translate}}</strong></td>
+	<table border="0" cellspacing="0" cellpadding="0" style="width:100%">
+		<tr style="{{oddbg}}">
+			<td width="150"><strong>{{'client.field.username'|translate}}</strong></td>
 			<td>{{client.username}}</td>
 		</tr>
-		<tr>
-			<td><strong>{{'client.field.type'|translate}}</strong></td>
+		<tr style="{{evenbg}}">
+			<td width="150"><strong>{{'client.field.type'|translate}}</strong></td>
 			<td>{{('client.types.' ~ client.type)|translate}}</td>
 		</tr>
-		<tr>
-			<td><strong>{{'general.fields.gender'|translate}}</strong></td>
+		<tr style="{{oddbg}}">
+			<td width="150"><strong>{{'general.fields.gender'|translate}}</strong></td>
 			<td>{{('general.gender.' ~ client.gender)|translate}}</td>
 		</tr>
-		<tr>
-			<td><strong>{{'client.field.contactname'|translate}}</strong></td>
+		<tr style="{{evenbg}}">
+			<td width="150"><strong>{{'client.field.contactname'|translate}}</strong></td>
 			<td>{{client.first_name}} {{client.last_name}}</td>
 		</tr>
-		{% if client.company %}
-			<tr>
-				<td><strong>{{'client.field.company'|translate}}</strong></td>
-				<td>{{client.company}}</td>
-			</tr>
-		{% endif %}
-		<tr>
-			<td><strong>{{'client.field.address'|translate}}</strong></td>
+		<tr style="{{oddbg}}">
+			<td width="150"><strong>{{'client.field.company'|translate}}</strong></td>
+			<td>{{client.company}}</td>
+		</tr>
+		<tr style="{{evenbg}}">
+			<td width="150"><strong>{{'client.field.address'|translate}}</strong></td>
 			<td>
 				{{client.address}}<br>
 				{% if client.address_supplement %}{{client.address_supplement}}<br>{% endif %}
 				{{client.zip}} {{client.city}}
 			</td>
 		</tr>
-		{% if client.phone %}
-			<tr>
-				<td><strong>{{'client.field.phone'|translate}}</strong></td>
-				<td>{{client.phone}}</td>
-			</tr>
-		{% endif %}
-		<tr>
-			<td><strong>{{'client.field.mail'|translate}}</strong></td>
+		<tr style="{{oddbg}}">
+			<td width="150"><strong>{{'client.field.phone'|translate}}</strong></td>
+			<td>{{client.phone}}</td>
+		</tr>
+		<tr style="{{evenbg}}">
+			<td width="150"><strong>{{'client.field.mail'|translate}}</strong></td>
 			<td>{{client.mail}}</td>
 		</tr>
 	</table>
