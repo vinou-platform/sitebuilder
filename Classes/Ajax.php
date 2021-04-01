@@ -75,7 +75,7 @@ class Ajax {
 
             case 'findPackage':
                 Session::setValue('delivery_type','address');
-                $this->sendResult($this->api->getBasketPackage());
+                $this->sendResult($this->api->getBasketPackage(), 'package not found', 400);
                 break;
 
             case 'findCampaign':
