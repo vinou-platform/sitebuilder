@@ -125,11 +125,13 @@ class Ajax {
         $result = $this->api->findCampaign($this->request);
         $campaign = Session::getValue('campaign');
 
-        if ($result && isset($result['code']))
+        if ($result && isset($result['code'])) {
+            Session::deleteValue('campaign');
             $this->sendResult(false, isset($result['data']) ? $result['data'] : $result['details']);
+        }
 
-        else if ($result && $campaign && $result['data']['uuid'] == $campaign['uuid'])
-            $this->sendResult(false, 'campaign already activated');
+        // else if ($result && $campaign && $result['data']['uuid'] == $campaign['uuid'])
+        //     $this->sendResult(false, 'campaign already activated');
 
         return $result;
     }
