@@ -49,17 +49,36 @@ class DynamicRoutes {
 	}
 
 	public function loadDefaultRoutes() {
-		if (is_null($this->routeStorage))
-			$configDir = str_replace('Classes/Router', 'Configuration/Routes', Helper::getClassPath(get_class($this)));
-		else {
-			$configDir = Helper::getNormDocRoot().$this->routeStorage;
-		}
 
-		if ($handle = opendir($configDir)) {
+		$exampleConfigDir = str_replace('Classes/Router', 'Configuration/Routes', Helper::getClassPath(get_class($this)));
+
+		if (!$this->loadDefaults)
+			return;
+
+		if (is_bool($this->loadDefaults))
+			$this->loadRoutesByDirectory($exampleConfigDir);
+
+		if (is_array($this->loadDefaults)) {
+			foreach ($this->loadDefaults as $fileName) {
+				$file = $exampleConfigDir . '/' . $fileName . '.yml';
+				$this->appendRoutesByFile($file);
+			}
+		}
+	}
+
+	public function loadRoutesByDirectory($dir) {
+
+		if (strpos($dir, Helper::getNormDocRoot()) === false)
+			$dir = Helper::getNormDocRoot() . $dir;
+
+		if (!is_dir($dir))
+			return false;
+
+		if ($handle = opendir($dir)) {
 		    while (false !== ($entry = readdir($handle))) {
 		        if ($entry != "." && $entry != ".." && pathinfo($entry)['extension'] == 'yml') {
-		        	$absFile = $configDir.'/'.$entry;
-		        	$this->configuration = array_merge($this->configuration, spyc_load_file($absFile));
+		        	$absFile = $dir.'/'.$entry;
+		        	$this->appendRoutesByFile($absFile);
 		        }
 		    }
 		    closedir($handle);
@@ -73,7 +92,15 @@ class DynamicRoutes {
 
 		$absRouteFile = substr($this->routeFile, 0, 1) == '/' ? $this->routeFile : Helper::getNormDocRoot().VINOU_CONFIG_DIR.$this->routeFile;
 
-		$this->configuration = array_merge($this->configuration, spyc_load_file($absRouteFile));
+		$this->appendRoutesByFile($absRouteFile);
+
+	}
+
+	private function appendRoutesByFile($file) {
+		if (!is_file($file))
+			return false;
+
+		$this->configuration = array_merge($this->configuration, spyc_load_file($file));
 	}
 
 	private function generateRoutes($configuration = NULL) {
