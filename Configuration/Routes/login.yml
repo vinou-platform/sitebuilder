@@ -1,5 +1,5 @@
 client:
-  pageTitle: 'Kundenbereich'
+  pageTitle: 'Member area'
   public: true
   sitemap: true
   type: redirect
@@ -29,7 +29,7 @@ client/logout:
 
 client/profile:
   template: 'Client/profile.twig'
-  pageTitle: 'Kundendaten bearbeiten'
+  pageTitle: 'Edit user profile'
   public: false
   twig:
     cache: false
@@ -41,7 +41,7 @@ client/profile:
 
 client/orders:
   template: 'Client/orders.twig'
-  pageTitle: 'Deine Bestellungen'
+  pageTitle: 'Your orders'
   public: false
   method: all
   dataProcessing:
@@ -49,14 +49,14 @@ client/orders:
 
 client/orders/{id}:
   template: 'Client/order-detail.twig'
-  pageTitle: 'Bestellung ansehen'
+  pageTitle: 'Order details'
   public: false
   dataProcessing:
     order: getClientOrder
 
 client/register:
   template: 'Client/register.twig'
-  pageTitle: 'Registrieren'
+  pageTitle: 'Register'
   public: true
   sitemap: true
   twig:
@@ -80,7 +80,7 @@ client/register:
 
 client/activate:
   template: 'Client/activate.twig'
-  pageTitle: 'Aktivieren'
+  pageTitle: 'Activate client'
   public: true
   twig:
     cache: false
@@ -92,7 +92,7 @@ client/activate:
 
 client/lostpassword:
   template: 'Client/lostpassword.twig'
-  pageTitle: 'Passwort vergessen'
+  pageTitle: 'Lost password'
   public: true
   sitemap: true
   twig:
@@ -109,7 +109,7 @@ client/lostpassword:
 
 client/resetPassword:
   template: 'Client/resetpassword.twig'
-  pageTitle: 'Passwort zurücksetzen'
+  pageTitle: 'Reset password'
   public: true
   twig:
     cache: false

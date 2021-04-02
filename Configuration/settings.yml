@@ -1,20 +1,77 @@
 system:
   # System area
   load:
-    defaultRoutes: true
+    defaultRoutes:
+      - bundles
+      - checkout
+      - login
+      - news
+      - pages
+      - products
+      - wineries
+      - wines
+    defaultSettings: true
 
 additionalContent:
+  test:
+    function: getWinesAll
+  categories:
+    function: getCategoriesAll
+    params:
+      orderBy: sorting ASC
+  customer: getCustomer
+  paymentMethods:
+    function: getAvailablePayments
+    key: payments
+  client:
+    function: getClient
   # Area to define content that will be rendered on each page
 
 settings:
+  defaultCountry: 'de'
+  deliveryCountries: ['de']
+  images:
+    list:
+      height: 650
+    detail:
+      height: 650
+  productimages:
+    list:
+      height: 500
+    detail:
+      height: 500
+  cache:
+    image: true
+    pdf: true
+  permissionRedirect: '/client/login'
   client:
     pages:
       register: '/client/register'
       activation: '/client/activate'
       declination: '/client/declined'
-      lostPassword: '/client/declined'
+      lostPassword: '/client/lostpassword'
       resetPassword: '/client/resetPassword'
       login: '/client/login'
       logout: '/client/logout'
       profile: '/client/profile'
+  pages:
+    basket: '/warenkorb'
+    billing: '/checkout'
+    delivery: '/checkout/lieferanschrift'
+    payment: '/checkout/zahlungsart'
+    summary: '/checkout/uebersicht'
+    finish: '/checkout/abschliessen'
+    login: '/client/login'
+    register: '/client/register'
+    paypal:
+      finish: '/checkout/paypal/finish'
+      cancel: '/checkout/paypal/cancel'
+    card:
+      init: '/checkout/payment/init'
+      finish: '/checkout/payment/finish'
+      cancel: '/checkout/payment/cancel'
+    debit:
+      init: '/checkout/payment/init'
+      finish: '/checkout/payment/finish'
+      cancel: '/checkout/payment/cancel'
   # Area to define render settings

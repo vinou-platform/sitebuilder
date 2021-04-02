@@ -1,0 +1,19 @@
+bundles:
+  template: 'Bundles/List.twig'
+  pageTitle: 'Bundles'
+  public: true
+  dataProcessing:
+    bundles: getBundlesAll
+
+bundles/{path_segment}:
+  template: 'Bundles/Detail.twig'
+  pageTitle: 'Bundle details'
+  public: true
+  sitemap:
+    function: getBundlesAll
+    params:
+      pageSize: 50
+      lazy: false
+    dataKey: 'data'
+  dataProcessing:
+    bundle: getBundle

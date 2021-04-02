@@ -1,37 +1,95 @@
 category:
   template: 'Categories/List.twig'
-  pageTitle: 'Our categories'
+  pageTitle: 'Category list'
   public: true
+  sitemap: true
   dataProcessing:
     categories: getCategoriesAll
+    wineries: getWineriesAll
 
-category/{id}:
+category/{path_segment}:
   template: 'Categories/Detail.twig'
-  pageTitle: 'The wines of category'
+  pageTitle: 'Category details'
   public: true
+  sitemap:
+    function: getCategoriesAll
+    params:
+      pageSize: 50
+      lazy: false
+    dataKey: 'categories'
   dataProcessing:
-    category: getCategoryWithWines
+    category: getCategory
+    wines:
+      function: getWinesByCategory
+      params:
+        language: 'de'
+        cluster:
+          - winery
+          - type
+          - taste_id
+          - vintage
+          - grapetypeIds
+    bundles: getBundlesByCategory
+    products: getProductsByCategory
+    wineries: getWineriesAll
+    items:
+      processor: 'formatter'
+      function: 'mergeData'
+      useRouteData: FALSE
+      useData:
+        - wines
+        - bundles
+        - products
 
 wines:
   template: 'Wines/List.twig'
-  pageTitle: 'Winelist'
+  pageTitle: 'Wine list'
   public: true
+  sitemap: true
   dataProcessing:
-    wines: getWinesAll
+    wines:
+      function: getWinesAll
+      params:
+        cluster:
+          - winery
+          - type
+          - taste_id
+          - vintage
+          - grapetypeIds
+    bundles: getBundlesAll
+    items:
+      processor: 'formatter'
+      function: 'mergeData'
+      useRouteData: FALSE
+      useData:
+        - wines
+        - bundles
+    wineries: getWineriesAll
 
-wines/{id}:
+wines/{path_segment}:
   template: 'Wines/Detail.twig'
   pageTitle: 'Wine details'
   public: true
+  sitemap:
+    function: getWinesAll
+    params:
+      pageSize: 50
+      lazy: false
+    dataKey: 'wines'
   dataProcessing:
     wine: getWine
+    wineries: getWineriesAll
 
 search:
   template: 'Wines/Search.twig'
-  pageTitle: 'Search'
+  pageTitle: 'Search wines'
   method: all
   public: true
   dataProcessing:
-    wines:
+    search:
       function: searchWine
       postParams: query,max
+      getParams: query,page
+      params:
+        pageSize: 6
+        lazy: false

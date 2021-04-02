@@ -1,0 +1,21 @@
+wineries:
+  template: 'Wineries/List.twig'
+  pageTitle: 'Wineries'
+  public: true
+  sitemap: true
+  dataProcessing:
+    wines: getWinesAll
+    wineries: getWineriesAll
+
+wineries/{id}:
+  template: 'Wineries/Detail.twig'
+  pageTitle: 'Winery details'
+  public: true
+  sitemap:
+    function: getWineriesAll
+    params:
+      pageSize: 50
+      lazy: false
+    dataKey: 'data'
+  dataProcessing:
+    winery: getWinery
