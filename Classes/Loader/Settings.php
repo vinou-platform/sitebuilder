@@ -7,16 +7,14 @@ use \Vinou\ApiConnector\Services\ServiceLocator;
 class Settings {
 
 	protected $files = [];
+	protected $defaultFile = false;
 	protected $settingsService = null;
 
-	function __construct($default = true) {
+	function __construct() {
 		$this->settingsService = ServiceLocator::get('Settings');
-		$this->loadDefaultFile();
-	}
-
-	public function loadDefaultFile() {
 		$classPaths = explode('/Classes', Helper::getClassPath(get_class($this)));
-		$this->addByDirectory(array_shift($classPaths));
+		$dir = array_shift($classPaths);
+		$this->defaultFile = $dir . '/Configuration/settings.yml';
 	}
 
 	public function addByDirectory($dir, $subdir = '/Configuration/') {
@@ -51,6 +49,12 @@ class Settings {
 		for ($i=0; $i < count($this->files); $i++) {
 			$fileSettings = spyc_load_file($this->files[$i]);
 			$settings = array_replace_recursive($settings, $fileSettings);
+		}
+
+		// Load default settings if enabled or no files are given
+		if (isset($settings['system']['load']['defaultSettings']) && $settings['system']['load']['defaultSettings'] || count($settings) == 0) {
+			$defaultSettings = spyc_load_file($this->defaultFile);
+			$settings = array_replace_recursive($defaultSettings, $settings);
 		}
 
 		foreach ($settings as $key => $value) {
