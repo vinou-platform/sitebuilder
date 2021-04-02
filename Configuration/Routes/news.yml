@@ -1,0 +1,20 @@
+news:
+  template: 'News/List.twig'
+  pageTitle: 'News list'
+  public: true
+  sitemap: true
+  dataProcessing:
+    newsEntries: getNewsAll
+
+news/{id}:
+  template: 'News/Detail.twig'
+  pageTitle: 'News details'
+  public: true
+  sitemap:
+    function: getNewsAll
+    params:
+      pageSize: 50
+      lazy: false
+    titleField: 'title'
+  dataProcessing:
+    newsEntry: getNews

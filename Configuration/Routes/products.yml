@@ -1,13 +1,19 @@
-products:
+produkte:
   template: 'Products/List.twig'
   pageTitle: 'Products'
   public: true
   dataProcessing:
     products: getProductsAll
 
-products/{id}:
+produkte/{path_segment}:
   template: 'Products/Detail.twig'
   pageTitle: 'Product details'
   public: true
+  sitemap:
+    function: getProductsAll
+    params:
+      pageSize: 50
+      lazy: false
+    dataKey: 'data'
   dataProcessing:
     product: getProduct

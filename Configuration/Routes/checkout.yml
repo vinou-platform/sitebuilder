@@ -1,10 +1,15 @@
 warenkorb:
   template: 'Checkout/basket.twig'
-  pageTitle: 'Warenkorb'
+  pageTitle: 'Basket'
   public: true
+  twig:
+    cache: false
   dataProcessing:
     basket: getBasket
     package: getBasketPackage
+    delivery_type:
+      function: loadDeliveryType
+      processor: shop
     campaign:
       processor: shop
       function: loadCampaign
@@ -18,10 +23,15 @@ warenkorb:
 
 checkout:
   template: 'Checkout/billing.twig'
-  pageTitle: 'Rechnungsadresse'
+  pageTitle: 'Billing address'
   public: true
   method: all
+  twig:
+    cache: false
   dataProcessing:
+    delivery_type:
+      function: loadDeliveryType
+      processor: shop
     precheck:
       function: validateBasket
       processor: shop
@@ -34,9 +44,11 @@ checkout:
 
 checkout/lieferanschrift:
   template: 'Checkout/delivery.twig'
-  pageTitle: 'Lieferanschrift'
+  pageTitle: 'Delivery address'
   public: true
   method: all
+  twig:
+    cache: false
   dataProcessing:
     precheck:
       function: validateBilling
@@ -44,15 +56,20 @@ checkout/lieferanschrift:
     billing:
       function: loadBilling
       processor: shop
+    delivery_type:
+      function: loadDeliveryType
+      processor: shop
     delivery:
       function: loadDelivery
       processor: shop
 
 checkout/zahlungsart:
   template: 'Checkout/payment.twig'
-  pageTitle: 'Zahlungsart'
+  pageTitle: 'Payment method'
   public: true
   method: all
+  twig:
+    cache: false
   dataProcessing:
     precheck:
       function: validateBilling
@@ -63,9 +80,11 @@ checkout/zahlungsart:
 
 checkout/uebersicht:
   template: 'Checkout/summary.twig'
-  pageTitle: 'Bestellübersicht'
+  pageTitle: 'Order summary'
   public: true
   method: all
+  twig:
+    cache: false
   dataProcessing:
     precheck:
       function: validateOrder
@@ -85,6 +104,9 @@ checkout/uebersicht:
     billing:
       function: loadBilling
       processor: shop
+    delivery_type:
+      function: loadDeliveryType
+      processor: shop
     delivery:
       function: loadDelivery
       processor: shop
@@ -97,7 +119,9 @@ checkout/uebersicht:
 
 checkout/abschliessen:
   template: 'Checkout/finish.twig'
-  pageTitle: 'Bestellung abgeschlossen'
+  pageTitle: 'Finish order'
+  twig:
+    cache: false
   dataProcessing:
     precheck:
       function: validateOrder
@@ -115,6 +139,10 @@ checkout/abschliessen:
       function: sendClientNotification
       processor: shop
       useData: 'addedOrder'
+    initPayment:
+      function: initPaymentByPage
+      processor: shop
+      useData: 'addedOrder'
     success:
       function: removeSessionData
       processor: shop
@@ -122,7 +150,9 @@ checkout/abschliessen:
 
 checkout/paypal/finish:
   template: 'Checkout/Paypal/finish.twig'
-  pageTitle: 'Bestellung abgeschlossen'
+  pageTitle: 'Order finished'
+  twig:
+    cache: false
   dataProcessing:
     paypal:
       function: finishPaypalPayment
@@ -141,7 +171,9 @@ checkout/paypal/finish:
 
 checkout/paypal/cancel:
   template: 'Checkout/Paypal/cancel.twig'
-  pageTitle: 'Bestellung abgebrochen'
+  pageTitle: 'Order cancelled'
+  twig:
+    cache: false
   dataProcessing:
     paypal:
       function: cancelPaypalPayment
@@ -151,3 +183,45 @@ checkout/paypal/cancel:
       function: removeSessionData
       processor: shop
       useData: 'paypal'
+
+checkout/payment/init:
+  template: 'Checkout/Payment/init.twig'
+  pageTitle: 'Init payment'
+  twig:
+    cache: false
+  dataProcessing:
+    stripe:
+      function: loadStripeData
+      processor: shop
+
+checkout/payment/finish:
+  template: 'Checkout/Payment/finish.twig'
+  pageTitle: 'Payment successful'
+  twig:
+    cache: false
+  dataProcessing:
+    result:
+      function: finishPayment
+      getParams: pid
+    addedOrder:
+      function: getSessionOrder
+    success:
+      function: removeSessionData
+      processor: shop
+      useData: 'result'
+
+checkout/payment/cancel:
+  template: 'Checkout/Payment/cancel.twig'
+  pageTitle: 'Payment cancelled'
+  twig:
+    cache: false
+  dataProcessing:
+    result:
+      function: cancelPayment
+      getParams: pid
+    addedOrder:
+      function: getSessionOrder
+    success:
+      function: removeSessionData
+      processor: shop
+      useData: 'result'
