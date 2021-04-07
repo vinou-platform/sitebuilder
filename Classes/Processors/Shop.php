@@ -348,19 +348,21 @@ class Shop {
                 unset($order['billing']);
             }
 
-            $deliveryMatch = true;
-            foreach ($compareFields as $source => $target) {
-                if (isset($order['delivery'][$target]) && strcmp($client[$source],$order['delivery'][$target]) !== 0) {
-                    $deliveryMatch = false;
-                    $order['delivery_type'] = 'address';
-                    break;
+            if ($order['delivery_type'] != 'none') {
+                $deliveryMatch = true;
+                foreach ($compareFields as $source => $target) {
+                    if (isset($order['delivery'][$target]) && strcmp($client[$source],$order['delivery'][$target]) !== 0) {
+                        $deliveryMatch = false;
+                        $order['delivery_type'] = 'address';
+                        break;
+                    }
                 }
-            }
 
-            if ($deliveryMatch) {
-                $order['delivery_type'] = 'client';
-                $order['delivery_id'] = $clientId;
-                unset($order['delivery']);
+                if ($deliveryMatch) {
+                    $order['delivery_type'] = 'client';
+                    $order['delivery_id'] = $clientId;
+                    unset($order['delivery']);
+                }
             }
         } else {
             $check = $this->api->checkClientMail($order['billing']);
