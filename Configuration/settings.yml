@@ -74,4 +74,15 @@ settings:
       init: '/checkout/payment/init'
       finish: '/checkout/payment/finish'
       cancel: '/checkout/payment/cancel'
-  # Area to define render settings
+  messages:
+    minBasketSize:
+      title: 'Mindestbestellmenge nicht erreicht'
+      description: 'Du hast noch nicht die nötige Mindestbestellmenge von <strong>###value### Flaschen</strong> im Warenkorb'
+      type: 'error'
+      checkout: 'hidden'
+    packageSteps:
+      title: 'Falsche Bestellmenge'
+      description: 'Die größe Deines Warenkorbes entspricht nicht unseren Versandstaffeln. <strong>Wir versenden ###value### Flaschen.</strong> Du möchtest eine Sondergröße beauftragen oder die passende Versandstaffel ist nicht dabei? Dann setz Dich direkt mit uns in Verbindung.'
+      factor: 'Die größe Deines Warenkorbes entspricht nicht unseren Versandstaffeln. <strong>Wir versenden ausschließlich Gesamtmengen die durch ###value### teilbar sind.</strong> Du möchtest eine Sondergröße beauftragen? Dann setz Dich direkt mit uns in Verbindung.'
+      type: 'error'
+      checkout: 'hidden'
