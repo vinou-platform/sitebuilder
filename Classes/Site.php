@@ -90,10 +90,6 @@ class Site {
 		if (is_array($config))
 			$this->config = $config;
 
-		$additionalContent = $this->settingsService->get('additionalContent');
-		if (is_array($additionalContent))
-			$this->render->dataProcessing($additionalContent);
-
 		$settings = $this->settingsService->get('settings');
 		if (is_array($settings)) {
 			$this->render->renderArr['settings'] = $settings;
@@ -102,6 +98,10 @@ class Site {
 		}
 
 		$this->loadDefaultProcessors();
+
+		$additionalContent = $this->settingsService->get('additionalContent');
+		if (is_array($additionalContent))
+			$this->render->dataProcessing($additionalContent);
 	}
 
 	private function loadDefaultProcessors() {
