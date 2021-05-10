@@ -467,30 +467,29 @@ class Shop {
 
         $customer = $this->api->getCustomer();
         $client = $this->api->getClient();
+        $data = [
+            'order' => $order,
+            'client' => $client,
+            'customer' => $customer,
+            'settings' => $this->settings
+        ];
+        if ($customer['type'] == 'merchant')
+            $data['wineries'] = $this->api->getWineriesAll();
+
         $subjectSuffix = $order['delivery_type'] == 'none' ? ' (Click & Collect)' : ' (Lieferung)';
 
-        $mail = new Mailer();
+        $mail = new Mailer($this->api);
         $mail->setTemplate('OrderCreateClient.twig');
         $mail->setReceiver($order['client']['mail']);
         $mail->setSubject('Deine Bestellung '. $order['number'] . $subjectSuffix);
-        $mail->setData([
-            'order' => $order,
-            'client' => $client,
-            'customer' => $customer,
-            'settings' => $this->settings
-        ]);
+        $mail->setData($data);
         $mail->loadShopAttachments();
         $send = $mail->send();
 
-        $adminmail = new Mailer();
+        $adminmail = new Mailer($this->api);
         $adminmail->setTemplate('OrderCreateClientNotification.twig');
         $adminmail->setSubject('Bestellung '. $order['number'] . $subjectSuffix);
-        $adminmail->setData([
-            'order' => $order,
-            'client' => $client,
-            'customer' => $customer,
-            'settings' => $this->settings
-        ]);
+        $adminmail->setData($data);
         $send = $adminmail->send();
 
         // // 2020-10-19 Deactivated due to gdpr reasons
