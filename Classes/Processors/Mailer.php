@@ -401,6 +401,20 @@ class Mailer {
 			return Helper::imageToBase64($url);
 		}));
 
+		$this->renderer->addFilter( new \Twig_SimpleFilter('withAttribute', function($arr,$attr, $value) {
+            return array_filter($arr,
+                                function($item) use ($attr, $value) {
+                                    if (is_array($item[$attr]))
+                                        return isset($item[$attr][$value]);
+                                    else
+                                        return $item[$attr] == $value;
+                                });
+        }));
+
+        $this->renderer->addFilter( new \Twig_SimpleFilter('getWinery', function ($id) {
+            return $this->api->getWinery($id);
+        }));
+
 		return $this->renderer;
 	}
 }

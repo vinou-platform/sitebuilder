@@ -92,7 +92,15 @@
 						<span class="small">{{('bundle.fields.articlenumber')|translate}}: {{item.item.articlenumber}}{% if item.item.size > 0 %}, {{('bundle.fields.size')|translate}}: {{item.item.size|number_format(2, ',', '.')|trim('0', 'right')|trim(',', 'right')}} {{item.item.unit}}{% endif %}</span>
 					{% else %}
 						{{item.quantity}}&nbsp;x&nbsp;{% if item.item.vintage > 0 %}{{item.item.vintage}} {% endif %}{{item.item.name}}{% if item.item.taste_id > 0 %} {{('tastes.' ~ item.item.taste_id)|translate}}{% endif %}<br>
-						<span class="small">{{('wine.field.articlenumber')|translate}}: {{item.item.articlenumber}}{% if item.item.bottlesize > 0 %}, {{('wine.field.bottlesize')|translate}}: {{item.item.bottlesize|number_format(2, ',', '.')|trim('0', 'right')|trim(',', 'right')}} l{% endif %}{% if item.item.place %}, {{('wine.field.place')|translate}}: {{item.item.place}}{% endif %}</span>
+						<span class="small">
+							{{('wine.field.articlenumber')|translate}}: {{item.item.articlenumber}}
+							{% if item.item.alcohol > 0 %}<br>{{ 'wine.field.alcohol'|translate}}: {{item.item.alcohol|number_format(1, ',', '.')}}&nbsp;%&nbsp;Vol.{% endif %}
+							{% if item.item.bottlesize > 0 %}<br>{{('wine.field.bottlesize')|translate}}: {{item.item.bottlesize|number_format(2, ',', '.')|trim('0', 'right')|trim(',', 'right')}} l{% endif %}
+							{% if item.item.place %}<br>{{('wine.field.place')|translate}}: {{item.item.place}}{% endif %}
+							{% if item.item.grapetypeIds|length > 0 %}<br>{{'wine.field.grapetypes.label' | translate}}: {% for grapetype in item.item.grapetypeIds %}{{ ('grapetypes.' ~ grapetype ~ '.name')|translate }}{% if not loop.last %}, {% endif %}{% endfor %}{% endif %}
+							{% if item.item.allergenIds|length > 0 %}<br>{{'wine.field.allergens.label' | translate}}: {% for allergen in item.item.allergenIds %}{{ ('allergens.' ~ allergen ~ '.name')|translate }}{% if not loop.last %}, {% endif %}{% endfor %}{% endif %}
+							{% if customer.type == 'merchant' and item.item.winery_id is defined %}{% set winery = wineries|withAttribute('id', item.item.winery_id)|first %}<br>{{('wine.field.winery.label')|translate}}: {{winery.company}}{% if winery.city != '' %}, {{ winery.city }}{% endif %}{% if winery.region > 0 %}, {{ ('wineregions.' ~ winery.countrycode ~ '.' ~ winery.region)|translate }}, {{ ('countries.' ~ winery.countrycode )|translate }}{% endif %}{% endif %}
+						</span>
 					{% endif %}
 				</td>
 				<td valign="top" align="right">{{(item.gross / item.quantity)|number_format(2, ',', '.')}}&nbsp;EUR</td>
