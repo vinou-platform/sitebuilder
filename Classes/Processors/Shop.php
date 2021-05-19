@@ -16,6 +16,7 @@ class Shop {
     protected $api;
     protected $settingsService = null;
     protected $settings = false;
+    protected $formalSpeech = false;
     protected $client = false;
 
     public function __construct($api = null) {
@@ -26,6 +27,9 @@ class Shop {
 
         $this->settingsService = ServiceLocator::get('Settings');
         $this->settings = $this->settingsService->get('settings');
+
+        $this->formalSpeech = array_key_exists('speechStyle', $this->settings) && $this->settings['speechStyle'] == 'formal';
+
         $this->client = Session::getValue('client');
     }
 
@@ -476,12 +480,14 @@ class Shop {
         if ($customer['type'] == 'merchant')
             $data['wineries'] = $this->api->getWineriesAll();
 
+        $subject = $this->formalSpeech ? 'Ihre Bestellung ' : 'Deine Bestellung ';
+        $subject .= $order['number'];
         $subjectSuffix = $order['delivery_type'] == 'none' ? ' (Click & Collect)' : ' (Lieferung)';
 
         $mail = new Mailer($this->api);
         $mail->setTemplate('OrderCreateClient.twig');
         $mail->setReceiver($order['client']['mail']);
-        $mail->setSubject('Deine Bestellung '. $order['number'] . $subjectSuffix);
+        $mail->setSubject($subject . $subjectSuffix);
         $mail->setData($data);
         $mail->loadShopAttachments();
         $send = $mail->send();
@@ -521,10 +527,14 @@ class Shop {
     public function sendClientRegisterMail($data = NULL) {
 
         if (isset($data['lostpassword_hash']) && isset($data['mail'])) {
+
+            $subject = $this->formalSpeech ? 'Bestätigen Sie Ihre Registrierung auf ' : 'Bestätige Deine Registrierung auf ';
+            $subject .= $_SERVER['SERVER_NAME'];
+
             $mail = new Mailer();
             $mail->setTemplate('ClientRegistration.twig');
             $mail->setReceiver($data['mail']);
-            $mail->setSubject('Bestätige Deine Registrierung auf '.$_SERVER['SERVER_NAME']);
+            $mail->setSubject($subject);
             $mail->setData([
                 'client' => $data,
                 'customer' => $this->api->getCustomer(),
@@ -552,10 +562,13 @@ class Shop {
                 'settings' => $this->settings
             ]);
 
+            $subject = $this->formalSpeech ? 'Ihr Account auf' : 'Dein Account auf ';
+            $subject .= $_SERVER['SERVER_NAME'];
+
             $clientMail = new Mailer();
             $clientMail->setTemplate('ClientApprovementNotification.twig');
             $clientMail->setReceiver($data['mail']);
-            $clientMail->setSubject('Dein Account auf '.$_SERVER['SERVER_NAME']);
+            $clientMail->setSubject($subject);
             $clientMail->setData([
                 'client' => $data,
                 'customer' => $this->api->getCustomer(),
@@ -607,10 +620,13 @@ class Shop {
     public function sendPasswordResetMail($data = NULL) {
 
         if (isset($data['hash']) && isset($data['mail'])) {
+            $subject = $this->formalSpeech ? 'Ihr Passwort wurde zurückgesetzt ' : 'Dein Passwort wurde zurückgesetzt ';
+            $subject .= $_SERVER['SERVER_NAME'];
+
             $mail = new Mailer();
             $mail->setTemplate('PasswordReset.twig');
             $mail->setReceiver($data['mail']);
-            $mail->setSubject('Dein Passwort wurde zurückgesetzt '.$_SERVER['SERVER_NAME']);
+            $mail->setSubject($subject);
             $mail->setData([
                 'client' => $data,
                 'customer' => $this->api->getCustomer(),
