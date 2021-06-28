@@ -143,30 +143,32 @@ class Sitemap {
                         }
                     }
 
-                    foreach ($data as $entry) {
-                        $createUrl = true;
-                        $entryUrl = $url;
-                        foreach ($matches[1] as $fieldName) {
-                            if (isset($entry[$fieldName]))
-                                $entryUrl = str_replace('{'.$fieldName.'}', $entry[$fieldName], $entryUrl);
-                            else
-                                $createUrl = false;
-                        }
-
-                        if ($createUrl) {
-
-                            $entryDate = isset($entry['chstamp']) ? new \DateTime($entry['chstamp']) : $date;
-                            $siteMapUrl = new Url($entryUrl);
-                            $siteMapUrl->setLastMod($entryDate);
-                            $siteMapUrl->setChangeFreq('weekly');
-                            $siteMapUrl->setPriority('0.8');
-
-                            if ($entry['image'] != '') {
-                                $image = new Image('https://api.vinou.de'.$entry['image']);
-                                $siteMapUrl->addExtension($image);
+                    if (is_iterable($data)) {
+                        foreach ($data as $entry) {
+                            $createUrl = true;
+                            $entryUrl = $url;
+                            foreach ($matches[1] as $fieldName) {
+                                if (isset($entry[$fieldName]))
+                                    $entryUrl = str_replace('{'.$fieldName.'}', $entry[$fieldName], $entryUrl);
+                                else
+                                    $createUrl = false;
                             }
 
-                            $urlset->add($siteMapUrl);
+                            if ($createUrl) {
+
+                                $entryDate = isset($entry['chstamp']) ? new \DateTime($entry['chstamp']) : $date;
+                                $siteMapUrl = new Url($entryUrl);
+                                $siteMapUrl->setLastMod($entryDate);
+                                $siteMapUrl->setChangeFreq('weekly');
+                                $siteMapUrl->setPriority('0.8');
+
+                                if ($entry['image'] != '') {
+                                    $image = new Image('https://api.vinou.de'.$entry['image']);
+                                    $siteMapUrl->addExtension($image);
+                                }
+
+                                $urlset->add($siteMapUrl);
+                            }
                         }
                     }
                 }

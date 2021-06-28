@@ -22,7 +22,7 @@ class Formatter {
 						$subdata = $subdata['data'];
 
 					if (empty($subdata) || is_null($subdata))
-						continue;
+						continue 2;
 
 					foreach ($subdata as $entry) {
 						if (is_array($entry) && array_key_exists('data', $entry))
