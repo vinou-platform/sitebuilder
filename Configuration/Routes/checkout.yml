@@ -20,6 +20,8 @@ warenkorb:
         - basket
         - package
         - campaign
+    openOrder:
+      function: getSessionOrder
 
 checkout:
   template: 'Checkout/billing.twig'
@@ -41,6 +43,8 @@ checkout:
     delivery:
       function: loadDelivery
       processor: shop
+    openOrder:
+      function: getSessionOrder
 
 checkout/lieferanschrift:
   template: 'Checkout/delivery.twig'
@@ -77,6 +81,8 @@ checkout/zahlungsart:
     payment:
       function: loadPayment
       processor: shop
+    openOrder:
+      function: getSessionOrder
 
 checkout/uebersicht:
   template: 'Checkout/summary.twig'
@@ -116,6 +122,8 @@ checkout/uebersicht:
     order:
       function: check
       processor: shop
+    openOrder:
+      function: getSessionOrder
 
 checkout/abschliessen:
   template: 'Checkout/finish.twig'
@@ -209,6 +217,21 @@ checkout/payment/finish:
       function: removeSessionData
       processor: shop
       useData: 'result'
+    mail:
+      function: sendClientNotification
+      processor: shop
+      useData:
+        - addedOrder
+        - success
+
+checkout/payment/abschliessen:
+  dataProcessing:
+    addedOrder:
+      function: getSessionOrder
+    initPayment:
+      function: initPaymentByPage
+      processor: shop
+      useData: 'addedOrder'
 
 checkout/payment/cancel:
   template: 'Checkout/Payment/cancel.twig'

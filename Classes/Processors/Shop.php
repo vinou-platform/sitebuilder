@@ -294,7 +294,6 @@ class Shop {
     }
 
     public function removeSessionData($status) {
-
         if ($status) {
             Session::deleteValue('payment');
             Session::deleteValue('basket');
@@ -462,12 +461,27 @@ class Shop {
         return true;
     }
 
-    public function sendClientNotification($addedOrder) {
+    public function sendClientNotification($data) {
 
-        if ($addedOrder && $addedOrder['number'])
-            $order = $this->api->getOrder($addedOrder['id']);
-        else
-            return false;
+				//prüfen was bei nicht angepassten altsystemen ohne entsprechende checkout.yml passieren würde
+
+				if (is_array($data) && isset($data['addedOrder']))
+					$addedOrder = $data['addedOrder'];
+
+				if (is_array($data) && isset($data['success']) && $data['success'][0])
+					$externalPaymentFinished = true;
+				else
+					$externalPaymentFinished = false;
+
+				if (isset($addedOrder) && $addedOrder['number'])
+						$order = $this->api->getOrder($addedOrder['id']);
+				else
+						return false;
+
+				//abbruch / keine mail versenden wenn es eine externe zahlung ist und die zahlung noch nicht abgeschlossen wurde
+        $temporaryPaymentMethods = ['card', 'debit', 'paypal'];
+        if (in_array($order['payment_type'], $temporaryPaymentMethods) && !$externalPaymentFinished)
+	        return false;
 
         $customer = $this->api->getCustomer();
         $client = $this->api->getClient();
