@@ -1,6 +1,7 @@
 <?php
 namespace Vinou\SiteBuilder\Processors;
 
+use Exception;
 use \Vinou\ApiConnector\Api;
 use \Vinou\ApiConnector\Session\Session;
 use \Vinou\ApiConnector\Services\ServiceLocator;
@@ -215,13 +216,18 @@ class Shop {
         $pages = $this->settings['pages'];
         if (array_key_exists($paymentType, $pages) && array_key_exists('init', $pages[$paymentType]))
             Redirect::internal($pages[$paymentType]['init']);
-
         return true;
     }
 
     public function loadStripeData() {
         return Session::getValue('stripe');
     }
+
+		public function initPaypalPayment() {
+			$paypal = Session::getValue('paypal');
+			if($paypal)
+				Redirect::external($paypal);
+		}
 
     public function check() {
         if (!empty($_POST)) {
@@ -295,6 +301,7 @@ class Shop {
 
     public function removeSessionData($status) {
         if ($status) {
+						Session::deleteValue('paypal');
             Session::deleteValue('payment');
             Session::deleteValue('basket');
             Session::deleteValue('card');
@@ -460,28 +467,31 @@ class Shop {
 
         return true;
     }
+		public function getPreviousOrderInProgress(){
+			$order = $this->api->getSessionOrder();
+			if ($order
+				&& $order['status'] != 'cancelled'
+				&& $order['status'] != 'need_package'
+				&& $this->isTemporaryPaymentMethod($order['payment_type'])
+			)
+				return $order;
+			return false;
+		}
+		private function isTemporaryPaymentMethod($method){
+			$temporaryPaymentMethods = ['card', 'debit', 'paypal'];
+			if (in_array($method, $temporaryPaymentMethods))
+	        return true;
+			return false;
+		}
+    public function sendClientNotification($addedOrder) {
 
-    public function sendClientNotification($data) {
+        if ($addedOrder && $addedOrder['number'])
+            $order = $this->api->getOrder($addedOrder['id']);
+        else
+            return false;
 
-				//prüfen was bei nicht angepassten altsystemen ohne entsprechende checkout.yml passieren würde
-
-				if (is_array($data) && isset($data['addedOrder']))
-					$addedOrder = $data['addedOrder'];
-
-				if (is_array($data) && isset($data['success']) && $data['success'][0])
-					$externalPaymentFinished = true;
-				else
-					$externalPaymentFinished = false;
-
-				if (isset($addedOrder) && $addedOrder['number'])
-						$order = $this->api->getOrder($addedOrder['id']);
-				else
-						return false;
-
-				//abbruch / keine mail versenden wenn es eine externe zahlung ist und die zahlung noch nicht abgeschlossen wurde
-        $temporaryPaymentMethods = ['card', 'debit', 'paypal'];
-        if (in_array($order['payment_type'], $temporaryPaymentMethods) && !$externalPaymentFinished)
-	        return false;
+        if ( $this->isTemporaryPaymentMethod($order['payment_type']) && $order['status'] == "new" )
+            return false;
 
         $customer = $this->api->getCustomer();
         $client = $this->api->getClient();
