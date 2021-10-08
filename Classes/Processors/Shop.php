@@ -732,7 +732,7 @@ class Shop {
 			$itemsByWinery[$wineryId] = $item['quantity'];
 		}
 
-		$quantity = min($itemsByWinery);
+		$quantity = count($itemsByWinery) ? min($itemsByWinery) : 0;
 
 		if ($quantity < $minBasketSize)
 			return $retString ? 'minBasketSize' : false;
