@@ -434,7 +434,6 @@ class Shop {
 			Redirect::internal($this->settings['pages']['basket']);
 		}
 
-
 		return true;
 	}
 
@@ -626,7 +625,6 @@ class Shop {
 		]);
 
 		return $mail->send();
-
 	}
 
 	public function sendClientDeclinationNotification($data = NULL) {
@@ -644,7 +642,6 @@ class Shop {
 		]);
 
 		return $mail->send();
-
 	}
 
 	public function sendPasswordResetMail($data = NULL) {
@@ -667,7 +664,6 @@ class Shop {
 
 		return false;
 	}
-
 
 	public static function calcCardQuantity($card) {
 		$quantity = 0;
@@ -714,22 +710,21 @@ class Shop {
 
 		$minBasketSize = $settings['minBasketSize'];
 		if (is_array($settings['basketPerWinery'])) {
-		if ($settings['basketPerWinery']['size']) {
-			$minBasketSize = $settings['basketPerWinery']['size'];
-		}
+			if ($settings['basketPerWinery']['size'])
+				$minBasketSize = $settings['basketPerWinery']['size'];
 		} else {
-		if (is_numeric($settings['basketPerWinery']))
-			$minBasketSize = $settings['basketPerWinery'];
+			if (is_numeric($settings['basketPerWinery']))
+				$minBasketSize = $settings['basketPerWinery'];
 		}
 
 		$itemsByWinery = [];
 		foreach ($items as $item) {
-		$wineryId = $item['item']['winery_id'];
+			$wineryId = $item['item']['winery_id'];
 
-		if(isset($itemsByWinery[$wineryId]))
-			$itemsByWinery[$wineryId] += $item['quantity'];
-		else
-			$itemsByWinery[$wineryId] = $item['quantity'];
+			if(isset($itemsByWinery[$wineryId]))
+				$itemsByWinery[$wineryId] += $item['quantity'];
+			else
+				$itemsByWinery[$wineryId] = $item['quantity'];
 		}
 
 		$quantity = count($itemsByWinery) ? min($itemsByWinery) : 0;
