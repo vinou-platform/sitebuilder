@@ -131,7 +131,6 @@ class Mailer {
 	}
 
 	public function loadCaptcha($params = NULL) {
-
 		$phrase = Session::getValue('captcha');
 		if (!$phrase) {
 			$phraseBuilder = new PhraseBuilder(5, '0123456789');
@@ -154,10 +153,13 @@ class Mailer {
 		$captcha->build($width, $height);
 		Session::setValue('captcha', $captcha->getPhrase());
 
+		if (isset($params['dynamicCaptchaInput']))
+			$this->dynamicCaptchaInput = $params['dynamicCaptchaInput'];
+
 		return [
 			'phrase' => $captcha->getPhrase(),
 			'image' => $captcha->inline(),
-			'fieldName' => bin2hex(random_bytes(20))
+			'field' => $this->dynamicCaptchaInput ? bin2hex(random_bytes(20)) : ''
 		];
 
 
@@ -227,10 +229,6 @@ class Mailer {
 
 		if (isset($formconfig['disableCaptcha'])) {
 			$this->useCaptcha = !$formconfig['disableCaptcha'];
-		}
-
-		if (isset($formconfig['dynamicCaptchaInput'])) {
-			$this->dynamicCaptchaInput = $formconfig['dynamicCaptchaInput'];
 		}
 
 		$maildata['formdata'] = [];
