@@ -165,20 +165,24 @@ class Mailer {
 
 	}
 
+	// To-Do: check whether the function is being used from outside
 	public function validateCaptcha() {
-		if (!isset($_POST['captcha']))
-			return false;
 
-		if ($this->dynamicCaptchaInput) {
-			if (!isset($_POST[$_POST['captcha']]))
-				return false;
-			$phrase = $_POST[$_POST['captcha']];
-		}
-		else
-			$phrase = $_POST['captcha'];
+		return Helper::validateCaptcha($this->dynamicCaptchaInput);
 
-		$sessionPhrase = Session::getValue('captcha');
-		return $phrase === (string)$sessionPhrase;
+		// if (!isset($_POST['captcha']))
+		// 	return false;
+
+		// if ($this->dynamicCaptchaInput) {
+		// 	if (!isset($_POST[$_POST['captcha']]))
+		// 		return false;
+		// 	$phrase = $_POST[$_POST['captcha']];
+		// }
+		// else
+		// 	$phrase = $_POST['captcha'];
+
+		// $sessionPhrase = Session::getValue('captcha');
+		// return $phrase === (string)$sessionPhrase;
 	}
 
 	public function sendPostForm($params) {
