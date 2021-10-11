@@ -55,8 +55,15 @@ class Ajax {
                     $this->sendResult(false, 'basket not found', 400);
                 else {
                     $result['quantity'] = Shop::calcCardQuantity($result['basketItems']);
-                    $result['valid'] = Shop::quantityIsAllowed($result['quantity'], true);
+
+										$settings = $this->settingsService->get('settings');
+										if (isset($settings['basketPerWinery']))
+											$result['valid'] = Shop::quantityByWineryIsAllowed( $result['basketItems'], true);
+										else
+											$result['valid'] = Shop::quantityIsAllowed($result['quantity'], true);
+
                 }
+
 
                 $this->sendResult($result);
                 break;

@@ -14,696 +14,728 @@ use \Vinou\SiteBuilder\Processors\Mailer;
  */
 class Shop {
 
-    protected $api;
-    protected $settingsService = null;
-    protected $settings = false;
-    protected $formalSpeech = false;
-    protected $client = false;
+	protected $api;
+	protected $settingsService = null;
+	protected $settings = false;
+	protected $formalSpeech = false;
+	protected $client = false;
 
-    public function __construct($api = null) {
-        if (is_null($api))
-            throw new \Exception('no api was initialized');
-        else
-            $this->api = $api;
+	public function __construct($api = null) {
+		if (is_null($api))
+			throw new \Exception('no api was initialized');
+		else
+			$this->api = $api;
 
-        $this->settingsService = ServiceLocator::get('Settings');
-        $this->settings = $this->settingsService->get('settings');
+		$this->settingsService = ServiceLocator::get('Settings');
+		$this->settings = $this->settingsService->get('settings');
 
-        $this->formalSpeech = array_key_exists('speechStyle', $this->settings) && $this->settings['speechStyle'] == 'formal';
+		$this->formalSpeech = array_key_exists('speechStyle', $this->settings) && $this->settings['speechStyle'] == 'formal';
 
-        $this->client = Session::getValue('client');
-    }
+		$this->client = Session::getValue('client');
+	}
 
-    public function loadCampaign() {
-        return Session::getValue('campaign');
-    }
+	public function loadCampaign() {
+		return Session::getValue('campaign');
+	}
 
-    public function calcSum($data = null) {
+	public function calcSum($data = null) {
 
-        $sum = [
-            'net' => 0,
-            'tax' => 0,
-            'gross' => 0,
-            'quantity' => 0
-        ];
+		$sum = [
+			'net' => 0,
+			'tax' => 0,
+			'gross' => 0,
+			'quantity' => 0
+		];
 
-        if (!is_array($data))
-            return $sum;
+		if (!is_array($data))
+			return $sum;
 
-        $items = isset($data['basketItems']) ? $data['basketItems'] : $data;
+		$items = isset($data['basketItems']) ? $data['basketItems'] : $data;
 
-        foreach ($items as $item) {
+		foreach ($items as $item) {
 
-            $quantity = $item['quantity'];
-            $priceObject = $item['item'];
-            if ($this->client && isset($item['item']['prices'][0]))
-                $priceObject = $item['item']['prices'][0];
+			$quantity = $item['quantity'];
+			$priceObject = $item['item'];
+			if ($this->client && isset($item['item']['prices'][0]))
+				$priceObject = $item['item']['prices'][0];
 
-            $sum['net'] += $priceObject['net'] * $quantity;
-            $sum['tax'] += $priceObject['tax'] * $quantity;
-            $sum['gross'] += $priceObject['gross'] * $quantity;
-            $sum['quantity'] += $quantity;
-        }
-
-        return $sum;
-    }
-
-    public function arrangePositions($data = null) {
-
-        if (is_null($data))
-            return false;
-
-        $items = [];
-
-        if (isset($data['basket']) && count($data['basket']['basketItems']) > 0)
-            $items = array_merge($items, $data['basket']['basketItems']);
-
-        if (isset($data['package']) && !empty($data['package']))
-            array_push($items, [
-                'item_type' => 'package',
-                'item_id' => $data['package']['id'],
-                'quantity' => 1,
-                'item' => $data['package']
-            ]);
-
-        return $items;
-    }
-
-    public function campaignDiscount($data = null) {
-        $items = [];
-
-        if (!isset($data['campaign']))
-            return false;
-
-        if (isset($data['basket']) && count($data['basket']['basketItems']) > 0) {
-            foreach ($data['basket']['basketItems'] as &$item) {
-                $position = [
-                    'item_type' => $item['item_type'],
-                    'item_id' => $item['item_id'],
-                    'quantity' => $item['quantity'],
-                    'gross' => $item['quantity'] * $item['item']['gross'],
-                    'net' => $item['quantity'] * $item['item']['net'],
-                    'taxrate' => $item['item']['taxrate']
-                ];
-                $position['tax'] = $position['gross'] - $position['net'];
-                array_push($items, $position);
-            }
-        }
-        if (isset($data['package'])) {
-            $package = $data['package'];
-            $position = [
-                'item_type' => 'package',
-                'item_id' => $package['id'],
-                'quantity' => 1,
-                'gross' => $package['gross'],
-                'tax' => $package['tax'],
-                'net' => $package['net'],
-                'taxrate' => $package['taxrate']
-            ];
-            array_push($items, $position);
-        }
-
-        $result = $this->api->findCampaign([
-            'hash' => $data['campaign']['hash'],
-            'items' => $items
-        ]);
-
-        if (!isset($result['summary']))
-            return false;
-
-        Session::setValue('campaignDiscount', $result['summary']);
-        return $result['summary'];
-    }
-
-    public function loadBilling() {
-        $billing = Session::getValue('billing');
-
-        if (!$billing)
-            $billing = [];
-
-        if (empty($_POST))
-            return $billing;
-
-        if (isset($_POST['newsletter']) && $_POST['newsletter'] == 1)
-            $billing['newsletter'] = 1;
-
-        if (isset($_POST['billing']))
-            $billing = array_merge($billing, $_POST['billing']);
-
-        Session::setValue('billing',$billing);
-
-        if (isset($_POST['enabledelivery']) && (bool)$_POST['enabledelivery']) {
-            if (isset($_POST['redirect']['delivery']))
-                Redirect::internal($_POST['redirect']['delivery']);
-            else
-                throw new \Exception('no url was set for delivery as hidden input');
-        }
-
-        $this->checkSubmitRedirect('billing');
-
-        return $billing;
-
-    }
-
-    public function loadDeliveryType() {
-        $type = Session::getValue('delivery_type');
-        if (!$type)
-            $type = 'address';
-
-        if (empty($_POST))
-            return $type;
-
-        if (isset($_POST['delivery_type']))
-            $type = $_POST['delivery_type'];
-
-        Session::setValue('delivery_type', $type);
-        return $type;
-    }
-
-    public function loadDelivery() {
-        $type = Session::getValue('delivery_type');
-        if ($type == 'none')
-            return null;
-
-        $delivery = Session::getValue('delivery');
-        if (!$delivery)
-            $delivery = [];
-
-        if (empty($_POST))
-            return $delivery;
-
-        if (isset($_POST['delivery']))
-            $delivery = array_merge($delivery, $_POST['delivery']);
-
-        Session::setValue('delivery',$delivery);
-
-        $this->checkSubmitRedirect('delivery');
-
-        return $delivery;
-    }
-
-    public function loadPayment() {
-        if (!empty($_POST) && isset($_POST['payment'])) {
-            Session::setValue('payment',$_POST['payment']);
-
-            $this->checkSubmitRedirect();
-        }
-        return Session::getValue('payment');
-    }
-
-    public function initPaymentByPage() {
-        $paymentType = Session::getValue('payment');
-        $pages = $this->settings['pages'];
-        if (array_key_exists($paymentType, $pages) && array_key_exists('init', $pages[$paymentType]))
-            Redirect::internal($pages[$paymentType]['init']);
-        return true;
-    }
-
-    public function loadStripeData() {
-        return Session::getValue('stripe');
-    }
-
-		public function initPaypalPayment() {
-			$paypal = Session::getValue('paypal');
-			if($paypal)
-				Redirect::external($paypal);
+			$sum['net'] += $priceObject['net'] * $quantity;
+			$sum['tax'] += $priceObject['tax'] * $quantity;
+			$sum['gross'] += $priceObject['gross'] * $quantity;
+			$sum['quantity'] += $quantity;
 		}
 
-    public function check() {
-        if (!empty($_POST)) {
-            if (!isset($_POST['cop']) || !isset($_POST['disclaimer']))
-                exit();
+		return $sum;
+	}
 
-            if (isset($_POST['note']))
-                Session::setValue('note',$_POST['note']);
+	public function arrangePositions($data = null) {
 
-            $this->checkSubmitRedirect();
-        }
-        return false;
-    }
-
-    public function prepareSessionOrder() {
-
-        $campaign = Session::getValue('campaign');
-        if ($campaign && $campaign['id'] > 0) {
-            $this->api->addItemToBasket(['data' => [
-                'quantity' => 1,
-                'item_type' => 'campaign',
-                'item_id' => $campaign['id']
-            ]]);
-        }
-
-        $order = [
-            'source' => 'shop',
-            'payment_type' => Session::getValue('payment'),
-            'basket' => Session::getValue('basket'),
-            'billing_type' => 'client',
-            'billing' => Session::getValue('billing'),
-            'delivery_type' => Session::getValue('delivery_type'),
-            'invoice_type' => isset($this->settings['checkout']['invoice_type']) ? $this->settings['checkout']['invoice_type'] : 'gross',
-            'payment_period' => isset($this->settings['checkout']['payment_period']) ? (int)$this->settings['checkout']['payment_period'] : 14
-        ];
-
-        if ($order['delivery_type'] != 'none')
-            $order['delivery'] = Session::getValue('delivery') ?? Session::getValue('billing');
-
-        // Specific order settings dependending on payment_type
-        switch ($order['payment_type']) {
-            case 'prepaid':
-                $order['payment_period'] = 1;
-                break;
-
-            case 'paypal':
-                $order['return_url'] = Helper::getCurrentHost() . $this->settings['pages']['paypal']['finish'];
-                $order['cancel_url'] = Helper::getCurrentHost() . $this->settings['pages']['paypal']['cancel'];
-                break;
-
-            case 'card':
-                $order['return_url'] = Helper::getCurrentHost() . $this->settings['pages']['card']['finish'];
-                $order['cancel_url'] = Helper::getCurrentHost() . $this->settings['pages']['card']['cancel'];
-                break;
-
-            case 'debit':
-                $order['return_url'] = Helper::getCurrentHost() . $this->settings['pages']['debit']['finish'];
-                $order['cancel_url'] = Helper::getCurrentHost() . $this->settings['pages']['debit']['cancel'];
-                break;
-
-            default:
-                break;
-        }
-
-        $note = Session::getValue('note');
-        if ($note) $order['note'] = $note;
-
-        Session::setValue('order',$order);
-        return $order;
-    }
-
-    public function removeSessionData($status) {
-        if ($status) {
-						Session::deleteValue('paypal');
-            Session::deleteValue('payment');
-            Session::deleteValue('basket');
-            Session::deleteValue('card');
-            Session::deleteValue('billing');
-            Session::deleteValue('delivery');
-            Session::deleteValue('delivery_type');
-            Session::deleteValue('campaign');
-            Session::deleteValue('note');
-            Session::deleteValue('order');
-        }
-        return $status;
-    }
-
-    public function saveOrderJSON() {
-        $this->checkFolders();
-
-        $folder = strftime('Orders/%Y/%m/%d');
-        $this->checkFolders($folder);
-
-        $filename = strftime('%H-%M-').Session::getValue('basket').'.json';
-        $formattedOrder = $this->prepareOrderToSend();
-        file_put_contents(Helper::getNormDocRoot().$folder.'/'.$filename, json_encode($formattedOrder));
-        return $formattedOrder;
-    }
-
-    public function prepareOrderToSend() {
-        $order = Session::getValue('order');
-        $client = Session::getValue('client');
-        if ($client) {
-            $clientId = $client['id'];
-            $order['client_id'] = $clientId;
-
-            $compareFields = [
-                'first_name' => 'firstname',
-                'last_name' => 'lastname',
-                'company' => 'company',
-                'address' => 'address',
-                'zip' => 'zip',
-                'city' => 'city'
-            ];
-
-            //compare billing;
-            $billingMatch = true;
-            foreach ($compareFields as $source => $target) {
-                if (isset($order['billing'][$target]) && strcmp($client[$source],$order['billing'][$target]) !== 0) {
-                    $billingMatch = false;
-                    $order['billing_type'] = 'address';
-                    break;
-                }
-            }
-            if ($billingMatch) {
-                $order['billing_type'] = 'client';
-                $order['billing_id'] = $clientId;
-                unset($order['billing']);
-            }
-
-            if ($order['delivery_type'] != 'none') {
-                $deliveryMatch = true;
-                foreach ($compareFields as $source => $target) {
-                    if (isset($order['delivery'][$target]) && strcmp($client[$source],$order['delivery'][$target]) !== 0) {
-                        $deliveryMatch = false;
-                        $order['delivery_type'] = 'address';
-                        break;
-                    }
-                }
-
-                if ($deliveryMatch) {
-                    $order['delivery_type'] = 'client';
-                    $order['delivery_id'] = $clientId;
-                    unset($order['delivery']);
-                }
-            }
-        } else {
-            $check = $this->api->checkClientMail($order['billing']);
-            if ($check) {
-                $order['client_id'] = $check;
-                $order['billing_type'] = 'address';
-            } else {
-                unset($order['billing_type']);
-            }
-
-            if ($order['delivery_type'] != 'none') {
-                unset($order['delivery_type']);
-                if (!$order['delivery'])
-                    $order['delivery'] = $order['billing'];
-            }
-        }
-        return $order;
-    }
-
-    public function checkFolders($folder = 'Orders') {
-
-        $orderDir = Helper::getNormDocRoot() . $folder;
-
-        if (!is_dir($orderDir))
-            mkdir($orderDir, 0777, true);
-
-        $htaccess = $orderDir .'/.htaccess';
-        if (!is_file($htaccess)) {
-            $content = 'Deny from all';
-            file_put_contents($htaccess, $content);
-        }
-    }
-
-    public function checkSubmitRedirect($checkPostField = false) {
-
-        if (empty($_POST))
-            return false;
-
-        if ($checkPostField && !isset($_POST[$checkPostField]))
-            return false;
-
-        if (isset($_POST['submitted']) && (bool)$_POST['submitted'] && isset($_POST['redirect']['standard']))
-            Redirect::internal($_POST['redirect']['standard']);
-
-        return false;
-    }
-
-    public function validateBasket() {
-        $card = Session::getValue('card');
-        if (!$card)
-            Redirect::internal($this->settings['pages']['basket']);
-
-        $quantity = self::calcCardQuantity($card);
-        if (!self::quantityIsAllowed($quantity))
-            Redirect::internal($this->settings['pages']['basket']);
-
-        return true;
-    }
-
-    public function validateBilling() {
-        $billing = Session::getValue('billing');
-        if (!$billing)
-            Redirect::internal($this->settings['pages']['billing']);
-
-        return true;
-    }
-
-    public function validatePayment() {
-        $payment = Session::getValue('payment');
-
-        $allowedPayments = $this->client && isset($this->settings['clientPayments']) ? $this->settings['clientPayments'] : $this->settings['allowedPayments'];
-
-        if (is_string($allowedPayments));
-            $allowedPayments = explode(',', preg_replace('/\s/', '', $allowedPayments));
-
-        if (!in_array($payment, $allowedPayments))
-            Redirect::internal($this->settings['pages']['payment']);
-
-        return true;
-    }
-
-    public function validateOrder() {
-
-        // Validate Basket
-        $this->validateBasket();
-
-        // Validate Billing
-        $this->validateBilling();
-
-        // Check if payment is allowed
-        $this->validatePayment();
-
-        return true;
-    }
-		public function getPreviousOrderInProgress(){
-			$order = $this->api->getSessionOrder();
-			if ($order
-				&& $order['status'] != 'cancelled'
-				&& $order['status'] != 'need_package'
-				&& $this->isTemporaryPaymentMethod($order['payment_type'])
-			)
-				return $order;
+		if (is_null($data))
 			return false;
-		}
-		private function isTemporaryPaymentMethod($method){
-			$temporaryPaymentMethods = ['card', 'debit', 'paypal'];
-			if (in_array($method, $temporaryPaymentMethods))
-	        return true;
+
+		$items = [];
+
+		if (isset($data['basket']) && count($data['basket']['basketItems']) > 0)
+			$items = array_merge($items, $data['basket']['basketItems']);
+
+		if (isset($data['package']) && !empty($data['package']))
+			array_push($items, [
+				'item_type' => 'package',
+				'item_id' => $data['package']['id'],
+				'quantity' => 1,
+				'item' => $data['package']
+			]);
+
+		return $items;
+	}
+
+	public function campaignDiscount($data = null) {
+		$items = [];
+
+		if (!isset($data['campaign']))
 			return false;
+
+		if (isset($data['basket']) && count($data['basket']['basketItems']) > 0) {
+			foreach ($data['basket']['basketItems'] as &$item) {
+				$position = [
+					'item_type' => $item['item_type'],
+					'item_id' => $item['item_id'],
+					'quantity' => $item['quantity'],
+					'gross' => $item['quantity'] * $item['item']['gross'],
+					'net' => $item['quantity'] * $item['item']['net'],
+					'taxrate' => $item['item']['taxrate']
+				];
+				$position['tax'] = $position['gross'] - $position['net'];
+				array_push($items, $position);
+			}
 		}
-    public function sendClientNotification($addedOrder) {
+		if (isset($data['package'])) {
+			$package = $data['package'];
+			$position = [
+				'item_type' => 'package',
+				'item_id' => $package['id'],
+				'quantity' => 1,
+				'gross' => $package['gross'],
+				'tax' => $package['tax'],
+				'net' => $package['net'],
+				'taxrate' => $package['taxrate']
+			];
+			array_push($items, $position);
+		}
 
-        if ($addedOrder  && isset($addedOrder['number']) && $addedOrder['number'])
-            $order = $this->api->getOrder($addedOrder['id']);
-        else
-            return false;
+		$result = $this->api->findCampaign([
+			'hash' => $data['campaign']['hash'],
+			'items' => $items
+		]);
 
-        if ( $this->isTemporaryPaymentMethod($order['payment_type']) && $order['status'] == "new" )
-            return false;
+		if (!isset($result['summary']))
+			return false;
 
-        $customer = $this->api->getCustomer();
-        $client = $this->api->getClient();
-        $data = [
-            'order' => $order,
-            'client' => $client,
-            'customer' => $customer,
-            'settings' => $this->settings
-        ];
-        if ($customer['type'] == 'merchant')
-            $data['wineries'] = $this->api->getWineriesAll();
+		Session::setValue('campaignDiscount', $result['summary']);
+		return $result['summary'];
+	}
 
-        $subject = $this->formalSpeech ? 'Ihre Bestellung ' : 'Deine Bestellung ';
-        $subject .= $order['number'];
-        $subjectSuffix = $order['delivery_type'] == 'none' ? ' (Click & Collect)' : ' (Lieferung)';
+	public function loadBilling() {
+		$billing = Session::getValue('billing');
 
-        $mail = new Mailer($this->api);
-        $mail->setTemplate('OrderCreateClient.twig');
-        $mail->setReceiver($order['client']['mail']);
-        $mail->setSubject($subject . $subjectSuffix);
-        $mail->setData($data);
-        $mail->loadShopAttachments();
-        $send = $mail->send();
+		if (!$billing)
+			$billing = [];
 
-        $adminmail = new Mailer($this->api);
-        $adminmail->setTemplate('OrderCreateClientNotification.twig');
-        $adminmail->setSubject('Bestellung '. $order['number'] . $subjectSuffix);
-        $adminmail->setData($data);
-        $send = $adminmail->send();
+		if (empty($_POST))
+			return $billing;
 
-        // // 2020-10-19 Deactivated due to gdpr reasons
-        // if (!$client) {
-        //     $client = $order['client'];
-        //     $pwreset = $this->api->getPasswordHash(['mail' => $order['client']['mail']]);
+		if (isset($_POST['newsletter']) && $_POST['newsletter'] == 1)
+			$billing['newsletter'] = 1;
 
-        //     if (isset($pwreset['hash']))
-        //         $client['lostpassword_hash'] = $pwreset['hash'];
+		if (isset($_POST['billing']))
+			$billing = array_merge($billing, $_POST['billing']);
 
-        //     if (isset($pwreset['expire']))
-        //         $client['lostpassword_expire'] = $pwreset['expire'];
+		Session::setValue('billing',$billing);
 
-        //     $accountmail = new Mailer();
-        //     $accountmail->setTemplate('NewAccountByOrder.twig');
-        //     $accountmail->setReceiver($order['client']['mail']);
-        //     $accountmail->setSubject('Dein Account auf '.$_SERVER['SERVER_NAME']);
-        //     $accountmail->setData([
-        //         'client' => $client,
-        //         'customer' => $customer,
-        //         'settings' => $this->settings
-        //     ]);
-        //     $accountsend = $accountmail->send();
-        // }
+		if (isset($_POST['enabledelivery']) && (bool)$_POST['enabledelivery']) {
+			if (isset($_POST['redirect']['delivery']))
+				Redirect::internal($_POST['redirect']['delivery']);
+			else
+				throw new \Exception('no url was set for delivery as hidden input');
+		}
 
-        return $send;
-    }
+		$this->checkSubmitRedirect('billing');
 
-    public function sendClientRegisterMail($data = NULL) {
+		return $billing;
 
-        if (isset($data['lostpassword_hash']) && isset($data['mail'])) {
+	}
 
-            $subject = $this->formalSpeech ? 'Bestätigen Sie Ihre Registrierung auf ' : 'Bestätige Deine Registrierung auf ';
-            $subject .= $_SERVER['SERVER_NAME'];
+	public function loadDeliveryType() {
+		$type = Session::getValue('delivery_type');
+		if (!$type)
+			$type = 'address';
 
-            $mail = new Mailer();
-            $mail->setTemplate('ClientRegistration.twig');
-            $mail->setReceiver($data['mail']);
-            $mail->setSubject($subject);
-            $mail->setData([
-                'client' => $data,
-                'customer' => $this->api->getCustomer(),
-                'settings' => $this->settings
-            ]);
-            return $mail->send();
-        }
+		if (empty($_POST))
+			return $type;
 
-        return false;
-    }
+		if (isset($_POST['delivery_type']))
+			$type = $_POST['delivery_type'];
 
-    public function sendClientApprovementMail($data = NULL) {
+		Session::setValue('delivery_type', $type);
+		return $type;
+	}
 
-        if (!isset($this->settings['registration']['approvementEmail']))
-            throw new Exception("no approvementEmail defined in settings", 1);
+	public function loadDelivery() {
+		$type = Session::getValue('delivery_type');
+		if ($type == 'none')
+			return null;
 
-        if (isset($data['lostpassword_hash']) && isset($data['mail'])) {
-            $adminMail = new Mailer();
-            $adminMail->setTemplate('ClientApprovement.twig');
-            $adminMail->setReceiver($this->settings['registration']['approvementEmail']);
-            $adminMail->setSubject('Neue Registrierung auf '.$_SERVER['SERVER_NAME']);
-            $adminMail->setData([
-                'client' => $data,
-                'customer' => $this->api->getCustomer(),
-                'settings' => $this->settings
-            ]);
+		$delivery = Session::getValue('delivery');
+		if (!$delivery)
+			$delivery = [];
 
-            $subject = $this->formalSpeech ? 'Ihr Account auf' : 'Dein Account auf ';
-            $subject .= $_SERVER['SERVER_NAME'];
+		if (empty($_POST))
+			return $delivery;
 
-            $clientMail = new Mailer();
-            $clientMail->setTemplate('ClientApprovementNotification.twig');
-            $clientMail->setReceiver($data['mail']);
-            $clientMail->setSubject($subject);
-            $clientMail->setData([
-                'client' => $data,
-                'customer' => $this->api->getCustomer(),
-                'settings' => $this->settings
-            ]);
+		if (isset($_POST['delivery']))
+			$delivery = array_merge($delivery, $_POST['delivery']);
 
-            return $adminMail->send() && $clientMail->send();
-        }
+		Session::setValue('delivery',$delivery);
 
-        return false;
-    }
+		$this->checkSubmitRedirect('delivery');
 
-    public function sendClientActivationNotification($data = NULL) {
+		return $delivery;
+	}
 
-        if (!isset($data['mail']) || isset($data['error']))
-            return false;
+	public function loadPayment() {
+		if (!empty($_POST) && isset($_POST['payment'])) {
+			Session::setValue('payment',$_POST['payment']);
 
-        $mail = new Mailer();
-        $mail->setTemplate('ClientActivationNotification.twig');
-        $mail->setReceiver($data['mail']);
-        $mail->setSubject('Account aktiviert auf '.$_SERVER['SERVER_NAME']);
-        $mail->setData([
-            'customer' => $this->api->getCustomer(),
-            'settings' => $this->settings
-        ]);
+			$this->checkSubmitRedirect();
+		}
+		return Session::getValue('payment');
+	}
 
-        return $mail->send();
+	public function initPaymentByPage() {
+		$paymentType = Session::getValue('payment');
+		$pages = $this->settings['pages'];
+		if (array_key_exists($paymentType, $pages) && array_key_exists('init', $pages[$paymentType]))
+			Redirect::internal($pages[$paymentType]['init']);
+		return true;
+	}
 
-    }
+	public function loadStripeData() {
+		return Session::getValue('stripe');
+	}
 
-    public function sendClientDeclinationNotification($data = NULL) {
+	public function initPaypalPayment() {
+		$paypal = Session::getValue('paypal');
+		if($paypal)
+		Redirect::external($paypal);
+	}
 
-        if (!isset($data['mail']))
-            return false;
+	public function check() {
+		if (!empty($_POST)) {
+			if (!isset($_POST['cop']) || !isset($_POST['disclaimer']))
+				exit();
 
-        $mail = new Mailer();
-        $mail->setTemplate('ClientDeclinationNotification.twig');
-        $mail->setReceiver($data['mail']);
-        $mail->setSubject('Account abgelehnt auf '.$_SERVER['SERVER_NAME']);
-        $mail->setData([
-            'customer' => $this->api->getCustomer(),
-            'settings' => $this->settings
-        ]);
+			if (isset($_POST['note']))
+				Session::setValue('note',$_POST['note']);
 
-        return $mail->send();
+			$this->checkSubmitRedirect();
+		}
+		return false;
+	}
 
-    }
+	public function prepareSessionOrder() {
 
-    public function sendPasswordResetMail($data = NULL) {
+		$campaign = Session::getValue('campaign');
+		if ($campaign && $campaign['id'] > 0) {
+			$this->api->addItemToBasket(['data' => [
+				'quantity' => 1,
+				'item_type' => 'campaign',
+				'item_id' => $campaign['id']
+			]]);
+		}
 
-        if (isset($data['hash']) && isset($data['mail'])) {
-            $subject = $this->formalSpeech ? 'Ihr Passwort wurde zurückgesetzt ' : 'Dein Passwort wurde zurückgesetzt ';
-            $subject .= $_SERVER['SERVER_NAME'];
+		$order = [
+			'source' => 'shop',
+			'payment_type' => Session::getValue('payment'),
+			'basket' => Session::getValue('basket'),
+			'billing_type' => 'client',
+			'billing' => Session::getValue('billing'),
+			'delivery_type' => Session::getValue('delivery_type'),
+			'invoice_type' => isset($this->settings['checkout']['invoice_type']) ? $this->settings['checkout']['invoice_type'] : 'gross',
+			'payment_period' => isset($this->settings['checkout']['payment_period']) ? (int)$this->settings['checkout']['payment_period'] : 14
+		];
 
-            $mail = new Mailer();
-            $mail->setTemplate('PasswordReset.twig');
-            $mail->setReceiver($data['mail']);
-            $mail->setSubject($subject);
-            $mail->setData([
-                'client' => $data,
-                'customer' => $this->api->getCustomer(),
-                'settings' => $this->settings
-            ]);
-            return $mail->send();
-        }
+		if ($order['delivery_type'] != 'none')
+			$order['delivery'] = Session::getValue('delivery') ?? Session::getValue('billing');
 
-        return false;
-    }
+		// Specific order settings dependending on payment_type
+		switch ($order['payment_type']) {
+			case 'prepaid':
+				$order['payment_period'] = 1;
+				break;
 
+			case 'paypal':
+				$order['return_url'] = Helper::getCurrentHost() . $this->settings['pages']['paypal']['finish'];
+				$order['cancel_url'] = Helper::getCurrentHost() . $this->settings['pages']['paypal']['cancel'];
+				break;
 
-    public static function calcCardQuantity($card) {
-        $quantity = 0;
-        foreach ($card as $item) {
-            if ($item['item_type'] == 'bundle')
-                $quantity = $quantity + $item['quantity'] * $item['item']['package_quantity'];
-            else
-                $quantity = $quantity + $item['quantity'];
-        }
-        return $quantity;
-    }
+			case 'card':
+				$order['return_url'] = Helper::getCurrentHost() . $this->settings['pages']['card']['finish'];
+				$order['cancel_url'] = Helper::getCurrentHost() . $this->settings['pages']['card']['cancel'];
+				break;
 
-    public static function quantityIsAllowed($quantity, $retString = false) {
+			case 'debit':
+				$order['return_url'] = Helper::getCurrentHost() . $this->settings['pages']['debit']['finish'];
+				$order['cancel_url'] = Helper::getCurrentHost() . $this->settings['pages']['debit']['cancel'];
+				break;
 
-        $settings = (ServiceLocator::get('Settings'))->get('settings');
+			default:
+				break;
+		}
 
-        if (array_key_exists('minBasketSize', $settings) && $quantity < $settings['minBasketSize'])
-            return $retString ? 'minBasketSize' : false;
+		$note = Session::getValue('note');
+		if ($note) $order['note'] = $note;
 
-        if (array_key_exists('packageSteps', $settings)) {
-            $steps = $settings['packageSteps'];
-            if (is_string($steps))
-                $steps = array_map('trim', explode(',', $steps));
+		Session::setValue('order',$order);
+		return $order;
+	}
 
-            if (array_key_exists('factor', $steps)) {
-                $factor = (int)$steps['factor'];
-                if ($quantity % $factor != 0)
-                    return $retString ? 'packageSteps' : false;
+	public function removeSessionData($status) {
+		if ($status) {
+			Session::deleteValue('paypal');
+			Session::deleteValue('payment');
+			Session::deleteValue('basket');
+			Session::deleteValue('card');
+			Session::deleteValue('billing');
+			Session::deleteValue('delivery');
+			Session::deleteValue('delivery_type');
+			Session::deleteValue('campaign');
+			Session::deleteValue('note');
+			Session::deleteValue('order');
+		}
+		return $status;
+	}
 
-                unset($steps['factor']);
-            }
+	public function saveOrderJSON() {
+		$this->checkFolders();
 
-            if (count($steps) > 0 && !in_array($quantity, array_values($steps)))
-                return $retString ? 'packageSteps' : false;
+		$folder = strftime('Orders/%Y/%m/%d');
+		$this->checkFolders($folder);
 
-        }
+		$filename = strftime('%H-%M-').Session::getValue('basket').'.json';
+		$formattedOrder = $this->prepareOrderToSend();
+		file_put_contents(Helper::getNormDocRoot().$folder.'/'.$filename, json_encode($formattedOrder));
+		return $formattedOrder;
+	}
 
-        return $retString ? 'valid' : true;
-    }
+	public function prepareOrderToSend() {
+		$order = Session::getValue('order');
+		$client = Session::getValue('client');
+		if ($client) {
+			$clientId = $client['id'];
+			$order['client_id'] = $clientId;
 
+			$compareFields = [
+				'first_name' => 'firstname',
+				'last_name' => 'lastname',
+				'company' => 'company',
+				'address' => 'address',
+				'zip' => 'zip',
+				'city' => 'city'
+			];
 
-    public function showAllSettings () {
-        return $this->settingsService->getAll();
-    }
+			//compare billing;
+			$billingMatch = true;
+			foreach ($compareFields as $source => $target) {
+				if (isset($order['billing'][$target]) && strcmp($client[$source],$order['billing'][$target]) !== 0) {
+					$billingMatch = false;
+					$order['billing_type'] = 'address';
+					break;
+				}
+			}
+			if ($billingMatch) {
+				$order['billing_type'] = 'client';
+				$order['billing_id'] = $clientId;
+				unset($order['billing']);
+			}
+
+			if ($order['delivery_type'] != 'none') {
+				$deliveryMatch = true;
+				foreach ($compareFields as $source => $target) {
+					if (isset($order['delivery'][$target]) && strcmp($client[$source],$order['delivery'][$target]) !== 0) {
+						$deliveryMatch = false;
+						$order['delivery_type'] = 'address';
+						break;
+					}
+				}
+
+				if ($deliveryMatch) {
+					$order['delivery_type'] = 'client';
+					$order['delivery_id'] = $clientId;
+					unset($order['delivery']);
+				}
+			}
+		} else {
+			$check = $this->api->checkClientMail($order['billing']);
+			if ($check) {
+				$order['client_id'] = $check;
+				$order['billing_type'] = 'address';
+			} else {
+				unset($order['billing_type']);
+			}
+
+			if ($order['delivery_type'] != 'none') {
+				unset($order['delivery_type']);
+				if (!$order['delivery'])
+					$order['delivery'] = $order['billing'];
+			}
+		}
+		return $order;
+	}
+
+	public function checkFolders($folder = 'Orders') {
+
+		$orderDir = Helper::getNormDocRoot() . $folder;
+
+		if (!is_dir($orderDir))
+			mkdir($orderDir, 0777, true);
+
+		$htaccess = $orderDir .'/.htaccess';
+		if (!is_file($htaccess)) {
+			$content = 'Deny from all';
+			file_put_contents($htaccess, $content);
+		}
+	}
+
+	public function checkSubmitRedirect($checkPostField = false) {
+
+		if (empty($_POST))
+			return false;
+
+		if ($checkPostField && !isset($_POST[$checkPostField]))
+			return false;
+
+		if (isset($_POST['submitted']) && (bool)$_POST['submitted'] && isset($_POST['redirect']['standard']))
+			Redirect::internal($_POST['redirect']['standard']);
+
+		return false;
+	}
+
+	public function validateBasket() {
+		$card = Session::getValue('card');
+		if (!$card)
+			Redirect::internal($this->settings['pages']['basket']);
+
+		if (isset($this->settings['basketPerWinery'])) {
+			if (!self::quantityByWineryIsAllowed($card))
+			Redirect::internal($this->settings['pages']['basket']);
+		} else {
+			$quantity = self::calcCardQuantity($card);
+			if (!self::quantityIsAllowed($quantity))
+			Redirect::internal($this->settings['pages']['basket']);
+		}
+
+		return true;
+	}
+
+	public function validateBilling() {
+		$billing = Session::getValue('billing');
+		if (!$billing)
+			Redirect::internal($this->settings['pages']['billing']);
+
+		return true;
+	}
+
+	public function validatePayment() {
+		$payment = Session::getValue('payment');
+
+		$allowedPayments = $this->client && isset($this->settings['clientPayments']) ? $this->settings['clientPayments'] : $this->settings['allowedPayments'];
+
+		if (is_string($allowedPayments));
+			$allowedPayments = explode(',', preg_replace('/\s/', '', $allowedPayments));
+
+		if (!in_array($payment, $allowedPayments))
+			Redirect::internal($this->settings['pages']['payment']);
+
+		return true;
+	}
+
+	public function validateOrder() {
+
+		// Validate Basket
+		$this->validateBasket();
+
+		// Validate Billing
+		$this->validateBilling();
+
+		// Check if payment is allowed
+		$this->validatePayment();
+
+		return true;
+	}
+	public function getPreviousOrderInProgress(){
+		$order = $this->api->getSessionOrder();
+		if ($order
+		&& $order['status'] != 'cancelled'
+		&& $order['status'] != 'need_package'
+		&& $this->isTemporaryPaymentMethod($order['payment_type'])
+		)
+		return $order;
+		return false;
+	}
+	private function isTemporaryPaymentMethod($method){
+		$temporaryPaymentMethods = ['card', 'debit', 'paypal'];
+		if (in_array($method, $temporaryPaymentMethods))
+			return true;
+		return false;
+	}
+	public function sendClientNotification($addedOrder) {
+
+		if ($addedOrder && $addedOrder['number'])
+			$order = $this->api->getOrder($addedOrder['id']);
+		else
+			return false;
+
+		if ( $this->isTemporaryPaymentMethod($order['payment_type']) && $order['status'] == "new" )
+			return false;
+
+		$customer = $this->api->getCustomer();
+		$client = $this->api->getClient();
+		$data = [
+			'order' => $order,
+			'client' => $client,
+			'customer' => $customer,
+			'settings' => $this->settings
+		];
+		if ($customer['type'] == 'merchant')
+			$data['wineries'] = $this->api->getWineriesAll();
+
+		$subject = $this->formalSpeech ? 'Ihre Bestellung ' : 'Deine Bestellung ';
+		$subject .= $order['number'];
+		$subjectSuffix = $order['delivery_type'] == 'none' ? ' (Click & Collect)' : ' (Lieferung)';
+
+		$mail = new Mailer($this->api);
+		$mail->setTemplate('OrderCreateClient.twig');
+		$mail->setReceiver($order['client']['mail']);
+		$mail->setSubject($subject . $subjectSuffix);
+		$mail->setData($data);
+		$mail->loadShopAttachments();
+		$send = $mail->send();
+
+		$adminmail = new Mailer($this->api);
+		$adminmail->setTemplate('OrderCreateClientNotification.twig');
+		$adminmail->setSubject('Bestellung '. $order['number'] . $subjectSuffix);
+		$adminmail->setData($data);
+		$send = $adminmail->send();
+
+		// // 2020-10-19 Deactivated due to gdpr reasons
+		// if (!$client) {
+		//	 $client = $order['client'];
+		//	 $pwreset = $this->api->getPasswordHash(['mail' => $order['client']['mail']]);
+
+		//	 if (isset($pwreset['hash']))
+		//		 $client['lostpassword_hash'] = $pwreset['hash'];
+
+		//	 if (isset($pwreset['expire']))
+		//		 $client['lostpassword_expire'] = $pwreset['expire'];
+
+		//	 $accountmail = new Mailer();
+		//	 $accountmail->setTemplate('NewAccountByOrder.twig');
+		//	 $accountmail->setReceiver($order['client']['mail']);
+		//	 $accountmail->setSubject('Dein Account auf '.$_SERVER['SERVER_NAME']);
+		//	 $accountmail->setData([
+		//		 'client' => $client,
+		//		 'customer' => $customer,
+		//		 'settings' => $this->settings
+		//	 ]);
+		//	 $accountsend = $accountmail->send();
+		// }
+
+		return $send;
+	}
+
+	public function sendClientRegisterMail($data = NULL) {
+
+		if (isset($data['lostpassword_hash']) && isset($data['mail'])) {
+
+			$subject = $this->formalSpeech ? 'Bestätigen Sie Ihre Registrierung auf ' : 'Bestätige Deine Registrierung auf ';
+			$subject .= $_SERVER['SERVER_NAME'];
+
+			$mail = new Mailer();
+			$mail->setTemplate('ClientRegistration.twig');
+			$mail->setReceiver($data['mail']);
+			$mail->setSubject($subject);
+			$mail->setData([
+				'client' => $data,
+				'customer' => $this->api->getCustomer(),
+				'settings' => $this->settings
+			]);
+			return $mail->send();
+		}
+
+		return false;
+	}
+
+	public function sendClientApprovementMail($data = NULL) {
+
+		if (!isset($this->settings['registration']['approvementEmail']))
+			throw new Exception("no approvementEmail defined in settings", 1);
+
+		if (isset($data['lostpassword_hash']) && isset($data['mail'])) {
+			$adminMail = new Mailer();
+			$adminMail->setTemplate('ClientApprovement.twig');
+			$adminMail->setReceiver($this->settings['registration']['approvementEmail']);
+			$adminMail->setSubject('Neue Registrierung auf '.$_SERVER['SERVER_NAME']);
+			$adminMail->setData([
+				'client' => $data,
+				'customer' => $this->api->getCustomer(),
+				'settings' => $this->settings
+			]);
+
+			$subject = $this->formalSpeech ? 'Ihr Account auf' : 'Dein Account auf ';
+			$subject .= $_SERVER['SERVER_NAME'];
+
+			$clientMail = new Mailer();
+			$clientMail->setTemplate('ClientApprovementNotification.twig');
+			$clientMail->setReceiver($data['mail']);
+			$clientMail->setSubject($subject);
+			$clientMail->setData([
+				'client' => $data,
+				'customer' => $this->api->getCustomer(),
+				'settings' => $this->settings
+			]);
+
+			return $adminMail->send() && $clientMail->send();
+		}
+
+		return false;
+	}
+
+	public function sendClientActivationNotification($data = NULL) {
+
+		if (!isset($data['mail']) || isset($data['error']))
+			return false;
+
+		$mail = new Mailer();
+		$mail->setTemplate('ClientActivationNotification.twig');
+		$mail->setReceiver($data['mail']);
+		$mail->setSubject('Account aktiviert auf '.$_SERVER['SERVER_NAME']);
+		$mail->setData([
+			'customer' => $this->api->getCustomer(),
+			'settings' => $this->settings
+		]);
+
+		return $mail->send();
+	}
+
+	public function sendClientDeclinationNotification($data = NULL) {
+
+		if (!isset($data['mail']))
+			return false;
+
+		$mail = new Mailer();
+		$mail->setTemplate('ClientDeclinationNotification.twig');
+		$mail->setReceiver($data['mail']);
+		$mail->setSubject('Account abgelehnt auf '.$_SERVER['SERVER_NAME']);
+		$mail->setData([
+			'customer' => $this->api->getCustomer(),
+			'settings' => $this->settings
+		]);
+
+		return $mail->send();
+	}
+
+	public function sendPasswordResetMail($data = NULL) {
+
+		if (isset($data['hash']) && isset($data['mail'])) {
+			$subject = $this->formalSpeech ? 'Ihr Passwort wurde zurückgesetzt ' : 'Dein Passwort wurde zurückgesetzt ';
+			$subject .= $_SERVER['SERVER_NAME'];
+
+			$mail = new Mailer();
+			$mail->setTemplate('PasswordReset.twig');
+			$mail->setReceiver($data['mail']);
+			$mail->setSubject($subject);
+			$mail->setData([
+				'client' => $data,
+				'customer' => $this->api->getCustomer(),
+				'settings' => $this->settings
+			]);
+			return $mail->send();
+		}
+
+		return false;
+	}
+
+	public static function calcCardQuantity($card) {
+		$quantity = 0;
+		foreach ($card as $item) {
+			if ($item['item_type'] == 'bundle')
+				$quantity = $quantity + $item['quantity'] * $item['item']['package_quantity'];
+			else
+				$quantity = $quantity + $item['quantity'];
+		}
+		return $quantity;
+	}
+
+	public static function quantityIsAllowed($quantity, $retString = false) {
+
+		$settings = (ServiceLocator::get('Settings'))->get('settings');
+
+		if (array_key_exists('minBasketSize', $settings) && $quantity < $settings['minBasketSize'])
+			return $retString ? 'minBasketSize' : false;
+
+		if (array_key_exists('packageSteps', $settings)) {
+			$steps = $settings['packageSteps'];
+			if (is_string($steps))
+				$steps = array_map('trim', explode(',', $steps));
+
+			if (array_key_exists('factor', $steps)) {
+				$factor = (int)$steps['factor'];
+				if ($quantity % $factor != 0)
+					return $retString ? 'packageSteps' : false;
+
+				unset($steps['factor']);
+			}
+
+			if (count($steps) > 0 && !in_array($quantity, array_values($steps)))
+				return $retString ? 'packageSteps' : false;
+
+		}
+
+		return $retString ? 'valid' : true;
+	}
+
+	public static function quantityByWineryIsAllowed($items, $retString = false) {
+
+		$settings = (ServiceLocator::get('Settings'))->get('settings');
+
+		$minBasketSize = $settings['minBasketSize'];
+		if (is_array($settings['basketPerWinery'])) {
+			if ($settings['basketPerWinery']['size'])
+				$minBasketSize = $settings['basketPerWinery']['size'];
+		} else {
+			if (is_numeric($settings['basketPerWinery']))
+				$minBasketSize = $settings['basketPerWinery'];
+		}
+
+		$itemsByWinery = [];
+		foreach ($items as $item) {
+			$wineryId = $item['item']['winery_id'];
+
+			if(isset($itemsByWinery[$wineryId]))
+				$itemsByWinery[$wineryId] += $item['quantity'];
+			else
+				$itemsByWinery[$wineryId] = $item['quantity'];
+		}
+
+		$quantity = count($itemsByWinery) ? min($itemsByWinery) : 0;
+
+		if ($quantity < $minBasketSize)
+			return $retString ? 'minBasketSize' : false;
+
+		return $retString ? 'valid' : true;
+	}
+
+	public function showAllSettings () {
+		return $this->settingsService->getAll();
+	}
 }
