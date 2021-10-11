@@ -23,6 +23,7 @@ class Mailer {
 	protected $config = [];
 	protected $formconfig = [];
 	protected $useCaptcha = true;
+	protected $dynamicCaptchaInput = false;
 	protected $sendCopyToSender = false;
 	protected $mails = [];
 
@@ -156,15 +157,25 @@ class Mailer {
 		return [
 			'phrase' => $captcha->getPhrase(),
 			'image' => $captcha->inline(),
+			'fieldName' => bin2hex(random_bytes(20))
 		];
+
+
 	}
 
 	public function validateCaptcha() {
 		if (!isset($_POST['captcha']))
 			return false;
 
+		if ($this->dynamicCaptchaInput) {
+			if (!isset($_POST[$_POST['captcha']]))
+				return false;
+			$phrase = $_POST[$_POST['captcha']];
+		}
+		else
+			$phrase = $_POST['captcha'];
+
 		$sessionPhrase = Session::getValue('captcha');
-		$phrase = $_POST['captcha'];
 		return $phrase === (string)$sessionPhrase;
 	}
 
@@ -194,7 +205,7 @@ class Mailer {
 
 		return $this->sendMails();
 	}
-
+//formconfig
 	public function loadFormConfig($config, $data) {
 
 		$formconfig = $this->validateFormConfig($config);
@@ -216,6 +227,10 @@ class Mailer {
 
 		if (isset($formconfig['disableCaptcha'])) {
 			$this->useCaptcha = !$formconfig['disableCaptcha'];
+		}
+
+		if (isset($formconfig['dynamicCaptchaInput'])) {
+			$this->dynamicCaptchaInput = $formconfig['dynamicCaptchaInput'];
 		}
 
 		$maildata['formdata'] = [];

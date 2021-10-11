@@ -485,7 +485,7 @@ class Shop {
 		}
     public function sendClientNotification($addedOrder) {
 
-        if ($addedOrder && $addedOrder['number'])
+        if ($addedOrder  && isset($addedOrder['number']) && $addedOrder['number'])
             $order = $this->api->getOrder($addedOrder['id']);
         else
             return false;
