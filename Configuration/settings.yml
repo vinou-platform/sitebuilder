@@ -30,6 +30,7 @@ additionalContent:
 settings:
   defaultCountry: 'de'
   deliveryCountries: ['de']
+  emailDelivery: true
   images:
     list:
       height: 650
