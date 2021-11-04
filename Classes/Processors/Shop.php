@@ -19,6 +19,7 @@ class Shop {
 	protected $settings = false;
 	protected $formalSpeech = false;
 	protected $client = false;
+	protected $emailDelivery = true;
 
 	public function __construct($api = null) {
 		if (is_null($api))
@@ -30,6 +31,9 @@ class Shop {
 		$this->settings = $this->settingsService->get('settings');
 
 		$this->formalSpeech = array_key_exists('speechStyle', $this->settings) && $this->settings['speechStyle'] == 'formal';
+
+		// Check if email delivery through the site builder is disabled. E-mails are sent via the API.
+		$this->emailDelivery = !(array_key_exists('emailDelivery', $this->settings) && !$this->settings['emailDelivery']);
 
 		$this->client = Session::getValue('client');
 	}
@@ -490,13 +494,19 @@ class Shop {
 	}
 	public function sendClientNotification($addedOrder) {
 
-		if ($addedOrder && $addedOrder['number'])
-			$order = $this->api->getOrder($addedOrder['id']);
-		else
+		if (!$addedOrder || !isset($addedOrder['number']))
 			return false;
 
-		if ( $this->isTemporaryPaymentMethod($order['payment_type']) && $order['status'] == "new" )
+		if ($this->isTemporaryPaymentMethod($addedOrder['payment_type']) && $addedOrder['status'] == "new")
 			return false;
+
+		if (!$this->emailDelivery)
+			return true;
+
+		// @deprecated
+		// use email notification from vinou api instead
+
+		$order = $this->api->getOrder($addedOrder['id']);
 
 		$customer = $this->api->getCustomer();
 		$client = $this->api->getClient();
@@ -526,7 +536,6 @@ class Shop {
 		$adminmail->setSubject('Bestellung '. $order['number'] . $subjectSuffix);
 		$adminmail->setData($data);
 		$send = $adminmail->send();
-
 		// // 2020-10-19 Deactivated due to gdpr reasons
 		// if (!$client) {
 		//	 $client = $order['client'];
