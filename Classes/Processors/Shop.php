@@ -429,7 +429,7 @@ class Shop {
 		if (!$card)
 			Redirect::internal($this->settings['pages']['basket']);
 
-		if (isset($this->settings['basketPerWinery'])) {
+		if (isset($this->settings['basketPerWinery']) && $this->settings['basketPerWinery'] !== false) {
 			if (!self::quantityByWineryIsAllowed($card))
 			Redirect::internal($this->settings['pages']['basket']);
 		} else {
