@@ -210,7 +210,7 @@ checkout/payment/finish:
   dataProcessing:
     result:
       function: finishPayment
-      getParams: pid
+      getParams: pid,payment_uuid
     addedOrder:
       function: getSessionOrder
     success:
@@ -241,7 +241,7 @@ checkout/payment/cancel:
   dataProcessing:
     result:
       function: cancelPayment
-      getParams: pid
+      getParams: pid,payment_uuid
     addedOrder:
       function: getSessionOrder
     success:
