@@ -718,16 +718,24 @@ class Shop {
 		$settings = (ServiceLocator::get('Settings'))->get('settings');
 
 		$minBasketSize = $settings['minBasketSize'];
+		$minBasketSizePerWinery = $settings['minBasketSize'];
+		$includeBundles = $settings['basketPerWinery']['includeBundles'];
+
 		if (is_array($settings['basketPerWinery'])) {
 			if ($settings['basketPerWinery']['size'])
-				$minBasketSize = $settings['basketPerWinery']['size'];
+				$minBasketSizePerWinery = $settings['basketPerWinery']['size'];
 		} else {
 			if (is_numeric($settings['basketPerWinery']))
-				$minBasketSize = $settings['basketPerWinery'];
+				$minBasketSizePerWinery = $settings['basketPerWinery'];
 		}
 
 		$itemsByWinery = [];
 		foreach ($items as $item) {
+			if (!isset($item['item']['winery_id']))
+				continue;
+			if ($includeBundles == false and $item['item_type'] == 'bundle')
+				continue;
+
 			$wineryId = $item['item']['winery_id'];
 
 			if(isset($itemsByWinery[$wineryId]))
@@ -737,11 +745,20 @@ class Shop {
 		}
 
 		$quantity = count($itemsByWinery) ? min($itemsByWinery) : 0;
+		if ($quantity < $minBasketSizePerWinery) {
+			$quantityInBundles = 0;
+			foreach ($items as $item) {
+				if ($item['item_type'] == 'bundle') {
+					$quantityInBundles += $item['quantity'] * $item['item']['package_quantity'];
+				}
+			}
+			if ($quantityInBundles >= $minBasketSize)
+				return $retString ? 'valid' : true;
 
-		if ($quantity < $minBasketSize)
 			return $retString ? 'minBasketSize' : false;
-
-		return $retString ? 'valid' : true;
+		} else {
+			return $retString ? 'valid' : true;
+		}
 	}
 
 	public function showAllSettings () {
