@@ -730,11 +730,20 @@ class Shop {
 		}
 
 		$itemsByWinery = [];
+		$wineInBasket = false;
+		$bundleInBasket = false;
+		$onlyBundleInBasket = false;
 		foreach ($items as $item) {
-			if (!isset($item['item']['winery_id']))
-				continue;
-			if ($includeBundles == false and $item['item_type'] == 'bundle')
-				continue;
+			if ($includeBundles == false) {
+				if ($item['item_type'] == 'wine') {
+					$wineInBasket = true;
+					if (!isset($item['item']['winery_id']))
+						continue;
+				} elseif ($item['item_type'] == 'bundle') {
+					$bundleInBasket = true;
+					continue;
+				}
+			}
 
 			$wineryId = $item['item']['winery_id'];
 
@@ -744,6 +753,9 @@ class Shop {
 				$itemsByWinery[$wineryId] = $item['quantity'];
 		}
 
+		if ($bundleInBasket == true and $wineInBasket == false)
+			$onlyBundleInBasket = true;
+
 		$quantity = count($itemsByWinery) ? min($itemsByWinery) : 0;
 		if ($quantity < $minBasketSizePerWinery) {
 			$quantityInBundles = 0;
@@ -752,7 +764,7 @@ class Shop {
 					$quantityInBundles += $item['quantity'] * $item['item']['package_quantity'];
 				}
 			}
-			if ($quantityInBundles >= $minBasketSize)
+			if ($onlyBundleInBasket == true and $quantityInBundles >= $minBasketSize)
 				return $retString ? 'valid' : true;
 
 			return $retString ? 'minBasketSize' : false;
