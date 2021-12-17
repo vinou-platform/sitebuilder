@@ -56,11 +56,11 @@ class Ajax {
                 else {
                     $result['quantity'] = Shop::calcCardQuantity($result['basketItems']);
 
-										$settings = $this->settingsService->get('settings');
-										if (isset($settings['basketPerWinery']) && $settings['basketPerWinery'] !== false)
-											$result['valid'] = Shop::quantityByWineryIsAllowed( $result['basketItems'], true);
-										else
-											$result['valid'] = Shop::quantityIsAllowed($result['quantity'], true);
+					$settings = $this->settingsService->get('settings');
+					if (isset($settings['basketPerWinery']) && $settings['basketPerWinery'] !== false)
+						$result['valid'] = Shop::quantityByWineryIsAllowed( $result['basketItems'], true);
+					else
+						$result['valid'] = Shop::quantityIsAllowed($result['quantity'], true);
 
                 }
 
