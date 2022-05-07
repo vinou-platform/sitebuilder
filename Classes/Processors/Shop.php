@@ -677,10 +677,15 @@ class Shop {
 	public static function calcCardQuantity($card) {
 		$quantity = 0;
 		foreach ($card as $item) {
-			if ($item['item_type'] == 'bundle')
-				$quantity = $quantity + $item['quantity'] * $item['item']['package_quantity'];
-			else
-				$quantity = $quantity + $item['quantity'];
+            switch ($item['item_type']) {
+                case 'bundle':
+                case 'product':
+				    $quantity = $quantity + $item['quantity'] * $item['item']['package_quantity'];
+                    break;
+                default:
+				    $quantity = $quantity + $item['quantity'];
+                    break;
+            }
 		}
 		return $quantity;
 	}
