@@ -203,9 +203,13 @@ class Render {
 
                 // initialize class for data processing
                 if (isset($option['class'])) {
-                    $class = new $option['class'];
-                    if (is_subclass_of($class, '\Vinou\SiteBuilder\Processors\AbstractProcessor'))
-                        $class->loadApi($this->api);
+                    if (isset($option['initApiOnConstruct']) && $option['initApiOnConstruct'])
+                        $class = new $option['class']($this->api);
+                    else {
+                        $class = new $option['class'];
+                        if (is_subclass_of($class, '\Vinou\SiteBuilder\Processors\AbstractProcessor'))
+                            $class->loadApi($this->api);
+                    }
                 }
                 elseif (isset($option['processor'])) {
 
