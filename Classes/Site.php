@@ -4,6 +4,7 @@ namespace Vinou\SiteBuilder;
 use \Bramus\Router\Router;
 use \Vinou\ApiConnector\Api;
 use \Vinou\ApiConnector\Tools\Helper;
+use \Vinou\ApiConnector\Tools\Redirect;
 use \Vinou\ApiConnector\Services\ServiceLocator;
 use \Vinou\ApiConnector\Session\Session;
 use \Vinou\SiteBuilder\Router\DynamicRoutes;
@@ -38,14 +39,6 @@ class Site {
 
 		$this->render->connect();
 		$this->routeConfig = new DynamicRoutes($this->router, $this->render);
-
-		$this->router->set404(function() {
-			header('HTTP/1.1 404 Not Found');
-			$options = [
-				'pageTitle' => '404 Page Not Found'
-			];
-			$this->render->renderPage('404.twig',$options);
-		});
 
 		$this->sendCorsHeaders();
 	}
@@ -89,6 +82,32 @@ class Site {
 		$config = $this->settingsService->get('system');
 		if (is_array($config))
 			$this->config = $config;
+
+		$this->router->set404(function() {
+			header('HTTP/1.1 404 Not Found');
+			$options = [
+				'pageTitle' => '404 Page Not Found'
+			];
+			if (isset($this->config['pageNotFound'])) {
+				$config404 = $this->config['pageNotFound'];
+
+				if (isset($config404['template']))
+					$this->render->renderPage($config404['template'],$options);
+				elseif (isset($config404['type'])) {
+					switch ($config404['type']) {
+						case 'redirect':
+						default:
+							Redirect::internal($config404['target']);
+							break;
+					}
+				}
+				else
+					$this->render->renderPage('404.twig',$options);
+			}
+			else {
+				$this->render->renderPage('404.twig',$options);
+			}
+		});
 
 		$settings = $this->settingsService->get('settings');
 		if (is_array($settings)) {
