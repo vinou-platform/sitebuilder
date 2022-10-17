@@ -82,7 +82,7 @@ class Render {
         }
 
 		$this->renderArr['languages'] = $this->languages;
-		$this->renderArr['protocol'] = Helper::getCurrentHost();
+		$this->renderArr['protocol'] = Helper::fetchProtocol();
 
 		if ($this->pathsegments && count($this->pathsegments)>1 && in_array($this->pathsegments[0],$this->languages)) {
 			$this->renderArr['language'] = $this->pathsegments[0];
