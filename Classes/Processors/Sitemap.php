@@ -118,8 +118,7 @@ class Sitemap {
                 continue;
 
             $url = $url == '/' ? '/' : '/' . $url;
-            $protocol = strpos($_SERVER['SERVER_PROTOCOL'],'https') ? 'https://' : 'http://';
-            $url = $protocol . $_SERVER['HTTP_HOST'] . $url;
+            $url = Helper::getCurrentHost() . $url;
             $config = $routeConfig['sitemap'];
 
             preg_match_all("/{(.+?)}/", $url, $matches);
