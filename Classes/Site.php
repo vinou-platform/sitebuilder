@@ -62,13 +62,15 @@ class Site {
 		$this->render->addTemplateStorages($rootDir, $folders);
 	}
 
-	public function loadTheme($themeID, $themeDir) {
+	public function loadTheme($themeID, $themeDir, $loadRoutes = true) {
 		$this->themeID = $themeID;
 		$this->themeDir = $themeDir;
 		$themeFolders = ['Layouts/', 'Partials/', 'Templates/'];
 		$this->render->loadDefaultStorages();
 		$this->render->addTemplateStorages($themeDir.'Resources/', $themeFolders);
-		$this->routeConfig->loadRoutesByDirectory($themeDir.'Configuration/Routes/');
+
+		if ($loadRoutes)
+			$this->routeConfig->loadRoutesByDirectory($themeDir.'Configuration/Routes/');
 	}
 
 	private function initialize() {

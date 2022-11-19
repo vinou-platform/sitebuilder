@@ -40,6 +40,10 @@ class DynamicRoutes {
 		$this->generateRoutes();
 	}
 
+	public function getDefaults() {
+		return $this->loadDefaults;
+	}
+
 	public function setDefaults($status) {
 		$this->loadDefaults = $status;
 	}
