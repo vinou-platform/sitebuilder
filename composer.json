@@ -1,6 +1,6 @@
 {
     "name": "vinou/site-builder",
-    "version": "2.9.10",
+    "version": "3.0.0-dev",
     "type": "library",
     "description": "PHP library to generate template based webpages with dynamic content from the Vinou Plattform",
     "keywords": [
@@ -19,7 +19,7 @@
     ],
     "require": {
         "bramus/router": "*",
-        "twig/twig": "2.*",
+        "twig/twig": "3.*",
         "twig/extensions": "1.*",
         "mustangostang/spyc": "^0.5.1",
         "erusev/parsedown": "^1.7",
