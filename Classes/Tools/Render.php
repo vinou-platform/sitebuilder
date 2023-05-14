@@ -366,8 +366,8 @@ class Render {
 
         $twig->addFilter( new TwigFilter('sortBy', function ($array, $property, $direction = 'ASC') {
             usort($array, function($a, $b) use ($property, $direction) {
-                $x = $a[$property];
-                $y = $b[$property];
+                $x = is_null($a[$property]) ? 0 : $a[$property];
+                $y = is_null($b[$property]) ? 0 : $b[$property];
 
                 if (is_numeric($x))
                     return $direction === 'ASC' ? (int)($x > $y) : (int)($x < $y);
