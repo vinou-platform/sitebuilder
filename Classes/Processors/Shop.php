@@ -322,10 +322,10 @@ class Shop {
 	public function saveOrderJSON() {
 		$this->checkFolders();
 
-		$folder = strftime('Orders/%Y/%m/%d');
+		$folder = 'Orders/' . date('Y/m/d');
 		$this->checkFolders($folder);
 
-		$filename = strftime('%H-%M-').Session::getValue('basket').'.json';
+		$filename = date('h-i-') . Session::getValue('basket').'.json';
 		$formattedOrder = $this->prepareOrderToSend();
 		file_put_contents(Helper::getNormDocRoot().$folder.'/'.$filename, json_encode($formattedOrder));
 		return $formattedOrder;

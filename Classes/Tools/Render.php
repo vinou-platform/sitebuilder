@@ -11,6 +11,9 @@ use \Vinou\ApiConnector\Tools\Redirect;
 use \Vinou\SiteBuilder\Processors\Shop;
 use \Gumlet\ImageResize;
 use \Gumlet\ImageResizeException;
+use \Twig\Loader\FilesystemLoader;
+use \Twig\Environment;
+use \Twig\TwigFilter;
 
 class Render {
 
@@ -58,9 +61,9 @@ class Render {
         $this->renderArr['backlink'] = isset($_SERVER['HTTP_REFERER']) ? $_SERVER['HTTP_REFERER'] : false;
 		$this->renderArr['host'] = $_SERVER['HTTP_HOST'];
         $this->renderArr['domain'] = Helper::getCurrentHost();
-        $this->renderArr['date'] = strftime('%d.%m.%Y',time());
-        $this->renderArr['year'] = strftime('%Y',time());
-        $this->renderArr['time'] = strftime('%H:%M',time());
+        $this->renderArr['date'] = date('d.m.Y');
+        $this->renderArr['year'] = date('Y');
+        $this->renderArr['time'] = date('h:i');
         $this->renderArr['basketuuid'] = Session::getValue('basket');
         $items = Session::getValue('card');
         if ($items && !empty($items)) {
@@ -269,7 +272,7 @@ class Render {
             }
         }
 
-		$loader = new \Twig_Loader_Filesystem($this->templateStorages);
+		$loader = new FilesystemLoader($this->templateStorages);
 
         $settings = [
             'cache' => defined('VINOU_CACHE') ? VINOU_CACHE : Helper::getNormDocRoot().'Cache/Twig',
@@ -282,7 +285,7 @@ class Render {
         if (isset($config['debug']))
             $settings['debug'] = $config['debug'];
 
-		$twig = new \Twig_Environment($loader, $settings);
+		$twig = new Environment($loader, $settings);
         $twig->addExtension(new \Twig_Extensions_Extension_Intl());
         $twig->addExtension(new \Twig_Extensions_Extension_Array());
 
@@ -291,7 +294,7 @@ class Render {
 		$twig->addExtension(new \Twig_Extension_Debug());
         $twig->addExtension(new \Vinou\Translations\TwigExtension(isset($options['language']) ? $options['language'] : 'de'));
 
-		$twig->addFilter( new \Twig_SimpleFilter('cast_to_array', function ($stdClassObject) {
+		$twig->addFilter( new TwigFilter('cast_to_array', function ($stdClassObject) {
             $response = array();
             foreach ($stdClassObject as $key => $value) {
                 $response[$key] = (array)$value;
@@ -299,7 +302,7 @@ class Render {
             return $response;
         }));
 
-        $twig->addFilter( new \Twig_SimpleFilter('image', function ($imagesrc, $chstamp = NULL, $dimension = NULL) use($options) {
+        $twig->addFilter( new TwigFilter('image', function ($imagesrc, $chstamp = NULL, $dimension = NULL) use($options) {
             $image = Images::storeApiImage($imagesrc, $chstamp);
             $extension = pathinfo($image['src'], PATHINFO_EXTENSION);
             if ($extension != 'svg' && !is_null($dimension)) {
@@ -325,19 +328,19 @@ class Render {
             return $image;
         }));
 
-        $twig->addFilter( new \Twig_SimpleFilter('pdf', function ($pdfsrc, $chstamp = NULL) use($options) {
+        $twig->addFilter( new TwigFilter('pdf', function ($pdfsrc, $chstamp = NULL) use($options) {
             $pdf = Pdf::storeApiPDF($pdfsrc, $chstamp);
             return $pdf;
         }));
 
-        $twig->addFilter( new \Twig_SimpleFilter('region', function ($region_id) {
+        $twig->addFilter( new TwigFilter('region', function ($region_id) {
             if (!is_numeric($region_id))
                 return false;
 
             return isset($this->regions[$region_id]) ? $this->regions[$region_id] : $region_id;
         }));
 
-        $twig->addFilter( new \Twig_SimpleFilter('taste', function ($taste_id) {
+        $twig->addFilter( new TwigFilter('taste', function ($taste_id) {
         	if (is_string($taste_id) && strlen($taste_id)>0) {
             	return $this->translation['tastes'][$taste_id];
         	} else {
@@ -345,7 +348,7 @@ class Render {
         	}
         }));
 
-        $twig->addFilter( new \Twig_SimpleFilter('groupBy', function ($array, $groupKey) {
+        $twig->addFilter( new TwigFilter('groupBy', function ($array, $groupKey) {
             $return = [];
             foreach ($array as $item) {
                 if (isset($item[$groupKey])) {
@@ -361,44 +364,44 @@ class Render {
             return $return;
         }));
 
-        $twig->addFilter( new \Twig_SimpleFilter('sortBy', function ($array, $property, $direction = 'ASC') {
+        $twig->addFilter( new TwigFilter('sortBy', function ($array, $property, $direction = 'ASC') {
             usort($array, function($a, $b) use ($property, $direction) {
                 $x = $a[$property];
                 $y = $b[$property];
 
                 if (is_numeric($x))
-                    return $direction === 'ASC' ? $x > $y : $x < $y;
+                    return $direction === 'ASC' ? (int)($x > $y) : (int)($x < $y);
                 else
-                    return $direction === 'ASC' ? strcmp($x, $y) : strcmp($y, $x);
+                    return $direction === 'ASC' ? (int)strcmp($x, $y) : (int)strcmp($y, $x);
 
             });
             return $array;
         }));
 
-        $twig->addFilter( new \Twig_SimpleFilter('ksort', function ($array) {
+        $twig->addFilter( new TwigFilter('ksort', function ($array) {
             ksort($array);
             return $array;
         }));
 
-        $twig->addFilter( new \Twig_SimpleFilter('gettype', function ($var) {
+        $twig->addFilter( new TwigFilter('gettype', function ($var) {
             return gettype($var);
         }));
 
-        $twig->addFilter( new \Twig_SimpleFilter('addProperty', function ($array, $property, $value) {
+        $twig->addFilter( new TwigFilter('addProperty', function ($array, $property, $value) {
             foreach ($array as &$entry) {
                 $entry[$property] = $value;
             }
             return $array;
         }));
 
-        $twig->addFilter( new \Twig_SimpleFilter('http', function ($src) {
+        $twig->addFilter( new TwigFilter('http', function ($src) {
             if (strpos($src,'://'))
                 return $src;
 
             return 'http://'.$src;
         }));
 
-        $twig->addFilter( new \Twig_SimpleFilter('filesize', function ($file) {
+        $twig->addFilter( new TwigFilter('filesize', function ($file) {
             $file = Helper::getNormDocRoot().$file;
             $bytes = floatval(filesize($file));
             $arBytes = array(
@@ -436,7 +439,7 @@ class Render {
             return $result;
         }));
 
-        $twig->addFilter( new \Twig_SimpleFilter('bytes', function ($bytes, $precision = 2) { 
+        $twig->addFilter( new TwigFilter('bytes', function ($bytes, $precision = 2) { 
             $units = array('B', 'KB', 'MB', 'GB', 'TB'); 
 
             $bytes = max($bytes, 0); 
@@ -451,21 +454,21 @@ class Render {
         }));
 
         //filter for decimal->brutto conversion 123.456 => 123.46
-        $twig->addFilter( new \Twig_SimpleFilter('brutto', function($decimal) {
+        $twig->addFilter( new TwigFilter('brutto', function($decimal) {
             return $decimal;
         }));
 
         //filter for decimal->netto conversion 123.456 => 146.92
-        $twig->addFilter( new \Twig_SimpleFilter('netto', function($decimal) {
+        $twig->addFilter( new TwigFilter('netto', function($decimal) {
             return ceil($decimal * 10000 /119 ) / 100;
         }));
 
         //filter for formatting prices to currency: 123456.78 => 123.456,78
-        $twig->addFilter( new \Twig_SimpleFilter('currency', function($decimal) {
-            return number_format($decimal,2,',','.');
+        $twig->addFilter( new TwigFilter('currency', function($decimal) {
+            return number_format(is_null($decimal) ? 0.00 : $decimal,2,',','.');
         }));
 
-        $twig->addFilter( new \Twig_SimpleFilter('cleanup', function($string) {
+        $twig->addFilter( new TwigFilter('cleanup', function($string) {
         	$string = substr($string, 0, 1) == ' ' ? substr($string, 1, strlen($string)) : $string;
         	$string = str_replace(',', '', $string);
         	$string = str_replace('@', '', $string);
@@ -473,7 +476,7 @@ class Render {
             return $string;
         }));
 
-        $twig->addFilter( new \Twig_SimpleFilter('src', function($file) {
+        $twig->addFilter( new TwigFilter('src', function($file) {
 
             if (!is_file(Helper::getNormDocRoot().'/'.$file))
                 return false;
@@ -487,7 +490,7 @@ class Render {
         }));
 
         //filter for formatting prices to currency: 123456.78 => 123.456,78
-        $twig->addFilter( new \Twig_SimpleFilter('arraytocsv', function($array) {
+        $twig->addFilter( new TwigFilter('arraytocsv', function($array) {
         	if (is_array($array)) {
             	return implode(',',$array);
             } else {
@@ -496,16 +499,16 @@ class Render {
         }));
 
         //sum of an array of numbers
-        $twig->addFilter( new \Twig_SimpleFilter('sum', function($arr) {
+        $twig->addFilter( new TwigFilter('sum', function($arr) {
             return array_reduce($arr, function($carry,$item){ return $carry+$item; },0);
         }));
 
         //return a subarray from an array of array by index
-        $twig->addFilter( new \Twig_SimpleFilter('subArray', function($arr,$index) {
+        $twig->addFilter( new TwigFilter('subArray', function($arr,$index) {
             return array_map(function($item) use ($index) { return $item[$index]; }, $arr);
         }));
 
-        $twig->addFilter( new \Twig_SimpleFilter('withAttribute', function($arr,$attr, $value) {
+        $twig->addFilter( new TwigFilter('withAttribute', function($arr,$attr, $value) {
             return array_filter($arr,
                                 function($item) use ($attr, $value) {
                                     if (is_array($item[$attr]))
@@ -515,14 +518,14 @@ class Render {
                                 });
         }));
 
-        $twig->addFilter( new \Twig_SimpleFilter('withoutAttribute', function($arr,$attr, $value) {
+        $twig->addFilter( new TwigFilter('withoutAttribute', function($arr,$attr, $value) {
             return array_filter($arr,
                                 function($item) use ($attr, $value) {
                                     return $item[$attr] != $value;
                                 });
         }));
 
-        $twig->addFilter( new \Twig_SimpleFilter('price', function($items) {
+        $twig->addFilter( new TwigFilter('price', function($items) {
             return array_reduce($items,
                                 function($carry, $item){
                                     return $carry + ($item['price'] * $item['quantity']);
@@ -530,25 +533,25 @@ class Render {
                                 0);
         }));
 
-        $twig->addFilter( new \Twig_SimpleFilter('wines', function($items) {
+        $twig->addFilter( new TwigFilter('wines', function($items) {
             return array_filter($items,
                                 function($item){
                                     return $item['type'] == 'wine';
                                 });
         }));
 
-        $twig->addFilter( new \Twig_SimpleFilter('packages', function($items) {
+        $twig->addFilter( new TwigFilter('packages', function($items) {
             return array_filter($items,
                                 function($item){
                                     return $item['type'] == 'package';
                                 });
         }));
 
-        $twig->addFilter( new \Twig_SimpleFilter('base64image', function($url) {
+        $twig->addFilter( new TwigFilter('base64image', function($url) {
             return Helper::imageToBase64($url);
         }));
 
-        $twig->addFilter( new \Twig_SimpleFilter('grapetypes', function($array) {
+        $twig->addFilter( new TwigFilter('grapetypes', function($array) {
             $return = [];
             foreach ($array as $entry) {
                 if (is_array($entry)) {
@@ -564,7 +567,7 @@ class Render {
 
         }));
 
-        $twig->addFilter( new \Twig_SimpleFilter('link', function($label,$url,$additionalParams = null, $options = null) {
+        $twig->addFilter( new TwigFilter('link', function($label,$url,$additionalParams = null, $options = null) {
         	$classSuffix = $_SERVER['REQUEST_URI'] == $url ? ' active' : false;
 
             $link = '<a href="'.$url.'"';
@@ -596,7 +599,7 @@ class Render {
 
         }, array('is_safe' => array('html'))));
 
-        $twig->addFilter( new \Twig_SimpleFilter('language', function($value,$translations,$key,$current) {
+        $twig->addFilter( new TwigFilter('language', function($value,$translations,$key,$current) {
         	$class = $current == $key ? 'active' : '';
         	if (isset($translations[$key])) {
             	$link = '<a href="'.$translations[$key].'" class="'.$class.'">'.$value.'</a>';
@@ -606,32 +609,32 @@ class Render {
             return $link;
         }, array('pre_escape' => 'html', 'is_safe' => array('html'))));
 
-        $twig->addFilter( new \Twig_SimpleFilter('getBundle', function ($id) {
+        $twig->addFilter( new TwigFilter('getBundle', function ($id) {
             return $this->api->getBundle($id);
         }));
 
-        $twig->addFilter( new \Twig_SimpleFilter('getWinery', function ($id) {
+        $twig->addFilter( new TwigFilter('getWinery', function ($id) {
             return $this->api->getWinery($id);
         }));
 
-        $twig->addFilter( new \Twig_SimpleFilter('quantityIsAllowed', function ($quantity) {
+        $twig->addFilter( new TwigFilter('quantityIsAllowed', function ($quantity) {
             return Shop::quantityIsAllowed($quantity, true);
         }));
 
-        $twig->addFilter( new \Twig_SimpleFilter('basePrice', function ($price, $unit) {
+        $twig->addFilter( new TwigFilter('basePrice', function ($price, $unit) {
             $factor = [
                 'g' => 100,
                 'kg' => 1,
                 'ml' => 100,
                 'l' => 1
             ];
-            $price = number_format($price,2,',','.');
+            $price = number_format(is_null($price) ? 0.00 : $price,2,',','.');
             $suffix = isset($factor[$unit]) && $factor[$unit] > 1 ? $factor[$unit] . ' '  : '';
             $suffix .=  $this->translation['units'][$unit];
             return '€ ' . $price . ' / ' . $suffix;
         }));
 
-        $twig->addFilter( new \Twig_SimpleFilter('nl2p', function ($string) {
+        $twig->addFilter( new TwigFilter('nl2p', function ($string) {
 
             $arr=explode("\n",$string);
             $out='';
@@ -644,7 +647,7 @@ class Render {
 
         }, array('pre_escape' => 'html', 'is_safe' => array('html'))));
 
-        $twig->addFilter( new \Twig_SimpleFilter('pageTitle', function ($object) {
+        $twig->addFilter( new TwigFilter('pageTitle', function ($object) {
 
             $relevantFields = ['articlenumber', 'name', 'title'];
             $lowFields = ['vintage'];

@@ -7,6 +7,9 @@ use \Vinou\ApiConnector\Tools\Helper;
 use \Vinou\ApiConnector\Session\Session;
 use \Gregwar\Captcha\CaptchaBuilder;
 use \Gregwar\Captcha\PhraseBuilder;
+use \Twig\Loader\FilesystemLoader;
+use \Twig\Environment;
+use \Twig\TwigFilter;
 
 class Mailer {
 
@@ -405,7 +408,7 @@ class Mailer {
 
 		$loader = new \Twig_Loader_Filesystem($this->storage);
 
-		$this->renderer = new \Twig_Environment($loader, array(
+		$this->renderer = new Environment($loader, array(
 			'cache' => defined('VINOU_CACHE') ? VINOU_CACHE : Helper::getNormDocRoot().'Cache/Twig',
 			'debug' => defined('VINOU_DEBUG') ? VINOU_DEBUG : false
 		));
