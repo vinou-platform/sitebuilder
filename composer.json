@@ -25,7 +25,7 @@
         "mustangostang/spyc": "^0.5.1",
         "erusev/parsedown": "^1.7",
         "phpmailer/phpmailer": "^6.0",
-        "gregwar/captcha": "^1.1",
+        "s1syphos/php-simple-captcha": "^2.3",
         "thepixeldeveloper/sitemap": "^5.1",
         "gumlet/php-image-resize": "^1.9",
         "vinou/api-connector": "^3.0.0",

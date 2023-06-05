@@ -5,11 +5,10 @@ use \PHPMailer\PHPMailer\PHPMailer;
 use \PHPMailer\PHPMailer\Exception;
 use \Vinou\ApiConnector\Tools\Helper;
 use \Vinou\ApiConnector\Session\Session;
-use \Gregwar\Captcha\CaptchaBuilder;
-use \Gregwar\Captcha\PhraseBuilder;
 use \Twig\Loader\FilesystemLoader;
 use \Twig\Environment;
 use \Twig\TwigFilter;
+use \SimpleCaptcha\Builder;
 
 class Mailer {
 
@@ -136,31 +135,63 @@ class Mailer {
 	public function loadCaptcha($params = NULL) {
 		$phrase = Session::getValue('captcha');
 		if (!$phrase) {
-			$phraseBuilder = new PhraseBuilder(5, '0123456789');
-			$captcha = new CaptchaBuilder(null, $phraseBuilder);
-		}
-		else {
-			$captcha = new CaptchaBuilder($phrase);
+			$phrase = Builder::buildPhrase(5, 'abcdefghijklmnopqrstuvwxyz@0123456789');
+			Session::setValue('captcha', $phrase);
 		}
 
-		if (isset($params['bgcolor']))
-			list($r, $g, $b) = explode(',',$params['bgcolor']);
-		else
-			list($r, $g, $b) = [100, 0, 0];
+		// rename deprecated bgcolor key in right camelcase way
+		if (isset($params['bgcolor'])) {
+			$params['bgColor'] = $params['bgcolor'];
+			unset($params['bgcolor']);
+		}
+
+		$captcha = new Builder($phrase);
+		$properties = [
+			'distort' => false,
+			'interpolate' => true,
+			'maxLinesBehind' => mt_rand(2,6),
+			'maxLinesFront' => mt_rand(2,6),
+			'bgColor' => [100,0,0],
+			'lineColor' => [99,99,99],
+			'textColor'=> [33,33,33],
+			'maxAngle' => mt_rand(0,15),
+			'maxOffset' => mt_rand(0,10),
+			'applyEffects' => true,
+			'applyNoise' => false,
+			'noiseFactor' => mt_rand(1,5),
+			'applyPostEffects' => true,
+			'applyScatterEffect' => false,
+			'randomizeFonts' => true
+		];
+
+		foreach ($properties as $property => $value) {
+			if (isset($params[$property])) {
+				$value = $params[$property];
+
+				if (in_array($property, ['bgColor', 'lineColor', 'textColor'])) {
+					list($r, $g, $b) = explode(',',$params[$property]);
+					$value = [(int)$r, (int)$g, (int)$b];
+				}
+			}
+
+			$captcha->$property = $value;
+		}
 
 		$width = isset($params['width']) ? $params['width'] : 120;
-		$height = isset($params['height']) ? $params['height'] : 50;
+		if($width % 2 == 1) $width++;
 
-		$captcha->setBackgroundColor($r, $g, $b);
-		$captcha->setIgnoreAllEffects(true);
+		$height = isset($params['height']) ? $params['height'] : 50;
+		if($height % 2 == 1) $height++;
+
+		// $captcha->applyEffects = false;
 		$captcha->build($width, $height);
-		Session::setValue('captcha', $captcha->getPhrase());
+		
 
 		if (isset($params['dynamicCaptchaInput']))
 			$this->dynamicCaptchaInput = $params['dynamicCaptchaInput'];
 
 		return [
-			'phrase' => $captcha->getPhrase(),
+			'phrase' => $captcha->phrase,
 			'image' => $captcha->inline(),
 			'field' => $this->dynamicCaptchaInput ? bin2hex(random_bytes(20)) : ''
 		];
