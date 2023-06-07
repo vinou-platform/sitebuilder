@@ -509,20 +509,24 @@ class Render {
         }));
 
         $twig->addFilter( new TwigFilter('withAttribute', function($arr,$attr, $value) {
-            return array_filter($arr,
-                                function($item) use ($attr, $value) {
-                                    if (is_array($item[$attr]))
-                                        return isset($item[$attr][$value]);
-                                    else
-                                        return $item[$attr] == $value;
-                                });
+            if (is_null($arr) || empty($arr))
+                return $arr;
+
+            return array_filter($arr, function($item) use ($attr, $value) {
+                if (is_array($item[$attr]))
+                    return isset($item[$attr][$value]);
+                else
+                    return $item[$attr] == $value;
+            });
         }));
 
         $twig->addFilter( new TwigFilter('withoutAttribute', function($arr,$attr, $value) {
-            return array_filter($arr,
-                                function($item) use ($attr, $value) {
-                                    return $item[$attr] != $value;
-                                });
+            if (is_null($arr) || empty($arr))
+                return $arr;
+
+            return array_filter($arr, function($item) use ($attr, $value) {
+                return $item[$attr] != $value;
+            });
         }));
 
         $twig->addFilter( new TwigFilter('price', function($items) {
