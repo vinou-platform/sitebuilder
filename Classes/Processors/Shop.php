@@ -334,6 +334,17 @@ class Shop {
 	public function prepareOrderToSend() {
 		$order = Session::getValue('order');
 		$client = Session::getValue('client');
+
+		$order['session'] = [
+			'billing' => $order['billing'],
+			'delivery' => $order['delivery'],
+			'basket' => Session::getValue('basket'),
+			'card' => Session::getValue('card'),
+			'payment' => Session::getValue('payment'),
+			'campaign' => Session::getValue('campaign'),
+			'note' => Session::getValue('note')
+		];
+
 		if ($client) {
 			$clientId = $client['id'];
 			$order['client_id'] = $clientId;
@@ -510,11 +521,18 @@ class Shop {
 
 		$customer = $this->api->getCustomer();
 		$client = $this->api->getClient();
+
+
+		$sessionOrder = Session::getValue('order');
 		$data = [
 			'order' => $order,
 			'client' => $client,
 			'customer' => $customer,
-			'settings' => $this->settings
+			'settings' => $this->settings,
+			'session' => [
+				'billing' => $sessionOrder['billing'],
+				'delivery' => $sessionOrder['delivery'],
+			]
 		];
 		if ($customer['type'] == 'merchant')
 			$data['wineries'] = $this->api->getWineriesAll();
