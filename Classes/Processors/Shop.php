@@ -113,7 +113,7 @@ class Shop {
 				array_push($items, $position);
 			}
 		}
-		if (isset($data['package'])) {
+		if (isset($data['package']) && is_array($data['package'])) {
 			$package = $data['package'];
 			$position = [
 				'item_type' => 'package',
