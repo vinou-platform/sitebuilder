@@ -365,17 +365,16 @@ class Render {
         }));
 
         $twig->addFilter( new TwigFilter('sortBy', function ($array, $property, $direction = 'ASC') {
-            usort($array, function($a, $b) use ($property, $direction) {
-                $x = is_null($a[$property]) ? 0 : $a[$property];
-                $y = is_null($b[$property]) ? 0 : $b[$property];
+            usort($array, function($a, $b) use ($property) {
+				if (is_null($a[$property]))
+					return 1;
 
-                if (is_numeric($x))
-                    return $direction === 'ASC' ? (int)($x > $y) : (int)($x < $y);
-                else
-                    return $direction === 'ASC' ? (int)strcmp($x, $y) : (int)strcmp($y, $x);
+				if (is_null($b[$property]))
+					return 0;
 
+            	return $a[$property] <=> $b[$property];
             });
-            return $array;
+            return $direction === 'ASC' ? $array : array_reverse($array);
         }));
 
         $twig->addFilter( new TwigFilter('ksort', function ($array) {
@@ -439,18 +438,18 @@ class Render {
             return $result;
         }));
 
-        $twig->addFilter( new TwigFilter('bytes', function ($bytes, $precision = 2) { 
-            $units = array('B', 'KB', 'MB', 'GB', 'TB'); 
+        $twig->addFilter( new TwigFilter('bytes', function ($bytes, $precision = 2) {
+            $units = array('B', 'KB', 'MB', 'GB', 'TB');
 
-            $bytes = max($bytes, 0); 
-            $pow = floor(($bytes ? log($bytes) : 0) / log(1024)); 
-            $pow = min($pow, count($units) - 1); 
+            $bytes = max($bytes, 0);
+            $pow = floor(($bytes ? log($bytes) : 0) / log(1024));
+            $pow = min($pow, count($units) - 1);
 
             // Uncomment one of the following alternatives
             $bytes /= pow(1024, $pow);
-            // $bytes /= (1 << (10 * $pow)); 
+            // $bytes /= (1 << (10 * $pow));
 
-            return round($bytes, $precision) . ' ' . $units[$pow]; 
+            return round($bytes, $precision) . ' ' . $units[$pow];
         }));
 
         //filter for decimal->brutto conversion 123.456 => 123.46
