@@ -95,8 +95,11 @@ class Render {
 	}
 
     public function connect() {
+		if (!defined('VINOU_MODE')) {
+			define('VINOU_MODE', 'Default');
+		}
 
-        if (defined('VINOU_MODE') && VINOU_MODE === 'Public') {
+        if (VINOU_MODE === 'Public') {
             $this->api = new PublicApi ();
         } else {
             $this->api = new Api ();
@@ -302,7 +305,7 @@ class Render {
             return $response;
         }));
 
-        $twig->addFilter( new TwigFilter('image', function ($imagesrc, $chstamp = NULL, $dimension = NULL) use($options) {
+        $twig->addFilter( new TwigFilter('image', function ($imagesrc, $chstamp = NULL, $dimension = NULL) {
             $image = Images::storeApiImage($imagesrc, $chstamp);
             $extension = pathinfo($image['src'], PATHINFO_EXTENSION);
             if ($extension != 'svg' && !is_null($dimension)) {
@@ -328,7 +331,7 @@ class Render {
             return $image;
         }));
 
-        $twig->addFilter( new TwigFilter('pdf', function ($pdfsrc, $chstamp = NULL) use($options) {
+        $twig->addFilter( new TwigFilter('pdf', function ($pdfsrc, $chstamp = NULL) {
             $pdf = Pdf::storeApiPDF($pdfsrc, $chstamp);
             return $pdf;
         }));
@@ -425,6 +428,7 @@ class Render {
                     "VALUE" => 1
                 ),
             );
+			$result = null;
 
             foreach($arBytes as $arItem)
             {
@@ -483,7 +487,7 @@ class Render {
         	$change_date = @filemtime(Helper::getNormDocRoot().'/'.$file);
 	        if (!$change_date) {
 	            //Fallback if mtime could not be found:
-	            $change_date = mktime(0, 0, 0, date('m'), date('d'), date('Y'));
+	            $change_date = mktime(0, 0, 0, (int)date('m'), (int)date('d'), (int)date('Y'));
 	        }
             return $file.'?'.$change_date;
         }));
@@ -657,13 +661,13 @@ class Render {
 
             $return = '';
             foreach ($relevantFields as $field) {
-                if (isset($object[$field]) && !empty($object[$field]) && !is_null($object[$field]))
+                if (!empty($object[$field]))
                     $return .= $object[$field] . ' ';
             }
 
             $lowString = '';
             foreach ($lowFields as $field) {
-                if (isset($object[$field]) && !empty($object[$field]) && !is_null($object[$field]))
+                if (!empty($object[$field]))
                     $lowString .= $object[$field] . ' ';
             }
 
