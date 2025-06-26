@@ -19,21 +19,21 @@ class Ajax {
     protected $result = false;
     protected $request = [];
 
-    public function __construct($themeDir = null, $defaults = true) {
+    public function __construct($themeDir = null) {
 
         $this->api = new Api();
 
-        if (!$this->api || is_null($this->api))
-            $this->sendResult(false, 'could not create api connection');
+        if ($this->api->connected === false)
+		    $this->sendResult(false, 'could not create api connection');
 
         $this->request = array_merge($_POST, (array)json_decode(trim(file_get_contents('php://input')), true));
 
         $this->settingsService = ServiceLocator::get('Settings');
-        $this->loadSettings($themeDir, $defaults);
+        $this->loadSettings($themeDir);
     }
 
-    public function loadSettings($dir, $defaults) {
-        $loader = new Loader\Settings($defaults);
+    public function loadSettings($dir) {
+        $loader = new Loader\Settings();
 
         if (!is_null($dir))
             $loader->addByDirectory($dir);

@@ -66,7 +66,7 @@ class Render {
         $this->renderArr['time'] = date('h:i');
         $this->renderArr['basketuuid'] = Session::getValue('basket');
         $items = Session::getValue('card');
-        if ($items && !empty($items)) {
+        if (is_array($items) && !empty($items)) {
             $this->renderArr['card'] = [];
             foreach ($items as $item) {
                 $object = $item['item'];

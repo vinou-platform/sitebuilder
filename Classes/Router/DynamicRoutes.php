@@ -14,7 +14,6 @@ class DynamicRoutes {
 	private $router;
 	private $render;
 	private $loadDefaults = true;
-	private $routeStorage = null;
 	public $configuration = [];
 	public $routeFile = null;
 
@@ -46,10 +45,6 @@ class DynamicRoutes {
 
 	public function setDefaults($status) {
 		$this->loadDefaults = $status;
-	}
-
-	public function setRouteStorage($storage) {
-		$this->routeStorage = $storage;
 	}
 
 	public function loadDefaultRoutes() {

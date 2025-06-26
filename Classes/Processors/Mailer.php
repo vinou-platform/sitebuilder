@@ -185,7 +185,7 @@ class Mailer {
 
 		// $captcha->applyEffects = false;
 		$captcha->build($width, $height);
-		
+
 
 		if (isset($params['dynamicCaptchaInput']))
 			$this->dynamicCaptchaInput = $params['dynamicCaptchaInput'];
@@ -446,7 +446,7 @@ class Mailer {
 
 		// This line enables debugging and is included to activate dump()
 		$this->renderer->addExtension(new \Twig_Extension_Debug());
-		$this->renderer->addExtension(new \Vinou\Translations\TwigExtension(isset($options['language']) ? $options['language'] : 'de'));
+		$this->renderer->addExtension(new \Vinou\Translations\TwigExtension(isset($this->config['language']) ? $this->config['language'] : 'de'));
 
 		$this->renderer->addFilter( new \Twig_SimpleFilter('base64image', function($url) {
 			return Helper::imageToBase64($url);

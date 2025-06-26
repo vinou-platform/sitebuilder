@@ -12,6 +12,7 @@ class Sitemap {
 	public $data = [];
 	public $routes = [];
 	public $routeConfig = [];
+	public $api = NULL;
 
 	public function __construct(&$routeConfig = NULL, &$api = NULL) {
 

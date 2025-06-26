@@ -29,6 +29,8 @@ class Files {
 			array_pop($subDirParts);
 			$back = implode('/', $subDirParts);
 		}
+		else
+			$back = false;
 
 		if (!is_dir($dir))
 			return ['error' => 'source folder doesnt exists in webroot'];
@@ -39,7 +41,7 @@ class Files {
 
 		return [
 			'source' => $this->source,
-			'back' => isset($data[0]) ? $back : false,
+			'back' => $back,
 			'files' => $this->readdir($dir)
 		];
 	}

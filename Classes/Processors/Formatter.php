@@ -21,14 +21,14 @@ class Formatter {
 					if (array_key_exists('data', $subdata))
 						$subdata = $subdata['data'];
 
-					if (empty($subdata) || is_null($subdata))
+					if (empty($subdata))
 						continue 2;
 
 					foreach ($subdata as $entry) {
 						if (is_array($entry) && array_key_exists('data', $entry))
 							$entry = $entry['data'];
 
-						if (empty($entry) || is_null($entry))
+						if (empty($entry))
 							continue;
 
 						if (is_string($key) && is_array($entry))

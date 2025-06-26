@@ -78,7 +78,7 @@ class Instagram {
             file_put_contents($htaccess, $content);
         }
 
-		$loglevel = defined('VINOU_LOG_LEVEL') ? Logger::VINOU_LOG_LEVEL : Logger::ERROR;
+		$loglevel = defined('VINOU_LOG_LEVEL') ? VINOU_LOG_LEVEL : Logger::ERROR;
 
 		if (defined('VINOU_DEBUG') && VINOU_DEBUG)
 			$loglevel = Logger::DEBUG;
@@ -124,7 +124,7 @@ class Instagram {
 			$this->logger->debug('api request', $logData);
 
 			$result = json_decode((string)$response->getBody(), true);
-			return isset($result['data']) && !is_null($result['data']) ? $result['data'] : false;
+			return isset($result['data']) && !empty($result['data']) ? $result['data'] : false;
 
 		} catch (ClientException $e) {
 
@@ -180,6 +180,7 @@ class Instagram {
 			'query_hash' => '56a7068fea504063273cc2120ffd54f3',
 			'variables' => $postData
 		];
+		$result = [];
 
 		if (!file_exists($cacheFile) || time() - filemtime($cacheFile) > 900 || $force ) {
 
@@ -190,7 +191,6 @@ class Instagram {
 			$data = $data['user'];
 
 			if (array_key_exists('edge_owner_to_timeline_media', $data)) {
-				$result = [];
 				$rawNodes = $data['edge_owner_to_timeline_media']['edges'];
 				foreach ($rawNodes as $key => $node) {
 					array_push($result, $node['node']);
