@@ -23,6 +23,8 @@ class Mailer {
 	protected $configFile = 'mail.yml';
 	protected $mailer = null;
 	protected $config = [];
+	protected $captchaConfig = [];
+	protected $allowIndividualCaptcha = true;
 	protected $formconfig = [];
 	protected $useCaptcha = true;
 	protected $dynamicCaptchaInput = false;
@@ -41,6 +43,25 @@ class Mailer {
 
 		$this->initMailer();
 		$this->loadDefaultTemplateStorage();
+
+		$this->captchaConfig = [
+			'distort' => false,
+			'interpolate' => false,
+			'maxLinesBehind' => mt_rand(1,4),
+			'maxLinesFront' => mt_rand(1,4),
+			'bgColor' => [100,0,0],
+			'lineColor' => [99,99,99],
+			'textColor'=> [255,255,255],
+			'maxAngle' => mt_rand(0,5),
+			'maxOffset' => mt_rand(0,5),
+			'applyEffects' => false,
+			'applyNoise' => false,
+			'noiseFactor' => mt_rand(1,10),
+			'applyPostEffects' => true,
+			'applyScatterEffect' => false,
+			'randomizeFonts' => true
+		];
+
 		$this->loadConfig();
 	}
 
@@ -133,47 +154,23 @@ class Mailer {
 	}
 
 	public function loadCaptcha($params = NULL) {
+
 		$phrase = Session::getValue('captcha');
 		if (!$phrase) {
 			$phrase = Builder::buildPhrase(5, 'abcdefghijklmnopqrstuvwxyz@0123456789');
 			Session::setValue('captcha', $phrase);
 		}
 
-		// rename deprecated bgcolor key in right camelcase way
-		if (isset($params['bgcolor'])) {
-			$params['bgColor'] = $params['bgcolor'];
-			unset($params['bgcolor']);
-		}
-
 		$captcha = new Builder($phrase);
-		$properties = [
-			'distort' => false,
-			'interpolate' => true,
-			'maxLinesBehind' => mt_rand(2,6),
-			'maxLinesFront' => mt_rand(2,6),
-			'bgColor' => [100,0,0],
-			'lineColor' => [99,99,99],
-			'textColor'=> [33,33,33],
-			'maxAngle' => mt_rand(0,15),
-			'maxOffset' => mt_rand(0,10),
-			'applyEffects' => true,
-			'applyNoise' => false,
-			'noiseFactor' => mt_rand(1,5),
-			'applyPostEffects' => true,
-			'applyScatterEffect' => false,
-			'randomizeFonts' => true
-		];
 
-		foreach ($properties as $property => $value) {
-			if (isset($params[$property])) {
+		foreach ($this->captchaConfig as $property => $value) {
+			if (isset($params[$property]) && $this->allowIndividualCaptcha) {
 				$value = $params[$property];
-
 				if (in_array($property, ['bgColor', 'lineColor', 'textColor'])) {
 					list($r, $g, $b) = explode(',',$params[$property]);
 					$value = [(int)$r, (int)$g, (int)$b];
 				}
 			}
-
 			$captcha->$property = $value;
 		}
 
@@ -245,7 +242,7 @@ class Mailer {
 
 		return $this->sendMails();
 	}
-//formconfig
+
 	public function loadFormConfig($config, $data) {
 
 		$formconfig = $this->validateFormConfig($config);
@@ -354,6 +351,19 @@ class Mailer {
 				$this->loadTemplateDirectories($template['rootDir'], $template['directories']);
 		}
 
+		if (isset($this->config['captcha'])) {
+			$this->loadCaptchaConfig($this->config['captcha']);
+		}
+
+	}
+
+	public function loadCaptchaConfig($overrideConfig = []) {
+		foreach ($this->captchaConfig as $key => $value) {
+			if (isset($overrideConfig[$key])) {
+				$this->captchaConfig[$key] = $overrideConfig[$key];
+			}
+		}
+		$this->allowIndividualCaptcha = false;
 	}
 
 	public function loadSMTPConfig() {
