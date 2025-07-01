@@ -59,7 +59,9 @@ class Mailer {
 			'noiseFactor' => mt_rand(1,10),
 			'applyPostEffects' => true,
 			'applyScatterEffect' => false,
-			'randomizeFonts' => true
+			'randomizeFonts' => true,
+			'width' => 120,
+			'height' => 50
 		];
 
 		$this->loadConfig();
@@ -174,15 +176,10 @@ class Mailer {
 			$captcha->$property = $value;
 		}
 
-		$width = isset($params['width']) ? $params['width'] : 120;
-		if($width % 2 == 1) $width++;
+		if($this->captchaConfig['width'] % 2 == 1) $this->captchaConfig['width']++;
+		if($this->captchaConfig['height'] % 2 == 1) $this->captchaConfig['height']++;
 
-		$height = isset($params['height']) ? $params['height'] : 50;
-		if($height % 2 == 1) $height++;
-
-		// $captcha->applyEffects = false;
-		$captcha->build($width, $height);
-
+		$captcha->build($this->captchaConfig['width'], $this->captchaConfig['height']);
 
 		if (isset($params['dynamicCaptchaInput']))
 			$this->dynamicCaptchaInput = $params['dynamicCaptchaInput'];
