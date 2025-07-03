@@ -314,9 +314,9 @@ class Render {
                     list($width, $height) = $dimension;
                     $prefix = $width . 'x' . $height;
                 }
-                $targetFile = dirname($image['absolute']) . '/' . $prefix . '-' . basename($image['absolute']);
+                $shrinked = dirname($image['absolute']) . '/' . $prefix . '-' . basename($image['absolute']);
 
-                if (!is_file($targetFile) || $image['recreate']) {
+                if (!is_file($shrinked) || $image['recreate']) {
                     $resize = new ImageResize($image['absolute']);
 
                     if (is_integer($dimension))
@@ -324,10 +324,18 @@ class Render {
                     else if (is_array($dimension))
                         $resize->resizeToBestFit($width, $height);
 
-                    $resize->save($targetFile);
+                    $resize->save($shrinked);
                 }
-                $image['src'] = str_replace(Helper::getNormDocRoot(), '/', $targetFile);
+
+				$image['absolute'] = Helper::getNormDocRoot() . $shrinked;
+                $image['src'] = $shrinked;
             }
+
+			if (in_array($extension, ['jpg', 'jpeg', 'png', 'gif'])) {
+				$image['src'] = $this::convertToWebP($image['absolute'], $this::replaceExtension($image['absolute'], 'webp'));
+			}
+
+			$image['src'] = str_replace(Helper::getNormDocRoot(), '/', $image['src']);
             return $image;
         }));
 
@@ -817,6 +825,50 @@ class Render {
         echo json_encode($data);
         exit();
     }
+
+	public static function convertToWebP($source, $target, $quality = 100) {
+		$extension = strtolower(pathinfo($source, PATHINFO_EXTENSION));
+
+		switch ($extension) {
+			case 'jpeg':
+			case 'jpg':
+				$image = imagecreatefromjpeg($source);
+				if(!$image)
+					return $source;
+				break;
+			case 'png':
+				$image = imagecreatefrompng($source);
+				if(!$image)
+					return $source;
+
+				// Transparenz korrekt setzen
+				imagepalettetotruecolor($image);
+				imagealphablending($image, false);
+				imagesavealpha($image, true);
+				break;
+			case 'gif':
+				$image = imagecreatefromgif($source);
+				if(!$image)
+					return $source;
+				// GIF hat kein echtes Alpha – Transparenz kann verloren gehen
+				break;
+			default:
+				return $source;
+		}
+
+		// WebP schreiben
+		if (!imagewebp($image, $target, $quality)) {
+			return $source;
+		}
+
+		imagedestroy($image);
+		return $target;
+	}
+
+	public static function replaceExtension($filename, $extension) {
+		$info = pathinfo($filename);
+		return $info['dirname'] . '/' . $info['filename'] . '.' . $extension;
+	}
 }
 
 
