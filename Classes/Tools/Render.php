@@ -3,6 +3,7 @@ namespace Vinou\SiteBuilder\Tools;
 
 use \Vinou\ApiConnector\Api;
 use \Vinou\ApiConnector\PublicApi;
+use \Vinou\ApiConnector\Services\ServiceLocator;
 use \Vinou\ApiConnector\Session\Session;
 use \Vinou\ApiConnector\FileHandler\Images;
 use \Vinou\ApiConnector\FileHandler\Pdf;
@@ -25,6 +26,8 @@ class Render {
 	protected $pathsegments;
     protected $options;
     protected $config;
+	protected $settings = [];
+	protected $settingsService = null;
     public $processors = [];
     public $templateStorages = [];
 	public $renderArr = [];
@@ -46,13 +49,19 @@ class Render {
         if (defined('VINOU_LOCAL'))
             $this->local = VINOU_LOCAL;
 
+		$this->settingsService = ServiceLocator::get('Settings');
+
         $this->renderArr['local'] = $this->local;
 
 		$this->defaultPageData();
 	}
 
-    public function setConfig($settings = NULL) {
-        $this->config = $settings;
+    public function setConfig($config = NULL) {
+        $this->config = $config;
+    }
+
+	public function setSettings($settings = NULL) {
+        $this->settings = $settings;
     }
 
 	private function defaultPageData(){
@@ -714,6 +723,8 @@ class Render {
     }
 
 	public function renderPage($template = 'Default.twig',$options = NULL){
+		$this->settings = $this->settingsService->getAll();
+
 		$view = $this->initTwig(isset($options['twig']) ? $options['twig'] : NULL);
 		$template = $view->loadTemplate($template);
 		if (!is_null($options)) {
