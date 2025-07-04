@@ -340,7 +340,7 @@ class Render {
                 $image['src'] = $shrinked;
             }
 
-			if (in_array($extension, ['jpg', 'jpeg', 'png', 'gif'])) {
+			if ($this->webPConversionIsAllowed() && $this::checkWebPEnvironment() && in_array($extension, ['jpg', 'jpeg', 'png', 'gif'])) {
 				$image['src'] = $this::convertToWebP($image['absolute'], $this::replaceExtension($image['absolute'], 'webp'));
 			}
 
@@ -835,6 +835,21 @@ class Render {
 
         echo json_encode($data);
         exit();
+    }
+
+	public function webPConversionIsAllowed() {
+
+		return isset($this->settings['system']['performance']['webpRendering']) && $this->settings['system']['performance']['webpRendering'] === true;
+	}
+
+	// Check if WebP is supported in the current environment
+
+	public static function checkWebPEnvironment() {
+        if (!extension_loaded('gd'))
+            return false;
+
+        $gdInfo = gd_info();
+        return function_exists('imagewebp') && !empty($gdInfo['WebP Support']);
     }
 
 	public static function convertToWebP($source, $target, $quality = 100) {
