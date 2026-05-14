@@ -118,7 +118,16 @@ class DynamicRoutes {
 		if (!is_file($file))
 			return false;
 
-		$this->configuration = array_merge($this->configuration, spyc_load_file($file));
+		$newRoutes = spyc_load_file($file);
+
+		foreach ($newRoutes as $pattern => &$options) {
+			if (isset($options['extend']) && $options['extend'] === true && isset($this->configuration[$pattern])) {
+				unset($options['extend']);
+				$options = array_replace_recursive($this->configuration[$pattern], $options);
+			}
+		}
+
+		$this->configuration = array_merge($this->configuration, $newRoutes);
 	}
 
 	// Loads routes as base layer: existing configuration (Theme) wins over these defaults.
