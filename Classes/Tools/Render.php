@@ -594,7 +594,7 @@ class Render {
         $twig->addFilter( new TwigFilter('link', function($label,$url,$additionalParams = null, $options = null) {
         	$classSuffix = $_SERVER['REQUEST_URI'] == $url ? ' active' : false;
 
-            $link = '<a href="'.$url.'"';
+            $link = '<a href="' . htmlspecialchars($url, ENT_QUOTES, 'UTF-8') . '"';
 
             if (!is_array($additionalParams))
                 $additionalParams = [
@@ -616,7 +616,7 @@ class Render {
                 }
 
                 //attribute rendering
-                $link .= ' ' . $attribute .'="' . $value . '"';
+                $link .= ' ' . htmlspecialchars($attribute, ENT_QUOTES, 'UTF-8') . '="' . htmlspecialchars($value, ENT_QUOTES, 'UTF-8') . '"';
             }
 
             return $link . '>'. $label . '</a>';
