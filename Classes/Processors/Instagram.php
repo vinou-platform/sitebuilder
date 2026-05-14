@@ -11,7 +11,7 @@ use \GuzzleHttp\Cookie\CookieJar;
 use \Monolog\Logger;
 use \Monolog\Handler\RotatingFileHandler;
 
-class Instagram {
+class Instagram implements ProcessorInterface {
 
 	public $data = [];
 	public $cacheDir = 'Cache/Instagram';

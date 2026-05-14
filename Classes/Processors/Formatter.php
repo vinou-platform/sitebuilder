@@ -10,7 +10,7 @@ use \Vinou\ApiConnector\Tools\Helper;
  * they are passed to Twig templates. Registered under the key 'formatter'
  * by default in Site::loadDefaultProcessors().
  */
-class Formatter {
+class Formatter implements ProcessorInterface {
 
     /** @var array<string, mixed> Shared data storage for multi-step formatting. */
     public array $data = [];

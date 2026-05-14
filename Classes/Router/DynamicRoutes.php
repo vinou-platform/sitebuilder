@@ -4,6 +4,7 @@ namespace Vinou\SiteBuilder\Router;
 use \Vinou\ApiConnector\Tools\Helper;
 use \Vinou\SiteBuilder\Tools\Render;
 use \Vinou\SiteBuilder\Processors\Sitemap;
+use \Symfony\Component\Yaml\Yaml;
 
 /**
  * Builds and registers all application routes with the underlying router.
@@ -218,7 +219,7 @@ class DynamicRoutes {
         if (!is_file($file))
             return;
 
-        $newRoutes = spyc_load_file($file);
+        $newRoutes = Yaml::parseFile($file);
 
         foreach ($newRoutes as $pattern => &$options) {
             if (isset($options['extend']) && $options['extend'] === true && isset($this->configuration[$pattern])) {
@@ -242,7 +243,7 @@ class DynamicRoutes {
         if (!is_file($file))
             return;
 
-        $this->configuration = array_merge(spyc_load_file($file), $this->configuration);
+        $this->configuration = array_merge(Yaml::parseFile($file), $this->configuration);
     }
 
     /**

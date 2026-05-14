@@ -18,7 +18,7 @@ use \Vinou\SiteBuilder\Processors\Mailer;
  *
  * Registered under the key 'shop' by default in Site::loadDefaultProcessors().
  */
-class Shop {
+class Shop implements ProcessorInterface {
 
     /** @var Api Vinou API instance. */
     protected Api $api;

@@ -7,6 +7,8 @@ use \Vinou\ApiConnector\Services\ServiceLocator;
 use \Vinou\ApiConnector\Session\Session;
 use \Vinou\ApiConnector\Tools\Helper;
 use \Vinou\ApiConnector\Tools\Redirect;
+use \Vinou\SiteBuilder\Processors\ApiAwareInterface;
+use \Vinou\SiteBuilder\Processors\ProcessorInterface;
 use \Twig\Loader\FilesystemLoader;
 use \Twig\Environment;
 use \Twig\Extension\DebugExtension;
@@ -23,7 +25,7 @@ use \Twig\Extension\DebugExtension;
  *
  * Image utilities are in ImageService; Twig filters are in FilterRegistry.
  */
-class Render {
+class Render implements RendererInterface {
 
     /** @var string Webroot-relative base path for default template directories. */
     protected string $templateRootPath = 'Resources/';
@@ -227,7 +229,7 @@ class Render {
      * @param object $object     Processor instance.
      * @return void
      */
-    public function loadProcessor(string $processor, object $object): void {
+    public function loadProcessor(string $processor, ProcessorInterface $object): void {
         $this->processors[$processor] = $object;
     }
 
@@ -321,7 +323,7 @@ class Render {
                         $class = new $option['class']($this->api);
                     else {
                         $class = new $option['class'];
-                        if (is_subclass_of($class, '\Vinou\SiteBuilder\Processors\AbstractProcessor'))
+                        if ($class instanceof ApiAwareInterface)
                             $class->loadApi($this->api);
                     }
                 } elseif (isset($option['processor'])) {

@@ -19,7 +19,7 @@ use \Thepixeldeveloper\Sitemap\Extensions\Image;
  *
  * Registered under the key 'sitemap' by default in Site::loadDefaultProcessors().
  */
-class Sitemap {
+class Sitemap implements ProcessorInterface {
 
     /** @var array<string, mixed> Shared data storage. */
     public array $data = [];

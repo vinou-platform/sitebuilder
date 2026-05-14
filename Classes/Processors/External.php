@@ -9,7 +9,7 @@ use \Vinou\ApiConnector\Tools\Helper;
  * Fetches remote URLs via cURL or reads local files from the webroot.
  * Registered under the key 'external' by default in Site::loadDefaultProcessors().
  */
-class External {
+class External implements ProcessorInterface {
 
     /** @var array<string, mixed> Shared data storage. */
     public array $data = [];

@@ -9,7 +9,7 @@ use \Vinou\ApiConnector\Tools\Helper;
  * Builds a structured file listing from a webroot-relative directory path.
  * Registered under the key 'files' by default in Site::loadDefaultProcessors().
  */
-class Files {
+class Files implements ProcessorInterface {
 
     /** @var array<string, mixed> Shared data storage. */
     public array $data = [];

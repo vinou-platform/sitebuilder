@@ -3,6 +3,7 @@ namespace Vinou\SiteBuilder\Loader;
 
 use \Vinou\ApiConnector\Tools\Helper;
 use \Vinou\ApiConnector\Services\ServiceLocator;
+use \Symfony\Component\Yaml\Yaml;
 
 /**
  * Collects and merges YAML settings files into the global settings service.
@@ -97,7 +98,7 @@ class Settings {
 
         $settings = [];
         foreach ($this->files as $file) {
-            $fileSettings = spyc_load_file($file);
+            $fileSettings = Yaml::parseFile($file);
             $settings     = array_replace_recursive($settings, $fileSettings);
         }
 
@@ -105,7 +106,7 @@ class Settings {
             && $settings['system']['load']['defaultSettings'];
 
         if ($loadDefaults || empty($settings)) {
-            $defaultSettings = spyc_load_file($this->defaultFile);
+            $defaultSettings = Yaml::parseFile($this->defaultFile);
             $settings        = array_replace_recursive($defaultSettings, $settings);
         }
 

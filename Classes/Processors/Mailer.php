@@ -11,6 +11,7 @@ use \Twig\Environment;
 use \Twig\TwigFilter;
 use \Twig\Extension\DebugExtension;
 use \SimpleCaptcha\Builder;
+use \Symfony\Component\Yaml\Yaml;
 
 /**
  * Processor for sending emails and rendering mail templates in dataProcessing steps.
@@ -21,7 +22,7 @@ use \SimpleCaptcha\Builder;
  *
  * Configuration is read from config/mail.yml (or the path set via setConfigFile()).
  */
-class Mailer {
+class Mailer implements ProcessorInterface {
 
     /** @var Api|null Vinou API instance, optional for processors not requiring API access. */
     protected ?Api $api = null;
@@ -469,7 +470,7 @@ class Mailer {
         $absFile     = str_starts_with($this->configFile, '/')
             ? $this->configFile
             : Helper::getNormDocRoot() . VINOU_CONFIG_DIR . $this->configFile;
-        $this->config = spyc_load_file($absFile);
+        $this->config = Yaml::parseFile($absFile);
 
         if (isset($this->config['smtp']))
             $this->loadSMTPConfig();
