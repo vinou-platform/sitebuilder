@@ -6,226 +6,344 @@ use \Vinou\SiteBuilder\Tools\Render;
 use \Vinou\SiteBuilder\Processors\Sitemap;
 
 /**
- * Dynamic Routes
+ * Builds and registers all application routes with the underlying router.
+ *
+ * Manages three layers of route configuration: SiteBuilder built-in defaults
+ * (lowest priority), theme routes, and project-level overrides (highest
+ * priority). Supports deep-merge via the 'extend' directive and per-route
+ * additionalContent exclusions via 'excludeContent'.
+ *
  * @see https://github.com/bramus/router
  */
-
 class DynamicRoutes {
-	private $router;
-	private $render;
-	private $loadDefaults = true;
-	private $additionalContent = [];
-	public $configuration = [];
-	public $routeFile = null;
 
-	function __construct($router, $render) {
+    /** @var object Underlying bramus/router instance. */
+    private object $router;
 
-		$this->router = $router;
-		$this->render = $render;
+    /** @var Render Render instance used inside route callbacks. */
+    private Render $render;
 
-	}
+    /**
+     * Controls which built-in default route files are loaded.
+     *
+     * true  = load all files in Configuration/Routes/
+     * false = skip defaults entirely
+     * array = load only the listed filenames (without .yml extension)
+     *
+     * @var bool|list<string>
+     */
+    private bool|array $loadDefaults = true;
 
-	public function setAdditionalContent($content) {
-		$this->additionalContent = $content;
-	}
+    /** @var array<string, mixed> Global data loaded before every page route render. */
+    private array $additionalContent = [];
 
-	public function setRouteFile($file) {
-		$this->routeFile = $file;
-	}
+    /** @var array<string, mixed> Merged route configuration (pattern → options). */
+    public array $configuration = [];
 
-	public function init() {
+    /** @var string|null Absolute path to the project-level route override file. */
+    public ?string $routeFile = null;
 
-		if ($this->loadDefaults)
-			$this->loadDefaultRoutes();
+    /**
+     * @param object $router  Initialized bramus/router instance.
+     * @param Render $render  Initialized Render instance.
+     */
+    public function __construct(object $router, Render $render) {
+        $this->router = $router;
+        $this->render = $render;
+    }
 
-		if (!is_null($this->routeFile))
-			$this->loadAdditionalRoutes();
+    /**
+     * Sets the global data that is loaded before every page route render.
+     *
+     * @param array<string, mixed> $content  additionalContent map from settings.
+     * @return void
+     */
+    public function setAdditionalContent(array $content): void {
+        $this->additionalContent = $content;
+    }
 
-		$this->generateRoutes();
-	}
+    /**
+     * Sets the path to the project-level route configuration file.
+     *
+     * @param string $file  Absolute path or path relative to VINOU_CONFIG_DIR.
+     * @return void
+     */
+    public function setRouteFile(string $file): void {
+        $this->routeFile = $file;
+    }
 
-	public function getDefaults() {
-		return $this->loadDefaults;
-	}
+    /**
+     * Loads all route layers in order and registers them with the router.
+     *
+     * Load order (earlier = lower priority):
+     *   1. SiteBuilder defaults (if loadDefaults is true or an array)
+     *   2. Theme routes (loaded externally via loadRoutesByDirectory before init())
+     *   3. Project route overrides (routeFile, via loadAdditionalRoutes)
+     *
+     * @return void
+     */
+    public function init(): void {
+        if ($this->loadDefaults)
+            $this->loadDefaultRoutes();
 
-	public function setDefaults($status) {
-		$this->loadDefaults = $status;
-	}
+        if (!is_null($this->routeFile))
+            $this->loadAdditionalRoutes();
 
-	public function loadDefaultRoutes() {
+        $this->generateRoutes();
+    }
 
-		$exampleConfigDir = str_replace('Classes/Router', 'Configuration/Routes', Helper::getClassPath(get_class($this)));
+    /**
+     * Returns the current loadDefaults setting.
+     *
+     * @return bool|list<string>
+     */
+    public function getDefaults(): bool|array {
+        return $this->loadDefaults;
+    }
 
-		if (!$this->loadDefaults)
-			return;
+    /**
+     * Overrides the loadDefaults setting.
+     *
+     * @param bool|list<string> $status  See $loadDefaults property for accepted values.
+     * @return void
+     */
+    public function setDefaults(bool|array $status): void {
+        $this->loadDefaults = $status;
+    }
 
-		if (is_bool($this->loadDefaults))
-			$this->loadDefaultRoutesByDirectory($exampleConfigDir);
+    /**
+     * Prepends built-in default route files as the base layer.
+     *
+     * When loadDefaults is true, all .yml files in Configuration/Routes/ are
+     * loaded. When it is an array, only the named files are loaded.
+     *
+     * @return void
+     */
+    public function loadDefaultRoutes(): void {
+        $exampleConfigDir = str_replace('Classes/Router', 'Configuration/Routes', Helper::getClassPath(get_class($this)));
 
-		if (is_array($this->loadDefaults)) {
-			foreach ($this->loadDefaults as $fileName) {
-				$file = $exampleConfigDir . '/' . $fileName . '.yml';
-				$this->prependRoutesByFile($file);
-			}
-		}
-	}
+        if (!$this->loadDefaults)
+            return;
 
-	public function loadRoutesByDirectory($dir) {
+        if (is_bool($this->loadDefaults)) {
+            $this->loadDefaultRoutesByDirectory($exampleConfigDir);
+            return;
+        }
 
-		if (strpos($dir, Helper::getNormDocRoot()) === false)
-			$dir = Helper::getNormDocRoot() . $dir;
+        if (is_array($this->loadDefaults)) {
+            foreach ($this->loadDefaults as $fileName) {
+                $file = $exampleConfigDir . '/' . $fileName . '.yml';
+                $this->prependRoutesByFile($file);
+            }
+        }
+    }
 
-		if (!is_dir($dir))
-			return false;
+    /**
+     * Appends all .yml route files from a directory as a high-priority layer.
+     *
+     * Used by Site::loadTheme() to register theme routes. Skips silently if
+     * $dir does not exist.
+     *
+     * @param string $dir  Absolute or webroot-relative path to a directory of .yml files.
+     * @return void
+     */
+    public function loadRoutesByDirectory(string $dir): void {
+        if (strpos($dir, Helper::getNormDocRoot()) === false)
+            $dir = Helper::getNormDocRoot() . $dir;
 
-		if ($handle = opendir($dir)) {
-		    while (false !== ($entry = readdir($handle))) {
-		        if ($entry != "." && $entry != ".." && pathinfo($entry)['extension'] == 'yml') {
-		        	$absFile = $dir.'/'.$entry;
-		        	$this->appendRoutesByFile($absFile);
-		        }
-		    }
-		    closedir($handle);
-		}
-	}
+        if (!is_dir($dir))
+            return;
 
-	private function loadDefaultRoutesByDirectory($dir) {
+        if ($handle = opendir($dir)) {
+            while (false !== ($entry = readdir($handle))) {
+                if ($entry != '.' && $entry != '..' && pathinfo($entry, PATHINFO_EXTENSION) === 'yml')
+                    $this->appendRoutesByFile($dir . '/' . $entry);
+            }
+            closedir($handle);
+        }
+    }
 
-		if (strpos($dir, Helper::getNormDocRoot()) === false)
-			$dir = Helper::getNormDocRoot() . $dir;
+    /**
+     * Prepends all .yml route files from a directory as the lowest-priority layer.
+     *
+     * Existing configuration always wins over files loaded here. Skips silently
+     * if $dir does not exist.
+     *
+     * @param string $dir  Absolute or webroot-relative path to a directory of .yml files.
+     * @return void
+     */
+    private function loadDefaultRoutesByDirectory(string $dir): void {
+        if (strpos($dir, Helper::getNormDocRoot()) === false)
+            $dir = Helper::getNormDocRoot() . $dir;
 
-		if (!is_dir($dir))
-			return false;
+        if (!is_dir($dir))
+            return;
 
-		if ($handle = opendir($dir)) {
-		    while (false !== ($entry = readdir($handle))) {
-		        if ($entry != "." && $entry != ".." && pathinfo($entry)['extension'] == 'yml') {
-		        	$absFile = $dir.'/'.$entry;
-		        	$this->prependRoutesByFile($absFile);
-		        }
-		    }
-		    closedir($handle);
-		}
-	}
+        if ($handle = opendir($dir)) {
+            while (false !== ($entry = readdir($handle))) {
+                if ($entry != '.' && $entry != '..' && pathinfo($entry, PATHINFO_EXTENSION) === 'yml')
+                    $this->prependRoutesByFile($dir . '/' . $entry);
+            }
+            closedir($handle);
+        }
+    }
 
-	private function loadAdditionalRoutes() {
+    /**
+     * Resolves and appends the project-level route override file.
+     *
+     * @return void
+     * @throws \Exception If the route file cannot be resolved to an existing file.
+     */
+    private function loadAdditionalRoutes(): void {
+        if (!is_file($this->routeFile) && !is_file(Helper::getNormDocRoot() . VINOU_CONFIG_DIR . $this->routeFile))
+            throw new \Exception('Route configuration file could not be solved');
 
-		if (!is_file($this->routeFile) && !is_file(Helper::getNormDocRoot().VINOU_CONFIG_DIR.$this->routeFile))
-			throw new \Exception('Route configuration file could not be solved');
+        $absRouteFile = str_starts_with($this->routeFile, '/')
+            ? $this->routeFile
+            : Helper::getNormDocRoot() . VINOU_CONFIG_DIR . $this->routeFile;
 
-		$absRouteFile = substr($this->routeFile, 0, 1) == '/' ? $this->routeFile : Helper::getNormDocRoot().VINOU_CONFIG_DIR.$this->routeFile;
+        $this->appendRoutesByFile($absRouteFile);
+    }
 
-		$this->appendRoutesByFile($absRouteFile);
+    /**
+     * Merges a route file on top of the current configuration (higher priority).
+     *
+     * Routes with 'extend: true' are deep-merged with the existing entry for
+     * the same pattern via array_replace_recursive instead of replacing it.
+     *
+     * @param string $file  Absolute path to a .yml route file.
+     * @return void
+     */
+    private function appendRoutesByFile(string $file): void {
+        if (!is_file($file))
+            return;
 
-	}
+        $newRoutes = spyc_load_file($file);
 
-	private function appendRoutesByFile($file) {
-		if (!is_file($file))
-			return false;
+        foreach ($newRoutes as $pattern => &$options) {
+            if (isset($options['extend']) && $options['extend'] === true && isset($this->configuration[$pattern])) {
+                unset($options['extend']);
+                $options = array_replace_recursive($this->configuration[$pattern], $options);
+            }
+        }
 
-		$newRoutes = spyc_load_file($file);
+        $this->configuration = array_merge($this->configuration, $newRoutes);
+    }
 
-		foreach ($newRoutes as $pattern => &$options) {
-			if (isset($options['extend']) && $options['extend'] === true && isset($this->configuration[$pattern])) {
-				unset($options['extend']);
-				$options = array_replace_recursive($this->configuration[$pattern], $options);
-			}
-		}
+    /**
+     * Merges a route file underneath the current configuration (lower priority).
+     *
+     * Existing configuration (theme routes) always wins over entries in $file.
+     *
+     * @param string $file  Absolute path to a .yml route file.
+     * @return void
+     */
+    private function prependRoutesByFile(string $file): void {
+        if (!is_file($file))
+            return;
 
-		$this->configuration = array_merge($this->configuration, $newRoutes);
-	}
+        $this->configuration = array_merge(spyc_load_file($file), $this->configuration);
+    }
 
-	// Loads routes as base layer: existing configuration (Theme) wins over these defaults.
-	private function prependRoutesByFile($file) {
-		if (!is_file($file))
-			return false;
+    /**
+     * Registers all routes in $configuration with the underlying router.
+     *
+     * Supports three route types: 'redirect', 'namespace' (grouped routes),
+     * 'sitemap', and the default 'page' type. Page routes run additionalContent
+     * (minus any excludeContent keys), then dataProcessing, then render.
+     *
+     * @param array<string, mixed>|null $configuration  Route map to register; defaults to $this->configuration.
+     * @return void
+     */
+    private function generateRoutes(?array $configuration = null): void {
+        if (is_null($configuration))
+            $configuration = $this->configuration;
 
-		$this->configuration = array_merge(spyc_load_file($file), $this->configuration);
-	}
+        foreach ($configuration as $pattern => $options) {
+            if ($pattern[0] != '/')
+                $pattern = '/' . $pattern;
 
-	private function generateRoutes($configuration = NULL) {
+            $options['pattern'] = $pattern;
 
-		if (is_null($configuration))
-			$configuration = $this->configuration;
+            if (!isset($options['type']))
+                $options['type'] = 'page';
 
-		foreach ($configuration as $pattern => $options) {
-			if ($pattern[0] != '/') {
-				$pattern = '/'.$pattern;
-			}
-			$options['pattern'] = $pattern;
+            $method = isset($options['method']) ? $options['method'] : 'get';
 
-			if (!isset($options['type']))
-				$options['type'] = 'page';
+            switch ($options['type']) {
+                case 'redirect':
+                    $this->router->{$method}($pattern, function() use ($options) {
+                        $this->render->redirect($options['redirect']);
+                    });
+                    break;
 
-			$method = isset($options['method']) ? $options['method'] : 'get';
+                case 'namespace':
+                    $this->router->mount($pattern, function() use ($options) {
+                        if (isset($options['defaults'])) {
+                            $defaults = $options['defaults'];
+                            foreach ($options['routes'] as &$routeOptions) {
+                                foreach ($defaults as $key => $value) {
+                                    if (!isset($routeOptions[$key]))
+                                        $routeOptions[$key] = $value;
+                                }
+                            }
+                        }
+                        $this->generateRoutes($options['routes']);
+                    });
+                    break;
 
-			switch ($options['type']) {
-				case 'redirect':
-					$this->router->{$method}($pattern, function() use ($options) {
-						$this->render->redirect($options['redirect']);
-					});
-					break;
+                case 'sitemap':
+                    $this->router->{$method}($pattern, function() use ($configuration) {
+                        $this->render->processors['sitemap']->renderSitemapXML($configuration);
+                    });
+                    break;
 
-				case 'namespace':
-					$this->router->mount($pattern, function() use ($options) {
-						// Merge defaults.
-						if (isset($options['defaults'])) {
-							$defaults = $options['defaults'];
-							foreach ($options['routes'] as &$routeOptions) {
-								foreach ($defaults as $key => $value) {
-									if (!isset($routeOptions[$key]))
-										$routeOptions[$key] = $value;
-									//elseif (is_array($value))
-									//	$routeOptions[$key] = array_merge($value, $routeOptions[$key]);
-								}
-							}
-						}
-						$this->generateRoutes($options['routes']);
-					});
-					break;
+                default:
+                    // Page
+                    $this->router->{$method}($pattern, function() use ($options) {
+                        $template = $this->detectForTemplate($options);
+                        if (isset($options['contentFunc']))
+                            $this->render->{$options['contentFunc']}($options);
 
-				case 'sitemap':
-					$this->router->{$method}($pattern, function() use ($configuration) {
-						$this->render->processors['sitemap']->renderSitemapXML($configuration);
-					});
-					break;
+                        $content = $this->additionalContent;
+                        if (!empty($content)) {
+                            if (isset($options['excludeContent']) && is_array($options['excludeContent'])) {
+                                foreach ($options['excludeContent'] as $key) {
+                                    unset($content[$key]);
+                                }
+                            }
+                            $this->render->dataProcessing($content);
+                        }
 
-				default:
-					// Page
-					$this->router->{$method}($pattern, function() use ($options) {
-						$template = $this->detectForTemplate($options);
-						if (isset($options['contentFunc']))
-							$this->render->{$options['contentFunc']}($options);
+                        if (isset($options['dataProcessing']))
+                            $this->render->dataProcessing($options['dataProcessing'], func_get_args());
+                        if (isset($options['postProcessing']))
+                            $this->render->postProcessing($options['postProcessing'], func_get_args());
 
-						$content = $this->additionalContent;
-						if (!empty($content)) {
-							if (isset($options['excludeContent']) && is_array($options['excludeContent'])) {
-								foreach ($options['excludeContent'] as $key) {
-									unset($content[$key]);
-								}
-							}
-							$this->render->dataProcessing($content);
-						}
+                        $this->render->loadUrlParams(func_get_args(), $options);
+                        $this->render->renderPage($template, $options);
+                    });
+                    break;
+            }
+        }
+    }
 
-						if (isset($options['dataProcessing']))
-							$this->render->dataProcessing($options['dataProcessing'],func_get_args());
-						if (isset($options['postProcessing']))
-							$this->render->postProcessing($options['postProcessing'],func_get_args());
+    /**
+     * Resolves the Twig template name for a route.
+     *
+     * Returns the explicit 'template' value when set. Falls back to deriving a
+     * .twig filename from a legacy .html request URI.
+     *
+     * @param array<string, mixed> $options  Route options array.
+     * @return string|null  Template filename, or null if none could be detected.
+     */
+    private function detectForTemplate(array $options): ?string {
+        if (isset($options['template']))
+            return $options['template'];
 
-						$this->render->loadUrlParams(func_get_args(), $options);
-						$this->render->renderPage($template,$options);
-					});
-					break;
-			}
-		}
+        if (strpos($_SERVER['REQUEST_URI'], '.html'))
+            return str_replace('.html', '.twig', $_SERVER['REQUEST_URI']);
 
-	}
-
-	private function detectForTemplate($options) {
-		if (isset($options['template']))
-			return $options['template'];
-
-		if (strpos($_SERVER['REQUEST_URI'],'.html'))
-			return str_replace('.html','.twig',$_SERVER['REQUEST_URI']);
-	}
+        return null;
+    }
 }
