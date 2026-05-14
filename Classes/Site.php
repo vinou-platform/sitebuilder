@@ -50,6 +50,10 @@ class Site {
 		if (isset($this->config['load']['defaultRoutes']))
 			$this->routeConfig->setDefaults($this->config['load']['defaultRoutes']);
 
+		$additionalContent = $this->settingsService->get('additionalContent');
+		if (is_array($additionalContent))
+			$this->routeConfig->setAdditionalContent($additionalContent);
+
 		$this->routeConfig->init();
 		$this->router->run();
 	}
@@ -119,10 +123,6 @@ class Site {
 		}
 
 		$this->loadDefaultProcessors();
-
-		$additionalContent = $this->settingsService->get('additionalContent');
-		if (is_array($additionalContent))
-			$this->render->dataProcessing($additionalContent);
 	}
 
 	private function loadDefaultProcessors() {

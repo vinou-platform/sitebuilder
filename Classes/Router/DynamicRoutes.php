@@ -14,6 +14,7 @@ class DynamicRoutes {
 	private $router;
 	private $render;
 	private $loadDefaults = true;
+	private $additionalContent = [];
 	public $configuration = [];
 	public $routeFile = null;
 
@@ -22,6 +23,10 @@ class DynamicRoutes {
 		$this->router = $router;
 		$this->render = $render;
 
+	}
+
+	public function setAdditionalContent($content) {
+		$this->additionalContent = $content;
 	}
 
 	public function setRouteFile($file) {
@@ -191,6 +196,17 @@ class DynamicRoutes {
 						$template = $this->detectForTemplate($options);
 						if (isset($options['contentFunc']))
 							$this->render->{$options['contentFunc']}($options);
+
+						$content = $this->additionalContent;
+						if (!empty($content)) {
+							if (isset($options['excludeContent']) && is_array($options['excludeContent'])) {
+								foreach ($options['excludeContent'] as $key) {
+									unset($content[$key]);
+								}
+							}
+							$this->render->dataProcessing($content);
+						}
+
 						if (isset($options['dataProcessing']))
 							$this->render->dataProcessing($options['dataProcessing'],func_get_args());
 						if (isset($options['postProcessing']))
