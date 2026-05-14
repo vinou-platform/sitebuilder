@@ -55,12 +55,12 @@ class DynamicRoutes {
 			return;
 
 		if (is_bool($this->loadDefaults))
-			$this->loadRoutesByDirectory($exampleConfigDir);
+			$this->loadDefaultRoutesByDirectory($exampleConfigDir);
 
 		if (is_array($this->loadDefaults)) {
 			foreach ($this->loadDefaults as $fileName) {
 				$file = $exampleConfigDir . '/' . $fileName . '.yml';
-				$this->appendRoutesByFile($file);
+				$this->prependRoutesByFile($file);
 			}
 		}
 	}
@@ -84,6 +84,25 @@ class DynamicRoutes {
 		}
 	}
 
+	private function loadDefaultRoutesByDirectory($dir) {
+
+		if (strpos($dir, Helper::getNormDocRoot()) === false)
+			$dir = Helper::getNormDocRoot() . $dir;
+
+		if (!is_dir($dir))
+			return false;
+
+		if ($handle = opendir($dir)) {
+		    while (false !== ($entry = readdir($handle))) {
+		        if ($entry != "." && $entry != ".." && pathinfo($entry)['extension'] == 'yml') {
+		        	$absFile = $dir.'/'.$entry;
+		        	$this->prependRoutesByFile($absFile);
+		        }
+		    }
+		    closedir($handle);
+		}
+	}
+
 	private function loadAdditionalRoutes() {
 
 		if (!is_file($this->routeFile) && !is_file(Helper::getNormDocRoot().VINOU_CONFIG_DIR.$this->routeFile))
@@ -100,6 +119,14 @@ class DynamicRoutes {
 			return false;
 
 		$this->configuration = array_merge($this->configuration, spyc_load_file($file));
+	}
+
+	// Loads routes as base layer: existing configuration (Theme) wins over these defaults.
+	private function prependRoutesByFile($file) {
+		if (!is_file($file))
+			return false;
+
+		$this->configuration = array_merge(spyc_load_file($file), $this->configuration);
 	}
 
 	private function generateRoutes($configuration = NULL) {
