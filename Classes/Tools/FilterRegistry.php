@@ -376,8 +376,9 @@ class FilterRegistry {
      * @return void
      */
     private function registerShopFilters(Environment $twig): void {
-        $twig->addFilter(new TwigFilter('quantityIsAllowed', function (int $quantity): bool|string {
-            return Shop::quantityIsAllowed($quantity, true);
+        $shopSettings = $this->settings['settings'] ?? [];
+        $twig->addFilter(new TwigFilter('quantityIsAllowed', function (int $quantity) use ($shopSettings): bool|string {
+            return Shop::quantityIsAllowed($quantity, true, $shopSettings);
         }));
 
         $twig->addFilter(new TwigFilter('basePrice', function (float|int|null $price, string $unit): string {

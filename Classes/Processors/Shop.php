@@ -590,11 +590,11 @@ class Shop implements ProcessorInterface {
             Redirect::internal($this->settings['pages']['basket']);
 
         if (isset($this->settings['basketPerWinery']) && $this->settings['basketPerWinery'] !== false) {
-            if (!self::quantityByWineryIsAllowed($card))
+            if (!self::quantityByWineryIsAllowed($card, false, $this->settings))
                 Redirect::internal($this->settings['pages']['basket']);
         } else {
             $quantity = self::calcCardQuantity($card);
-            if (!self::quantityIsAllowed($quantity))
+            if (!self::quantityIsAllowed($quantity, false, $this->settings))
                 Redirect::internal($this->settings['pages']['basket']);
         }
 
@@ -915,9 +915,7 @@ class Shop implements ProcessorInterface {
      * @param bool $retString  When true, return a diagnostic string instead of a bool.
      * @return bool|string  Validation result.
      */
-    public static function quantityIsAllowed(int $quantity, bool $retString = false): bool|string {
-        $settings = (ServiceLocator::get('Settings'))->get('settings');
-
+    public static function quantityIsAllowed(int $quantity, bool $retString = false, array $settings = []): bool|string {
         if (array_key_exists('minBasketSize', $settings) && $quantity < $settings['minBasketSize'])
             return $retString ? 'minBasketSize' : false;
 
@@ -952,9 +950,7 @@ class Shop implements ProcessorInterface {
      * @param bool                       $retString  When true, return a diagnostic string instead of a bool.
      * @return bool|string  Validation result.
      */
-    public static function quantityByWineryIsAllowed(array $items, bool $retString = false): bool|string {
-        $settings = (ServiceLocator::get('Settings'))->get('settings');
-
+    public static function quantityByWineryIsAllowed(array $items, bool $retString = false, array $settings = []): bool|string {
         $minBasketSize          = $settings['minBasketSize'];
         $minBasketSizePerWinery = $settings['minBasketSize'];
         $includeBundles         = $settings['basketPerWinery']['includeBundles'];

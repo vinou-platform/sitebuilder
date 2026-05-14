@@ -89,9 +89,9 @@ class Ajax {
 
                     $settings = $this->settingsService->get('settings');
                     if (isset($settings['basketPerWinery']) && $settings['basketPerWinery'] !== false)
-                        $result['valid'] = Shop::quantityByWineryIsAllowed($result['basketItems'], true);
+                        $result['valid'] = Shop::quantityByWineryIsAllowed($result['basketItems'], true, $settings);
                     else
-                        $result['valid'] = Shop::quantityIsAllowed($result['quantity'], true);
+                        $result['valid'] = Shop::quantityIsAllowed($result['quantity'], true, $settings);
                 }
 
                 $this->sendResult($result);
