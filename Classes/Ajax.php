@@ -8,31 +8,54 @@ use \Vinou\ApiConnector\Session\Session;
 use \Vinou\ApiConnector\Services\ServiceLocator;
 
 /**
-* Ajax
-*/
-
+ * Entry point for shop AJAX requests (ajax.php).
+ *
+ * Bootstraps the API connection and settings, then dispatches to action
+ * handlers based on the 'action' field in the merged POST/JSON request body.
+ * Every code path ends by calling sendResult(), which outputs JSON and exits.
+ */
 class Ajax {
 
-    protected $api = null;
-    protected $settingsService = null;
-    protected $errors = [];
-    protected $result = false;
-    protected $request = [];
+    /** @var Api|null Vinou API instance. */
+    protected ?Api $api = null;
 
-    public function __construct($themeDir = null) {
+    /** @var object|null Settings service from the service locator. */
+    protected ?object $settingsService = null;
 
+    /** @var list<string> Accumulated error messages for the current request. */
+    protected array $errors = [];
+
+    /** @var mixed Reserved for external inspection of the last result. */
+    protected mixed $result = false;
+
+    /** @var array<string, mixed> Merged request data from POST and JSON body. */
+    protected array $request = [];
+
+    /**
+     * @param string|null $themeDir  Absolute path to the theme directory for settings loading.
+     */
+    public function __construct(?string $themeDir = null) {
         $this->api = new Api();
 
         if ($this->api->connected === false)
-		    $this->sendResult(false, 'could not create api connection');
+            $this->sendResult(false, 'could not create api connection');
 
-        $this->request = array_merge($_POST, (array)json_decode(trim(file_get_contents('php://input')), true));
+        $this->request = array_merge(
+            $_POST,
+            (array)json_decode(trim(file_get_contents('php://input')), true)
+        );
 
         $this->settingsService = ServiceLocator::get('Settings');
         $this->loadSettings($themeDir);
     }
 
-    public function loadSettings($dir) {
+    /**
+     * Initialises the settings loader with the given theme directory.
+     *
+     * @param string|null $dir  Absolute path to the theme directory, or null to skip.
+     * @return void
+     */
+    public function loadSettings(?string $dir): void {
         $loader = new Loader\Settings();
 
         if (!is_null($dir))
@@ -41,29 +64,35 @@ class Ajax {
         $loader->load();
     }
 
-    public function run() {
-
+    /**
+     * Dispatches the incoming request to the matching action handler.
+     *
+     * Reads 'action' from the merged request data and routes to the
+     * corresponding API or session operation. Always terminates via sendResult().
+     *
+     * @return void
+     */
+    public function run(): void {
         if (empty($this->request) || !isset($this->request['action']))
             $this->sendResult(false, 'no action defined');
 
         $action = $this->request['action'];
         unset($this->request['action']);
+
         switch ($action) {
             case 'get':
                 $result = $this->api->getBasket();
-                if (!$result)
+                if (!$result) {
                     $this->sendResult(false, 'basket not found', 400);
-                else {
+                } else {
                     $result['quantity'] = Shop::calcCardQuantity($result['basketItems']);
 
-					$settings = $this->settingsService->get('settings');
-					if (isset($settings['basketPerWinery']) && $settings['basketPerWinery'] !== false)
-						$result['valid'] = Shop::quantityByWineryIsAllowed( $result['basketItems'], true);
-					else
-						$result['valid'] = Shop::quantityIsAllowed($result['quantity'], true);
-
+                    $settings = $this->settingsService->get('settings');
+                    if (isset($settings['basketPerWinery']) && $settings['basketPerWinery'] !== false)
+                        $result['valid'] = Shop::quantityByWineryIsAllowed($result['basketItems'], true);
+                    else
+                        $result['valid'] = Shop::quantityIsAllowed($result['quantity'], true);
                 }
-
 
                 $this->sendResult($result);
                 break;
@@ -81,7 +110,7 @@ class Ajax {
                 break;
 
             case 'findPackage':
-                Session::setValue('delivery_type','address');
+                Session::setValue('delivery_type', 'address');
                 $this->sendResult($this->api->getBasketPackage(), 'package not found', 400);
                 break;
 
@@ -118,18 +147,25 @@ class Ajax {
                 if (!$settings)
                     $this->sendResult(false, 'delivery type could not be set');
                 else
-                    $this->sendResult(array_merge($settings,['delivery_type' => Session::getValue('delivery_type')]));
+                    $this->sendResult(array_merge($settings, ['delivery_type' => Session::getValue('delivery_type')]));
                 break;
 
             default:
                 $this->sendResult(false, 'action could not be resolved');
                 break;
         }
-
     }
 
-    private function validateCampaign() {
-        $result = $this->api->findCampaign($this->request);
+    /**
+     * Calls the API findCampaign endpoint and clears an invalid campaign from the session.
+     *
+     * When the API returns an error code, the stored campaign session value is
+     * deleted and sendResult() is called immediately with the error detail.
+     *
+     * @return array<string, mixed>|false  Campaign result array, or false if not found.
+     */
+    private function validateCampaign(): array|false {
+        $result   = $this->api->findCampaign($this->request);
         $campaign = Session::getValue('campaign');
 
         if ($result && isset($result['code'])) {
@@ -137,14 +173,22 @@ class Ajax {
             $this->sendResult(false, isset($result['data']) ? $result['data'] : $result['details']);
         }
 
-        // else if ($result && $campaign && $result['data']['uuid'] == $campaign['uuid'])
-        //     $this->sendResult(false, 'campaign already activated');
-
         return $result;
     }
 
-    private function sendResult($result, $errorMessage = null, $errorCode = 409) {
-
+    /**
+     * Outputs a JSON response and terminates the process.
+     *
+     * When $result is falsy and $errorMessage is given, the message is appended
+     * to the error list and a JSON error response is sent with $errorCode.
+     * Otherwise a standard JSON success response is sent.
+     *
+     * @param mixed       $result        The result payload to send.
+     * @param string|null $errorMessage  Error message to include when $result is falsy.
+     * @param int         $errorCode     HTTP status code for error responses (default 409).
+     * @return never
+     */
+    private function sendResult(mixed $result, ?string $errorMessage = null, int $errorCode = 409): never {
         if (!$result) {
             if (is_null($errorMessage))
                 $result = ['no result created'];
@@ -154,8 +198,8 @@ class Ajax {
 
         if (count($this->errors) > 0)
             Render::sendJSONError([
-                'info' => 'error',
-                'errors' => $this->errors,
+                'info'    => 'error',
+                'errors'  => $this->errors,
                 'request' => $this->request
             ], $errorCode);
         else
@@ -163,5 +207,4 @@ class Ajax {
 
         exit();
     }
-
 }
