@@ -1,0 +1,12 @@
+@use 'variables' as *;
+
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+body {
+  font-family: $font-sans;
+  font-size: 0.9375rem;   // 15px
+  background: $bg;
+  color: $text;
+  min-height: 100vh;
+  line-height: 1.5;
+}

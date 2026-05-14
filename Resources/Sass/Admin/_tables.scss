@@ -1,0 +1,51 @@
+@use 'variables' as *;
+
+// ── KV Table (Mail section) ───────────────────────────────────────────────────
+.kv-table {
+  width: 100%;
+  border-collapse: collapse;
+
+  td {
+    padding: 0.5625rem 0.875rem;
+    border-bottom: 1px solid $border-light;
+    font-size: 0.8125rem;
+    vertical-align: top;
+  }
+
+  tr:last-child td { border-bottom: none; }
+
+  td:first-child {
+    color: $primary;
+    font-weight: 600;
+    width: 12.5rem;         // 200px
+    white-space: nowrap;
+  }
+}
+
+// ── Environment table ─────────────────────────────────────────────────────────
+.env-table {
+  width: 100%;
+  border-collapse: collapse;
+
+  th {
+    text-align: left;
+    padding: 0.5625rem 0.875rem;
+    font-size: 0.6875rem;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: $primary;
+    font-weight: 700;
+    border-bottom: 2px solid $border;
+    background: $bg-card-header;
+  }
+
+  td {
+    padding: 0.625rem 0.875rem;
+    border-bottom: 1px solid $border-light;
+    font-size: 0.8125rem;
+    vertical-align: middle;
+  }
+
+  tr:last-child td { border-bottom: none; }
+  td:last-child { font-family: $font-mono; font-size: 0.75rem; color: $primary; }
+}

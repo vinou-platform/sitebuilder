@@ -1,0 +1,80 @@
+<div class="content-header">
+  <h2>Mail</h2>
+  <span class="subtitle">SMTP-Konfiguration und Formulare</span>
+</div>
+
+{% if section.mailConfig.error is defined %}
+  <div class="alert alert-warning">{{ section.mailConfig.error }}</div>
+{% else %}
+
+  {% if section.mailConfig.smtp is defined %}
+    <div class="card">
+      <div class="card-header">SMTP</div>
+      <div class="card-body">
+        <table class="kv-table">
+          <tr><td>Host</td><td>{{ section.mailConfig.smtp.host }}</td></tr>
+          <tr><td>Port</td><td>{{ section.mailConfig.smtp.port }}</td></tr>
+          {% if section.mailConfig.smtp.encrypt is defined %}
+            <tr><td>Verschlüsselung</td><td>{{ section.mailConfig.smtp.encrypt }}</td></tr>
+          {% endif %}
+          <tr>
+            <td>Erreichbarkeit</td>
+            <td>
+              <span class="status">
+                <span class="status-dot {{ section.mailConfig.smtp.reachable ? 'status-ok' : 'status-fail' }}"></span>
+                {{ section.mailConfig.smtp.reachable ? 'Verbindung erfolgreich' : 'Nicht erreichbar' }}
+              </span>
+            </td>
+          </tr>
+        </table>
+      </div>
+    </div>
+  {% endif %}
+
+  {% if section.mailConfig.defaults is defined %}
+    <div class="card">
+      <div class="card-header">Absender</div>
+      <div class="card-body">
+        <table class="kv-table">
+          {% if section.mailConfig.defaults.fromMail is defined %}
+            <tr>
+              <td>Von</td>
+              <td>
+                {% if section.mailConfig.defaults.fromName is defined %}
+                  {{ section.mailConfig.defaults.fromName }} &lt;{{ section.mailConfig.defaults.fromMail }}&gt;
+                {% else %}
+                  {{ section.mailConfig.defaults.fromMail }}
+                {% endif %}
+              </td>
+            </tr>
+          {% endif %}
+          {% if section.mailConfig.defaults.receiver is defined %}
+            <tr><td>Standard-Empfänger</td><td>{{ section.mailConfig.defaults.receiver }}</td></tr>
+          {% endif %}
+        </table>
+      </div>
+    </div>
+  {% endif %}
+
+  {% if section.mailConfig.forms is defined %}
+    <div class="card">
+      <div class="card-header">Formulare ({{ section.mailConfig.forms|length }})</div>
+      <div class="card-body">
+        {% for key, form in section.mailConfig.forms %}
+          <details>
+            <summary>
+              <span class="route-url">{{ key }}</span>
+              {% if form.receiver is defined %}
+                <span class="route-template">→ {{ form.receiver }}</span>
+              {% endif %}
+            </summary>
+            <div class="route-details">
+              <pre>{{ form|json_encode(constant('JSON_PRETTY_PRINT') b-or constant('JSON_UNESCAPED_UNICODE')) }}</pre>
+            </div>
+          </details>
+        {% endfor %}
+      </div>
+    </div>
+  {% endif %}
+
+{% endif %}

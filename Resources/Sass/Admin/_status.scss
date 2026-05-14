@@ -1,0 +1,7 @@
+@use 'variables' as *;
+
+.status     { display: inline-flex; align-items: center; gap: 0.375rem; font-size: 0.8125rem; }
+.status-dot { width: 0.5rem; height: 0.5rem; border-radius: 50%; flex-shrink: 0; }
+.status-ok   { background: #2e9e6b; }
+.status-fail { background: $primary; }
+.status-warn { background: #e0982a; }

@@ -1,0 +1,13 @@
+@use 'variables' as *;
+
+.alert {
+  padding: 0.6875rem 1rem;
+  border-radius: 0.375rem;
+  font-size: 0.8125rem;
+  margin-bottom: 1.25rem;
+  border-left: 4px solid;
+}
+
+.alert-error   { background: #fdf5f5; border-color: $primary;  color: $primary; }
+.alert-success { background: #f0faf5; border-color: #2e9e6b;   color: #1a5e3f; }
+.alert-warning { background: #fff8ec; border-color: #e0982a;   color: #7a4f0f; }

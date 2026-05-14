@@ -1,0 +1,50 @@
+<div class="content-header">
+  <h2>Routes</h2>
+  <span class="subtitle">{{ section.routes|length }} Routen geladen</span>
+</div>
+<div class="card">
+  <div class="card-header">Routenkonfiguration</div>
+  <div class="card-body">
+    {% for url, route in section.routes %}
+      <details>
+        <summary>
+          <span class="route-url">{{ url }}</span>
+          {% if route.method is defined %}
+            <span class="badge badge-{{ route.method|lower }}">{{ route.method|upper }}</span>
+          {% else %}
+            <span class="badge badge-get">GET</span>
+          {% endif %}
+          {% if route.template is defined %}
+            <span class="route-template">{{ route.template }}</span>
+          {% endif %}
+        </summary>
+        <div class="route-details">
+          {% if route.pageTitle is defined %}
+            <div class="route-detail-row">
+              <span class="route-detail-key">pageTitle</span>
+              <span class="route-detail-val">{{ route.pageTitle }}</span>
+            </div>
+          {% endif %}
+          {% if route.dataProcessing is defined %}
+            <div class="route-detail-row">
+              <span class="route-detail-key">dataProcessing</span>
+              <span class="route-detail-val">{{ route.dataProcessing|keys|join(', ') }}</span>
+            </div>
+          {% endif %}
+          {% if route.sitemap is defined %}
+            <div class="route-detail-row">
+              <span class="route-detail-key">sitemap</span>
+              <span class="route-detail-val">{{ route.sitemap is same as(true) ? 'true' : route.sitemap|json_encode }}</span>
+            </div>
+          {% endif %}
+          {% if route.middleware is defined %}
+            <div class="route-detail-row">
+              <span class="route-detail-key">middleware</span>
+              <span class="route-detail-val">{{ route.middleware|join(', ') }}</span>
+            </div>
+          {% endif %}
+        </div>
+      </details>
+    {% endfor %}
+  </div>
+</div>

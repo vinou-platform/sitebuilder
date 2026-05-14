@@ -1,0 +1,99 @@
+/* Source Sans 3 – self-hosted, full legacy support */
+
+/* 300 normal */
+@font-face {
+  font-family: 'Source Sans 3';
+  src: url('files/source-sans-3-v19-latin_latin-ext-300.eot');
+  src: url('files/source-sans-3-v19-latin_latin-ext-300.eot?#iefix') format('embedded-opentype'),
+       url('files/source-sans-3-v19-latin_latin-ext-300.woff2') format('woff2'),
+       url('files/source-sans-3-v19-latin_latin-ext-300.woff') format('woff'),
+       url('files/source-sans-3-v19-latin_latin-ext-300.ttf') format('truetype'),
+       url('files/source-sans-3-v19-latin_latin-ext-300.svg#SourceSans3') format('svg');
+  font-weight: 300;
+  font-style: normal;
+  font-display: swap;
+}
+
+/* 300 italic */
+@font-face {
+  font-family: 'Source Sans 3';
+  src: url('files/source-sans-3-v19-latin_latin-ext-300italic.eot');
+  src: url('files/source-sans-3-v19-latin_latin-ext-300italic.eot?#iefix') format('embedded-opentype'),
+       url('files/source-sans-3-v19-latin_latin-ext-300italic.woff2') format('woff2'),
+       url('files/source-sans-3-v19-latin_latin-ext-300italic.woff') format('woff'),
+       url('files/source-sans-3-v19-latin_latin-ext-300italic.ttf') format('truetype'),
+       url('files/source-sans-3-v19-latin_latin-ext-300italic.svg#SourceSans3') format('svg');
+  font-weight: 300;
+  font-style: italic;
+  font-display: swap;
+}
+
+/* 400 normal */
+@font-face {
+  font-family: 'Source Sans 3';
+  src: url('files/source-sans-3-v19-latin_latin-ext-regular.eot');
+  src: url('files/source-sans-3-v19-latin_latin-ext-regular.eot?#iefix') format('embedded-opentype'),
+       url('files/source-sans-3-v19-latin_latin-ext-regular.woff2') format('woff2'),
+       url('files/source-sans-3-v19-latin_latin-ext-regular.woff') format('woff'),
+       url('files/source-sans-3-v19-latin_latin-ext-regular.ttf') format('truetype'),
+       url('files/source-sans-3-v19-latin_latin-ext-regular.svg#SourceSans3') format('svg');
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
+
+/* 400 italic */
+@font-face {
+  font-family: 'Source Sans 3';
+  src: url('files/source-sans-3-v19-latin_latin-ext-italic.eot');
+  src: url('files/source-sans-3-v19-latin_latin-ext-italic.eot?#iefix') format('embedded-opentype'),
+       url('files/source-sans-3-v19-latin_latin-ext-italic.woff2') format('woff2'),
+       url('files/source-sans-3-v19-latin_latin-ext-italic.woff') format('woff'),
+       url('files/source-sans-3-v19-latin_latin-ext-italic.ttf') format('truetype'),
+       url('files/source-sans-3-v19-latin_latin-ext-italic.svg#SourceSans3') format('svg');
+  font-weight: 400;
+  font-style: italic;
+  font-display: swap;
+}
+
+/* 500 normal */
+@font-face {
+  font-family: 'Source Sans 3';
+  src: url('files/source-sans-3-v19-latin_latin-ext-500.eot');
+  src: url('files/source-sans-3-v19-latin_latin-ext-500.eot?#iefix') format('embedded-opentype'),
+       url('files/source-sans-3-v19-latin_latin-ext-500.woff2') format('woff2'),
+       url('files/source-sans-3-v19-latin_latin-ext-500.woff') format('woff'),
+       url('files/source-sans-3-v19-latin_latin-ext-500.ttf') format('truetype'),
+       url('files/source-sans-3-v19-latin_latin-ext-500.svg#SourceSans3') format('svg');
+  font-weight: 500;
+  font-style: normal;
+  font-display: swap;
+}
+
+/* 600 normal */
+@font-face {
+  font-family: 'Source Sans 3';
+  src: url('files/source-sans-3-v19-latin_latin-ext-600.eot');
+  src: url('files/source-sans-3-v19-latin_latin-ext-600.eot?#iefix') format('embedded-opentype'),
+       url('files/source-sans-3-v19-latin_latin-ext-600.woff2') format('woff2'),
+       url('files/source-sans-3-v19-latin_latin-ext-600.woff') format('woff'),
+       url('files/source-sans-3-v19-latin_latin-ext-600.ttf') format('truetype'),
+       url('files/source-sans-3-v19-latin_latin-ext-600.svg#SourceSans3') format('svg');
+  font-weight: 600;
+  font-style: normal;
+  font-display: swap;
+}
+
+/* 700 normal */
+@font-face {
+  font-family: 'Source Sans 3';
+  src: url('files/source-sans-3-v19-latin_latin-ext-700.eot');
+  src: url('files/source-sans-3-v19-latin_latin-ext-700.eot?#iefix') format('embedded-opentype'),
+       url('files/source-sans-3-v19-latin_latin-ext-700.woff2') format('woff2'),
+       url('files/source-sans-3-v19-latin_latin-ext-700.woff') format('woff'),
+       url('files/source-sans-3-v19-latin_latin-ext-700.ttf') format('truetype'),
+       url('files/source-sans-3-v19-latin_latin-ext-700.svg#SourceSans3') format('svg');
+  font-weight: 700;
+  font-style: normal;
+  font-display: swap;
+}

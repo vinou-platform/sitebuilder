@@ -1,0 +1,26 @@
+// ── Vinou Admin — Design Tokens ─────────────────────────────────────────────
+
+// Colors
+$primary:        #640000;   // Bordeaux
+$primary-dark:   #4a0000;
+$primary-border: #7a0000;
+$accent:         #db5b14;   // Orange
+$accent-hover:   #c14f10;
+$text:           #222222;
+$text-muted:     #666666;
+$text-faint:     #999999;
+$white:          #ffffff;
+$bg:             #f5f0f0;
+$bg-card:        #ffffff;
+$bg-card-header: #fdf8f8;
+$border:         #e0d0d0;
+$border-light:   #f5ecec;
+
+// Typography
+$font-sans: 'Source Sans 3', system-ui, -apple-system, sans-serif;
+$font-mono: 'SFMono-Regular', Consolas, monospace;
+
+// Breakpoints (mobile-first)
+$bp-sm:  37.5rem;   // 600px
+$bp-md:  47.5rem;   // 760px
+$bp-lg:  56.25rem;  // 900px

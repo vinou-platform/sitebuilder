@@ -1,0 +1,325 @@
+{% if section.flash is defined and section.flash %}
+  <div class="alert alert-{{ section.flash.type == 'error' ? 'error' : 'success' }}">
+    {{ section.flash.message }}
+  </div>
+{% endif %}
+
+<div class="content-header">
+  <h2>Redirects</h2>
+  <span class="subtitle">Weiterleitungen werden in <code>config/redirects.yml</code> gespeichert und beim nächsten Request aktiv</span>
+</div>
+
+<div class="card">
+  <div class="card-header">Neue Weiterleitung</div>
+  <div class="card-body">
+    <form class="redir-form"
+          hx-post="/system/redirects/save"
+          hx-target="#section-content"
+          hx-select="#section-content">
+      <div class="redir-form-row">
+        <div class="redir-field redir-field-source">
+          <label>Quell-Pfad <span class="redir-hint-inline">(ohne führenden /)</span></label>
+          <div class="redir-input-wrap">
+            <span class="redir-prefix">/</span>
+            <input type="text" name="source" class="redir-input" placeholder="alter-pfad/seite" autocomplete="off" required>
+          </div>
+        </div>
+        <div class="redir-field redir-field-arrow">
+          <i class="fa-solid fa-arrow-right"></i>
+        </div>
+        <div class="redir-field redir-field-target">
+          <label>Ziel-URL</label>
+          <input type="text" name="redirect" class="redir-input redir-input-standalone" placeholder="/neuer-pfad oder https://…" autocomplete="off" required>
+        </div>
+        <div class="redir-field redir-field-method">
+          <label>Methode</label>
+          <select name="method" class="redir-select">
+            <option value="get">GET</option>
+            <option value="all">ALL</option>
+            <option value="post">POST</option>
+          </select>
+        </div>
+        <div class="redir-field redir-field-action">
+          <label>&nbsp;</label>
+          <button type="submit" class="btn btn-primary">
+            <i class="fa-solid fa-plus"></i> Hinzufügen
+          </button>
+        </div>
+      </div>
+    </form>
+  </div>
+</div>
+
+{% if section.redirects is defined and section.redirects|length > 0 %}
+<div class="card">
+  <div class="card-header">Aktive Weiterleitungen ({{ section.redirects|length }})</div>
+  <table class="redir-table">
+    <thead>
+      <tr>
+        <th>Quelle</th>
+        <th></th>
+        <th>Ziel</th>
+        <th>Methode</th>
+        <th></th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for r in section.redirects %}
+      <tr class="redir-row" data-source="{{ r.source }}">
+        {# ── View mode ── #}
+        <td class="redir-source redir-view"><code>/{{ r.source }}</code></td>
+        <td class="redir-arrow redir-view"><i class="fa-solid fa-arrow-right"></i></td>
+        <td class="redir-target redir-view">{{ r.redirect }}</td>
+        <td class="redir-method redir-view">
+          <span class="badge badge-{{ r.method == 'get' ? 'get' : (r.method == 'post' ? 'post' : 'put') }}">{{ r.method|upper }}</span>
+        </td>
+        <td class="redir-actions redir-view">
+          <button type="button" class="redir-icon-btn" onclick="redirStartEdit(this)" title="Bearbeiten">
+            <i class="fa-solid fa-pen"></i>
+          </button>
+          <form hx-post="/system/redirects/delete"
+                hx-target="#section-content"
+                hx-select="#section-content"
+                hx-confirm="Redirect '/{{ r.source }}' löschen?">
+            <input type="hidden" name="source" value="{{ r.source }}">
+            <button type="submit" class="redir-del-btn" title="Löschen">
+              <svg viewBox="0 0 14 16" fill="none" stroke="currentColor" stroke-width="1.5">
+                <path d="M1.5 4.5h11M5 4.5V3h4v1.5M3 4.5l.8 9h6.4l.8-9"/>
+              </svg>
+            </button>
+          </form>
+        </td>
+
+        {# ── Edit mode (hidden) ── #}
+        <td colspan="5" class="redir-edit" style="display:none">
+          <form class="redir-edit-form"
+                hx-post="/system/redirects/save"
+                hx-target="#section-content"
+                hx-select="#section-content">
+            <input type="hidden" name="original_source" value="{{ r.source }}">
+            <div class="redir-edit-row">
+              <div class="redir-input-wrap">
+                <span class="redir-prefix">/</span>
+                <input type="text" name="source" class="redir-input" value="{{ r.source }}" autocomplete="off" required>
+              </div>
+              <i class="fa-solid fa-arrow-right redir-edit-arrow"></i>
+              <input type="text" name="redirect" class="redir-input redir-input-standalone redir-input-target" value="{{ r.redirect }}" autocomplete="off" required>
+              <select name="method" class="redir-select redir-select-sm">
+                <option value="get"{{ r.method == 'get' ? ' selected' : '' }}>GET</option>
+                <option value="all"{{ r.method == 'all' ? ' selected' : '' }}>ALL</option>
+                <option value="post"{{ r.method == 'post' ? ' selected' : '' }}>POST</option>
+              </select>
+              <button type="submit" class="redir-btn-ok" title="Speichern"><i class="fa-solid fa-check"></i></button>
+              <button type="button" class="redir-btn-cancel" onclick="redirCancelEdit(this)" title="Abbrechen"><i class="fa-solid fa-xmark"></i></button>
+            </div>
+          </form>
+        </td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% else %}
+<div class="card">
+  <div class="card-body redir-empty">
+    <i class="fa-solid fa-arrow-right-arrow-left redir-empty-icon"></i>
+    <p>Noch keine Weiterleitungen angelegt.</p>
+  </div>
+</div>
+{% endif %}
+
+<script>
+function redirStartEdit(btn) {
+  var row = btn.closest('tr');
+  row.querySelectorAll('.redir-view').forEach(function(el) { el.style.display = 'none'; });
+  var editCell = row.querySelector('.redir-edit');
+  editCell.style.display = '';
+  editCell.querySelector('input[name="source"]').focus();
+}
+function redirCancelEdit(btn) {
+  var row = btn.closest('tr');
+  row.querySelector('.redir-edit').style.display = 'none';
+  row.querySelectorAll('.redir-view').forEach(function(el) { el.style.display = ''; });
+}
+</script>
+
+<style>
+.redir-form-row {
+  display: flex;
+  align-items: flex-end;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.redir-field { display: flex; flex-direction: column; gap: 5px; }
+.redir-field label { font-size: 11px; font-weight: 700; color: #640000; text-transform: uppercase; letter-spacing: .5px; }
+
+.redir-field-source { flex: 2; min-width: 180px; }
+.redir-field-target { flex: 3; min-width: 200px; }
+.redir-field-method { width: 90px; flex-shrink: 0; }
+.redir-field-action { flex-shrink: 0; }
+
+.redir-field-arrow {
+  flex-shrink: 0;
+  color: #bbb;
+  font-size: 16px;
+  padding-bottom: 10px;
+}
+
+.redir-input-wrap {
+  display: flex;
+  align-items: center;
+  border: 2px solid #e0d0d0;
+  border-radius: 5px;
+  background: #fdf8f8;
+  overflow: hidden;
+  transition: border-color .15s;
+}
+.redir-input-wrap:focus-within {
+  border-color: #DB5B14;
+  background: #fff;
+}
+
+.redir-prefix {
+  padding: 0 4px 0 10px;
+  font-size: 13px;
+  color: #bbb;
+  font-family: 'SFMono-Regular', Consolas, monospace;
+  flex-shrink: 0;
+  user-select: none;
+}
+
+.redir-input {
+  width: 100%;
+  padding: 8px 10px;
+  border: none;
+  background: transparent;
+  font-size: 13px;
+  font-family: 'SFMono-Regular', Consolas, monospace;
+  outline: none;
+  color: #222;
+}
+
+.redir-input-standalone {
+  border: 2px solid #e0d0d0;
+  border-radius: 5px;
+  background: #fdf8f8;
+  padding: 8px 10px;
+  transition: border-color .15s, background .15s;
+}
+.redir-input-standalone:focus {
+  border-color: #DB5B14;
+  box-shadow: 0 0 0 3px rgba(219,91,20,.12);
+  background: #fff;
+  outline: none;
+}
+
+.redir-select {
+  width: 100%;
+  padding: 8px 10px;
+  border: 2px solid #e0d0d0;
+  border-radius: 5px;
+  font-size: 13px;
+  background: #fdf8f8;
+  color: #222;
+  cursor: pointer;
+  outline: none;
+  transition: border-color .15s;
+}
+.redir-select:focus { border-color: #DB5B14; }
+.redir-select-sm { width: 80px; }
+
+.redir-hint-inline { font-size: 10px; font-weight: 400; color: #aaa; text-transform: none; letter-spacing: 0; }
+
+/* Table */
+.redir-table {
+  width: 100%;
+  border-collapse: collapse;
+}
+.redir-table th {
+  text-align: left;
+  padding: 9px 16px;
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: .5px;
+  color: #640000;
+  font-weight: 700;
+  border-bottom: 2px solid #e0d0d0;
+  background: #fdf8f8;
+}
+.redir-table td {
+  padding: 10px 16px;
+  border-bottom: 1px solid #f5ecec;
+  font-size: 13px;
+  vertical-align: middle;
+}
+.redir-table tr:last-child td { border-bottom: none; }
+.redir-row:hover .redir-view { background: #fdf8f8; }
+
+.redir-source code { font-family: 'SFMono-Regular', Consolas, monospace; font-size: 12px; color: #222; }
+.redir-target { font-family: 'SFMono-Regular', Consolas, monospace; font-size: 12px; color: #1d7a3a; }
+.redir-arrow { color: #ccc; width: 24px; }
+.redir-method { width: 80px; }
+.redir-actions {
+  width: 64px;
+  text-align: right;
+  white-space: nowrap;
+}
+.redir-actions form { display: inline; }
+
+.redir-icon-btn {
+  width: 28px; height: 28px;
+  display: inline-flex; align-items: center; justify-content: center;
+  border: none; background: none; cursor: pointer; border-radius: 4px;
+  font-size: 11px;
+  color: transparent; transition: color .1s, background .1s;
+}
+.redir-row:hover .redir-icon-btn { color: #bbb; }
+.redir-icon-btn:hover { color: #DB5B14 !important; background: #fef5ef; }
+
+.redir-del-btn {
+  width: 28px; height: 28px;
+  display: inline-flex; align-items: center; justify-content: center;
+  border: none; background: none; cursor: pointer; border-radius: 4px;
+  color: transparent; transition: color .1s, background .1s;
+  vertical-align: middle;
+}
+.redir-del-btn svg { width: 13px; height: 15px; }
+.redir-row:hover .redir-del-btn { color: #ccc; }
+.redir-del-btn:hover { color: #c0392b !important; background: #fdf5f5; }
+
+/* Edit row */
+.redir-edit td { padding: 8px 16px; background: #fdf8f8; }
+.redir-edit-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+.redir-edit-row .redir-input-wrap { flex: 2; min-width: 160px; }
+.redir-edit-row .redir-input-target { flex: 3; min-width: 180px; }
+.redir-edit-arrow { color: #bbb; font-size: 14px; flex-shrink: 0; }
+
+.redir-btn-ok, .redir-btn-cancel {
+  width: 30px; height: 30px;
+  display: inline-flex; align-items: center; justify-content: center;
+  border: none; border-radius: 4px; cursor: pointer; font-size: 13px;
+  flex-shrink: 0;
+}
+.redir-btn-ok { background: #640000; color: #fff; }
+.redir-btn-ok:hover { background: #4a0000; }
+.redir-btn-cancel { background: #eee; color: #555; }
+.redir-btn-cancel:hover { background: #ddd; }
+
+/* Empty state */
+.redir-empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 48px 20px;
+  color: #999;
+  gap: 12px;
+}
+.redir-empty-icon { font-size: 32px; color: #e0d0d0; }
+.redir-empty p { font-size: 14px; }
+</style>

@@ -1,0 +1,362 @@
+{% macro renderTree(data, prefix, depth, projectPaths) %}
+  {% import _self as macros %}
+  {% set depth = depth is defined ? depth : 0 %}
+  {% for key, value in data %}
+    {% set path = prefix ? prefix ~ '.' ~ key : key %}
+    {% if value is iterable %}
+      <div class="stree-group stree-d{{ depth < 3 ? depth : 3 }}">
+        <div class="stree-branch-row">
+          <button type="button" class="stree-branch" onclick="streeToggle(this)">
+            <svg class="stree-chevron" viewBox="0 0 10 6" fill="none" stroke="currentColor" stroke-width="1.5">
+              <path d="M1 1l4 4 4-4"/>
+            </svg>
+            <span class="stree-gkey">{{ key }}</span>
+            <span class="stree-gmeta">{{ value|length }}</span>
+          </button>
+          <div class="stree-row-actions">
+            <button type="button" class="stree-add-btn" onclick="streeShowAdd(this)" title="Element hinzufügen">
+              <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6">
+                <circle cx="8" cy="8" r="6.5"/>
+                <path d="M8 5v6M5 8h6"/>
+              </svg>
+            </button>
+            <div class="stree-del-slot">
+              {% if path in projectPaths %}
+              <form class="stree-del-form"
+                    hx-post="/system/settings/delete"
+                    hx-target="#section-content"
+                    hx-select="#section-content"
+                    hx-confirm="'{{ path }}' und alle untergeordneten Einträge löschen?">
+                <input type="hidden" name="key" value="{{ path }}">
+                <button type="submit" class="stree-del-btn" title="Löschen">
+                  <svg viewBox="0 0 14 16" fill="none" stroke="currentColor" stroke-width="1.5">
+                    <path d="M1.5 4.5h11M5 4.5V3h4v1.5M3 4.5l.8 9h6.4l.8-9"/>
+                  </svg>
+                </button>
+              </form>
+              {% endif %}
+            </div>
+          </div>
+        </div>
+        <div class="stree-children">
+          {{ macros.renderTree(value, path, depth + 1, projectPaths) }}
+          <div class="stree-add-row" style="display:none">
+            <form class="stree-new-form"
+                  hx-post="/system/settings/add"
+                  hx-target="#section-content"
+                  hx-select="#section-content">
+              <input type="hidden" name="path" value="{{ path }}">
+              <input type="text" name="key" class="stree-input stree-input-key" placeholder="Key (leer = Array-Append)" autocomplete="off">
+              <input type="text" name="value" class="stree-input stree-input-val" placeholder="Wert (YAML)" autocomplete="off">
+              <button type="submit" class="stree-btn stree-btn-ok">+&nbsp;Hinzufügen</button>
+              <button type="button" class="stree-btn stree-btn-cancel" onclick="streeHideAdd(this)">✕</button>
+            </form>
+          </div>
+        </div>
+      </div>
+    {% else %}
+      {% if value is null %}
+        {% set typeClass = 'stree-null' %}
+        {% set displayValue = 'null' %}
+      {% elseif value is same as true %}
+        {% set typeClass = 'stree-bool' %}
+        {% set displayValue = 'true' %}
+      {% elseif value is same as false %}
+        {% set typeClass = 'stree-bool' %}
+        {% set displayValue = 'false' %}
+      {% else %}
+        {% set typeClass = 'stree-string' %}
+        {% set displayValue = value %}
+      {% endif %}
+      <div class="stree-leaf">
+        <div class="stree-leaf-key">
+          <svg class="stree-licon" viewBox="0 0 10 10" fill="none" stroke="currentColor">
+            <path d="M2 1v5h7"/>
+          </svg>
+          <code class="stree-lkey" title="{{ path }}">{{ key }}</code>
+        </div>
+        <div class="stree-val-cell">
+          <span class="stree-val {{ typeClass }}"
+                onclick="streeStartEdit(this)"
+                title="Klicken zum Bearbeiten · Pfad: {{ path }}">{{ displayValue }}</span>
+          <form class="stree-edit-form"
+                style="display:none"
+                hx-post="/system/settings/save"
+                hx-target="#section-content"
+                hx-select="#section-content">
+            <input type="hidden" name="key" value="{{ path }}">
+            <input type="text" name="value" value="{{ displayValue }}" class="stree-input" autocomplete="off">
+            <button type="submit" class="stree-btn stree-btn-ok" title="Speichern">✓</button>
+            <button type="button" class="stree-btn stree-btn-cancel" onclick="streeCancelEdit(this)" title="Abbrechen">✕</button>
+          </form>
+        </div>
+        <div class="stree-leaf-add-slot"></div>
+        <div class="stree-del-slot">
+          {% if path in projectPaths %}
+          <form class="stree-del-form"
+                hx-post="/system/settings/delete"
+                hx-target="#section-content"
+                hx-select="#section-content"
+                hx-confirm="'{{ path }}' löschen?">
+            <input type="hidden" name="key" value="{{ path }}">
+            <button type="submit" class="stree-del-btn" title="Löschen">
+              <svg viewBox="0 0 14 16" fill="none" stroke="currentColor" stroke-width="1.5">
+                <path d="M1.5 4.5h11M5 4.5V3h4v1.5M3 4.5l.8 9h6.4l.8-9"/>
+              </svg>
+            </button>
+          </form>
+          {% endif %}
+        </div>
+      </div>
+    {% endif %}
+  {% endfor %}
+{% endmacro %}
+{% import _self as macros %}
+
+<style>
+/* ── Base ── */
+.stree-root { font-size: 13px; line-height: 1.5; padding: 4px 0; }
+
+/* ── Group (object / array) ── */
+.stree-group { margin: 2px 0; }
+.stree-group.stree-collapsed > .stree-children { display: none; }
+.stree-group.stree-collapsed .stree-chevron { transform: rotate(-90deg); }
+
+/* Branch row: toggle button + fixed-width actions area */
+.stree-branch-row { display: flex; align-items: center; gap: 0; }
+
+/* Branch toggle button */
+.stree-branch {
+  display: flex; align-items: center; gap: 7px;
+  flex: 1; min-width: 0; text-align: left; cursor: pointer;
+  background: none; border: none; font-family: inherit;
+  padding: 8px 12px; border-radius: 5px;
+  transition: background .12s;
+}
+.stree-branch:hover { background: #fdf0f0; }
+
+/* Depth-0: top-level — most prominent */
+.stree-d0 > .stree-branch-row > .stree-branch {
+  padding: 10px 14px;
+  background: #faf4f4;
+  border: 1px solid #e4d5d5;
+  border-radius: 6px;
+  margin-bottom: 1px;
+}
+.stree-d0 > .stree-branch-row > .stree-branch:hover { background: #f5eaea; }
+.stree-d0 > .stree-branch-row > .stree-branch .stree-gkey { font-size: 13px; font-weight: 700; color: #640000; }
+
+/* Depth-1: second level */
+.stree-d1 > .stree-branch-row > .stree-branch .stree-gkey { font-size: 12px; font-weight: 600; color: #333; }
+
+/* Depth ≥ 2: deep */
+.stree-d2 > .stree-branch-row > .stree-branch .stree-gkey,
+.stree-d3 > .stree-branch-row > .stree-branch .stree-gkey { font-size: 12px; font-weight: 500; color: #555; }
+
+/* ── Row actions: always 56 px wide so every row ends at the same x ── */
+.stree-row-actions {
+  display: flex; align-items: center; flex-shrink: 0; width: 56px;
+}
+
+/* Circle-plus add button */
+.stree-add-btn {
+  width: 28px; height: 28px;
+  display: flex; align-items: center; justify-content: center;
+  border: none; background: none; cursor: pointer; border-radius: 4px;
+  color: #d8d8d8; transition: color .1s, background .1s;
+}
+.stree-branch-row:hover .stree-add-btn { color: #bbb; }
+.stree-add-btn:hover { color: #640000 !important; background: #fdf0f0; }
+.stree-add-btn svg { width: 14px; height: 14px; }
+
+/* Delete slot — always occupies 28 px */
+.stree-del-slot {
+  width: 28px; height: 28px;
+  display: flex; align-items: center; justify-content: center;
+  flex-shrink: 0;
+}
+.stree-del-form { display: flex; align-items: center; margin: 0; }
+.stree-del-btn {
+  width: 28px; height: 28px;
+  display: flex; align-items: center; justify-content: center;
+  border: none; background: none; cursor: pointer; border-radius: 4px;
+  color: transparent; transition: color .1s, background .1s;
+}
+.stree-del-btn svg { width: 13px; height: 15px; }
+.stree-leaf:hover .stree-del-btn,
+.stree-branch-row:hover .stree-del-btn { color: #ccc; }
+.stree-del-btn:hover { color: #c0392b !important; background: #fdf5f5; }
+
+/* Add form row inside children */
+.stree-add-row { padding: 6px 4px; }
+.stree-new-form {
+  display: flex; align-items: center; gap: 6px; flex-wrap: wrap;
+}
+.stree-input-key { width: 160px; flex-shrink: 0; }
+.stree-input-val { flex: 1; min-width: 140px; }
+
+/* Chevron */
+.stree-chevron {
+  width: 10px; height: 10px; flex-shrink: 0;
+  color: #aaa; transition: transform .15s;
+  stroke: currentColor;
+}
+.stree-d0 > .stree-branch-row > .stree-branch .stree-chevron { color: #a05050; }
+
+/* Item-count badge */
+.stree-gmeta {
+  margin-left: auto; font-size: 11px; color: #bbb;
+  font-family: 'SFMono-Regular', Consolas, monospace;
+  background: #f0e8e8; border-radius: 10px;
+  padding: 1px 7px; flex-shrink: 0;
+}
+.stree-d0 > .stree-branch-row > .stree-branch .stree-gmeta { background: #eddada; color: #a07070; }
+
+/* Children container — tree connector line */
+.stree-children {
+  margin-left: 16px;
+  padding-left: 14px;
+  border-left: 1px solid #ecdede;
+  padding-top: 2px;
+  padding-bottom: 2px;
+}
+.stree-d0 > .stree-children {
+  margin-left: 7px;
+  border-left-color: #e4d5d5;
+  margin-bottom: 8px;
+}
+
+/* ── Leaf (key / value row) ── */
+.stree-leaf {
+  display: grid;
+  grid-template-columns: 180px 1fr 28px 28px;
+  align-items: center;
+  gap: 0;
+  padding: 3px 0 3px 10px;
+  border-radius: 4px;
+  min-height: 30px;
+}
+.stree-leaf:hover { background: #fdf8f8; }
+
+/* Placeholder to keep leaf del-slot aligned with branch del-slot */
+.stree-leaf-add-slot { width: 28px; }
+
+/* Key area: icon + label */
+.stree-leaf-key {
+  display: flex; align-items: center; gap: 7px;
+  min-width: 0; padding-right: 8px;
+}
+
+/* Leaf branch icon */
+.stree-licon {
+  width: 10px; height: 10px; flex-shrink: 0;
+  color: #ccc; stroke-width: 1.5;
+}
+
+/* Key label */
+.stree-lkey {
+  font-family: 'SFMono-Regular', Consolas, monospace;
+  font-size: 12px; font-weight: normal;
+  color: #888; white-space: nowrap;
+  overflow: hidden; text-overflow: ellipsis;
+  background: none; padding: 0;
+  min-width: 0;
+}
+
+/* Value cell (holds display span OR edit form) */
+.stree-val-cell { display: flex; align-items: center; min-width: 0; padding-right: 4px; }
+
+/* Value display span */
+.stree-val {
+  cursor: pointer;
+  padding: 2px 7px; border-radius: 3px;
+  font-family: 'SFMono-Regular', Consolas, monospace; font-size: 12px;
+  border: 1px solid transparent; transition: border-color .1s, background .1s;
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  max-width: 100%;
+}
+.stree-val:hover { border-color: #c09090; background: #fff8f8; }
+
+/* Type colours */
+.stree-string { color: #1d7a3a; }
+.stree-bool   { color: #c0392b; font-weight: 600; }
+.stree-null   { color: #aaa; font-style: italic; }
+
+/* ── Edit form ── */
+.stree-edit-form { display: flex; align-items: center; gap: 4px; flex: 1; min-width: 0; }
+.stree-input {
+  flex: 1; min-width: 180px;
+  font-family: 'SFMono-Regular', Consolas, monospace; font-size: 12px;
+  padding: 3px 8px; border: 1px solid #640000; border-radius: 3px;
+  background: #fff; outline: none;
+}
+.stree-input:focus { box-shadow: 0 0 0 2px rgba(100,0,0,.15); }
+.stree-btn {
+  flex-shrink: 0; border: none; border-radius: 3px;
+  cursor: pointer; font-size: 12px; padding: 3px 9px; line-height: 1.5;
+}
+.stree-btn-ok     { background: #640000; color: #fff; }
+.stree-btn-ok:hover { background: #4a0000; }
+.stree-btn-cancel { background: #eee; color: #555; }
+.stree-btn-cancel:hover { background: #ddd; }
+
+/* ── Hint ── */
+.stree-hint {
+  font-size: 11px; color: #aaa; margin-top: 12px; padding: 0 2px;
+  display: flex; gap: 8px; flex-wrap: wrap; align-items: center;
+}
+.stree-hint code { background: #f5f0f0; padding: 1px 5px; border-radius: 3px; color: #640000; }
+</style>
+
+{% if section.flash is defined and section.flash %}
+  <div class="alert alert-{{ section.flash.type == 'error' ? 'error' : 'success' }}">
+    {{ section.flash.message }}
+  </div>
+{% endif %}
+
+<div class="content-header">
+  <h2>Settings</h2>
+  <span class="subtitle">Klick auf einen Wert zum Bearbeiten &mdash; Änderungen gehen in <code>config/settings.yml</code></span>
+</div>
+
+<div class="card">
+  <div class="card-header">Konfiguration</div>
+  <div class="card-body stree-root">
+    {{ macros.renderTree(section.settings, '', 0, section.projectPaths) }}
+  </div>
+</div>
+
+<p class="stree-hint">
+  <span>YAML-Eingabe:</span>
+  <span><code>42</code> Zahl</span>
+  <span><code>true</code> / <code>false</code> Boolean</span>
+  <span><code>~</code> null</span>
+  <span><code>Text</code> String (ohne Anführungszeichen)</span>
+</p>
+
+<script>
+function streeToggle(btn) {
+  btn.closest('.stree-group').classList.toggle('stree-collapsed');
+}
+function streeShowAdd(btn) {
+  var row = btn.closest('.stree-group').querySelector(':scope > .stree-children > .stree-add-row');
+  row.style.display = 'block';
+  row.querySelector('.stree-input-val').focus();
+}
+function streeHideAdd(btn) {
+  btn.closest('.stree-add-row').style.display = 'none';
+}
+function streeStartEdit(el) {
+  el.style.display = 'none';
+  var form = el.nextElementSibling;
+  form.style.display = 'flex';
+  var input = form.querySelector('.stree-input');
+  input.focus();
+  input.select();
+}
+function streeCancelEdit(btn) {
+  var form = btn.closest('.stree-edit-form');
+  form.style.display = 'none';
+  form.previousElementSibling.style.display = '';
+}
+</script>

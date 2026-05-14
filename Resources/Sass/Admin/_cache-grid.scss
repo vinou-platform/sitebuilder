@@ -1,0 +1,33 @@
+@use 'variables' as *;
+
+.cache-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;   // mobile: 2 columns
+  gap: 1rem;
+
+  @media (min-width: $bp-lg) {
+    grid-template-columns: repeat(auto-fill, minmax(11.25rem, 1fr));  // 180px
+  }
+}
+
+.cache-card {
+  border: 1px solid $border;
+  border-radius: 0.5rem;
+  padding: 1.25rem;
+  text-align: center;
+  background: $bg-card-header;
+
+  h3 {
+    font-size: 0.875rem;
+    font-weight: 700;
+    color: $primary;
+    margin-bottom: 0.375rem;
+  }
+
+  p {
+    font-size: 0.6875rem;
+    color: $text-faint;
+    margin-bottom: 1rem;
+    font-family: $font-mono;
+  }
+}

@@ -1,0 +1,157 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Vinou SiteBuilder - Admin Panel</title>
+<link rel="stylesheet" href="/system/assets/vendor/source-sans-3/source-sans-3.css">
+<link rel="stylesheet" href="/system/assets/vendor/fontawesome/css/all.min.css">
+<link rel="stylesheet" href="/system/assets/styles/admin.css">
+<script src="/system/assets/vendor/htmx/htmx.min.js"></script>
+</head>
+<body>
+
+{# ──────────────────── LOGIN ──────────────────── #}
+{% if not admin.authenticated %}
+<div class="login-page">
+  <div class="login-card">
+
+    <div class="login-card-left">
+      <img src="/system/assets/images/vinou_logo_red.svg" alt="Vinou" class="login-logo-img">
+      <div class="login-illustration">
+        <img src="/system/assets/images/admin-panel-2.svg" alt="">
+      </div>
+    </div>
+
+    <div class="login-card-right">
+      <p class="login-overline">Vinou SiteBuilder</p>
+      <h1 class="login-heading">Admin Panel</h1>
+      <p class="login-sub">Passwort eingeben um fortzufahren.</p>
+
+      {% if admin.error is defined and admin.error %}
+        <div class="alert alert-error">{{ admin.error }}</div>
+      {% endif %}
+
+      <form method="post" action="/system">
+        <div class="form-group">
+          <label for="password">Passwort</label>
+          <input type="password" id="password" name="password" autofocus autocomplete="current-password" placeholder="••••••••">
+        </div>
+        <button type="submit" class="btn btn-primary btn-block">Anmelden</button>
+      </form>
+
+      {% if admin.version is defined %}
+        <p class="login-version">SiteBuilder {{ admin.version }}</p>
+      {% endif %}
+    </div>
+
+  </div>
+</div>
+
+{# ──────────────────── PANEL ──────────────────── #}
+{% else %}
+<div class="layout">
+
+  <header class="topbar">
+    <div class="topbar-logo">
+      <img src="/system/assets/images/vinou_logo_white.svg" alt="Vinou">
+    </div>
+    <a href="/system?action=logout" class="topbar-logout">
+      <i class="fa-solid fa-right-from-bracket"></i> Abmelden
+    </a>
+  </header>
+
+  <div class="panel-body">
+    <nav class="sidenav">
+      <a data-tab="settings"
+         hx-get="/system/settings"
+         hx-target="#section-content"
+         hx-select="#section-content"
+         hx-push-url="/system/settings"
+         class="{{ admin.adminTab == 'settings' ? 'active' : '' }}">
+        <i class="fa-solid fa-sliders nav-icon"></i> <span>Settings</span>
+      </a>
+      <a data-tab="redirects"
+         hx-get="/system/redirects"
+         hx-target="#section-content"
+         hx-select="#section-content"
+         hx-push-url="/system/redirects"
+         class="{{ admin.adminTab == 'redirects' ? 'active' : '' }}">
+        <i class="fa-solid fa-arrow-right-arrow-left nav-icon"></i> <span>Redirects</span>
+      </a>
+      <a data-tab="routes"
+         hx-get="/system/routes"
+         hx-target="#section-content"
+         hx-select="#section-content"
+         hx-push-url="/system/routes"
+         class="{{ admin.adminTab == 'routes' ? 'active' : '' }}">
+        <i class="fa-solid fa-route nav-icon"></i> <span>Routes</span>
+      </a>
+      <a data-tab="mail"
+         hx-get="/system/mail"
+         hx-target="#section-content"
+         hx-select="#section-content"
+         hx-push-url="/system/mail"
+         class="{{ admin.adminTab == 'mail' ? 'active' : '' }}">
+        <i class="fa-solid fa-envelope nav-icon"></i> <span>Mail</span>
+      </a>
+      <a data-tab="system"
+         hx-get="/system/system"
+         hx-target="#section-content"
+         hx-select="#section-content"
+         hx-push-url="/system/system"
+         class="{{ admin.adminTab == 'system' ? 'active' : '' }}">
+        <i class="fa-solid fa-server nav-icon"></i> <span>System</span>
+      </a>
+      <a data-tab="environment"
+         hx-get="/system/environment"
+         hx-target="#section-content"
+         hx-select="#section-content"
+         hx-push-url="/system/environment"
+         class="{{ admin.adminTab == 'environment' ? 'active' : '' }}">
+        <i class="fa-solid fa-microchip nav-icon"></i> <span>Umgebung</span>
+      </a>
+    </nav>
+
+    <main class="content">
+      <div id="section-content">
+        {% include 'Admin/Sections/' ~ admin.sectionName|capitalize ~ '.twig' with {'section': admin} %}
+      </div>
+    </main>
+  </div>
+</div>
+
+<script>
+var sectionLoader = '<div class="section-loader"><div class="loader-spinner"></div><span>Wird geladen…</span></div>';
+
+document.querySelectorAll('.sidenav a[data-tab]').forEach(function(a) {
+  a.addEventListener('click', function() {
+    document.querySelectorAll('.sidenav a[data-tab]').forEach(function(b) {
+      b.classList.remove('active');
+    });
+    a.classList.add('active');
+    var sc = document.getElementById('section-content');
+    if (sc) sc.innerHTML = sectionLoader;
+  });
+});
+
+document.body.addEventListener('htmx:beforeRequest', function(evt) {
+  var sc = document.getElementById('section-content');
+  if (sc && evt.detail && evt.detail.target === sc) {
+    sc.innerHTML = sectionLoader;
+  }
+});
+
+document.body.addEventListener('htmx:afterOnLoad', function(evt) {
+  var sc = document.getElementById('section-content');
+  if (sc && evt.detail && evt.detail.target === sc) {
+    var active = document.querySelector('.sidenav a[hx-push-url="' + window.location.pathname + '"]');
+    document.querySelectorAll('.sidenav a[data-tab]').forEach(function(b) { b.classList.remove('active'); });
+    if (active) active.classList.add('active');
+  }
+});
+</script>
+{% endif %}
+
+</body>
+</html>

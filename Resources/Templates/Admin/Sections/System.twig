@@ -1,0 +1,25 @@
+{% if section.message %}
+  <div class="alert alert-success">{{ section.message }}</div>
+{% endif %}
+
+<div class="content-header">
+  <h2>System</h2>
+  <span class="subtitle">Cache-Verwaltung</span>
+</div>
+<div class="card">
+  <div class="card-header">Cache leeren</div>
+  <div class="card-body">
+    <div class="cache-grid">
+      {% for type, label in {'Images': 'Bilder-Cache', 'Instagram': 'Instagram-Cache', 'PDF': 'PDF-Cache'} %}
+        <div class="cache-card">
+          <h3>{{ label }}</h3>
+          <p>Cache/{{ type }}</p>
+          <button hx-get="/system/system?action=clearCache&type={{ type }}"
+                  hx-target="#section-content"
+                  hx-select="#section-content"
+                  class="btn btn-ghost">Leeren</button>
+        </div>
+      {% endfor %}
+    </div>
+  </div>
+</div>

@@ -1,0 +1,51 @@
+@use 'variables' as *;
+
+.topbar {
+  height: 3.375rem;         // 54px mobile
+  background: $primary;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 1rem;
+  flex-shrink: 0;
+  border-bottom: 1px solid $primary-border;
+
+  @media (min-width: $bp-lg) {
+    height: 3.875rem;       // 62px
+    padding: 0 2rem 0 1.75rem;
+  }
+}
+
+.topbar-logo {
+  img {
+    height: 1.875rem;       // 30px mobile
+    width: auto;
+    display: block;
+
+    @media (min-width: $bp-lg) {
+      height: 2.125rem;     // 34px
+    }
+  }
+}
+
+.topbar-logout {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  color: rgba($white, .6);
+  text-decoration: none;
+  font-size: 0.875rem;
+  padding: 0.5rem 0.875rem;
+  border-radius: 0.25rem;
+  transition: color .15s, background .15s;
+
+  &:hover {
+    color: $white;
+    background: rgba($white, .1);
+  }
+
+  @media (min-width: $bp-lg) {
+    font-size: 0.875rem;
+    padding: 0.5rem 0.875rem;
+  }
+}

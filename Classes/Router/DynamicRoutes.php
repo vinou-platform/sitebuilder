@@ -90,6 +90,12 @@ class DynamicRoutes {
         if (!is_null($this->routeFile))
             $this->loadAdditionalRoutes();
 
+        if (defined('VINOU_CONFIG_DIR')) {
+            $redirectsFile = Helper::getNormDocRoot() . VINOU_CONFIG_DIR . 'redirects.yml';
+            if (is_file($redirectsFile))
+                $this->loadRouteFile($redirectsFile);
+        }
+
         $this->generateRoutes();
     }
 
@@ -207,6 +213,19 @@ class DynamicRoutes {
     }
 
     /**
+     * Appends a single route file from an absolute path, bypassing docroot resolution.
+     *
+     * Useful for registering vendor-internal routes (e.g. admin panel) that live
+     * outside the project docroot and should not be merged with default routes.
+     *
+     * @param string $file  Absolute path to a .yml route file.
+     * @return void
+     */
+    public function loadRouteFile(string $file): void {
+        $this->appendRoutesByFile($file);
+    }
+
+    /**
      * Merges a route file on top of the current configuration (higher priority).
      *
      * Routes with 'extend: true' are deep-merged with the existing entry for
@@ -308,12 +327,17 @@ class DynamicRoutes {
 
                         $content = $this->additionalContent;
                         if (!empty($content)) {
-                            if (isset($options['excludeContent']) && is_array($options['excludeContent'])) {
-                                foreach ($options['excludeContent'] as $key) {
-                                    unset($content[$key]);
+                            if (isset($options['excludeContent'])) {
+                                if ($options['excludeContent'] === true) {
+                                    $content = [];
+                                } elseif (is_array($options['excludeContent'])) {
+                                    foreach ($options['excludeContent'] as $key) {
+                                        unset($content[$key]);
+                                    }
                                 }
                             }
-                            $this->render->dataProcessing($content);
+                            if (!empty($content))
+                                $this->render->dataProcessing($content);
                         }
 
                         if (isset($options['dataProcessing']))

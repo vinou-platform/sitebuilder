@@ -1,0 +1,15 @@
+@use 'variables' as *;
+
+.badge {
+  display: inline-block;
+  padding: 0.125rem 0.4375rem;
+  border-radius: 0.1875rem;
+  font-size: 0.625rem;      // 10px
+  font-weight: 700;
+  letter-spacing: 0.03em;
+  flex-shrink: 0;
+}
+
+.badge-get  { background: #e8f5ee; color: #1e7249; }
+.badge-post { background: #fef3e2; color: #7a4f0f; }
+.badge-put  { background: #fdf0f0; color: $primary; }

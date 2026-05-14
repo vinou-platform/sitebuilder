@@ -1,0 +1,31 @@
+<div class="content-header">
+  <h2>Umgebung</h2>
+  <span class="subtitle">PHP-Extensions und Systemvoraussetzungen</span>
+</div>
+<div class="card">
+  <div class="card-body" style="padding:0;">
+    <table class="env-table">
+      <thead>
+        <tr>
+          <th>Komponente</th>
+          <th>Status</th>
+          <th>Detail</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for key, check in section.environment %}
+          <tr>
+            <td style="font-weight:600;">{{ check.label }}</td>
+            <td>
+              <span class="status">
+                <span class="status-dot {{ check.available ? 'status-ok' : 'status-fail' }}"></span>
+                {{ check.available ? 'OK' : 'Fehlt' }}
+              </span>
+            </td>
+            <td>{{ check.detail }}</td>
+          </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>

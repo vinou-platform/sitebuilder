@@ -1,0 +1,23 @@
+@use 'variables' as *;
+
+.section-loader {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.75rem;
+  padding: 3.75rem 1.25rem;
+  color: $text-muted;
+  font-size: 0.8125rem;
+}
+
+.loader-spinner {
+  width: 1.25rem;
+  height: 1.25rem;
+  border: 2px solid $border;
+  border-top-color: $accent;
+  border-radius: 50%;
+  animation: spin .7s linear infinite;
+  flex-shrink: 0;
+}
+
+@keyframes spin { to { transform: rotate(360deg); } }

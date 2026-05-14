@@ -1,0 +1,69 @@
+system:
+  template: 'Admin/Panel.twig'
+  pageTitle: 'Vinou Admin'
+  method: all
+  excludeContent: true
+  dataProcessing:
+    admin:
+      processor: admin
+      function: init
+      forceLoadAll: true
+
+system/settings/save:
+  template: 'Admin/Panel.twig'
+  method: post
+  excludeContent: true
+  dataProcessing:
+    admin:
+      processor: admin
+      function: saveSetting
+      forceLoadAll: true
+
+system/settings/delete:
+  template: 'Admin/Panel.twig'
+  method: post
+  excludeContent: true
+  dataProcessing:
+    admin:
+      processor: admin
+      function: deleteSetting
+      forceLoadAll: true
+
+system/settings/add:
+  template: 'Admin/Panel.twig'
+  method: post
+  excludeContent: true
+  dataProcessing:
+    admin:
+      processor: admin
+      function: addSetting
+      forceLoadAll: true
+
+system/redirects/save:
+  template: 'Admin/Panel.twig'
+  method: post
+  excludeContent: true
+  dataProcessing:
+    admin:
+      processor: admin
+      function: saveRedirect
+      forceLoadAll: true
+
+system/redirects/delete:
+  template: 'Admin/Panel.twig'
+  method: post
+  excludeContent: true
+  dataProcessing:
+    admin:
+      processor: admin
+      function: deleteRedirect
+      forceLoadAll: true
+
+system/{name}:
+  template: 'Admin/Panel.twig'
+  excludeContent: true
+  dataProcessing:
+    admin:
+      processor: admin
+      function: page
+      forceLoadAll: true

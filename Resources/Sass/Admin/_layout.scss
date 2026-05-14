@@ -1,0 +1,14 @@
+@use 'variables' as *;
+
+.layout {
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
+  overflow: hidden;
+}
+
+.panel-body {
+  display: flex;
+  flex: 1;
+  overflow: hidden;
+}

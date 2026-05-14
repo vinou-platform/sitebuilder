@@ -10,6 +10,7 @@ use \Vinou\ApiConnector\Session\Session;
 use \Vinou\SiteBuilder\Router\DynamicRoutes;
 use \Vinou\SiteBuilder\Tools\Render;
 use \Vinou\SiteBuilder\Loader;
+use \Vinou\SiteBuilder\Processors\Admin;
 use \Vinou\SiteBuilder\Processors\External;
 use \Vinou\SiteBuilder\Processors\Formatter;
 use \Vinou\SiteBuilder\Processors\Files;
@@ -86,6 +87,7 @@ class Site {
         if (is_array($additionalContent))
             $this->routeConfig->setAdditionalContent($additionalContent);
 
+        $this->loadAdminPanel();
         $this->routeConfig->init();
         $this->router->run();
     }
@@ -201,6 +203,58 @@ class Site {
         $this->render->loadProcessor('instagram', new Instagram());
         $this->render->loadProcessor('sitemap',   new Sitemap($this->routeConfig, $this->render->api));
         $this->render->loadProcessor('formatter', new Formatter());
+    }
+
+    /**
+     * Bootstraps the admin panel when system.password is configured.
+     *
+     * Registers the Admin processor and loads the system route definitions from
+     * Configuration/Routes/Admin/system.yml into the route configuration so they
+     * are picked up by DynamicRoutes::init(). The static asset route for CSS/JS
+     * is registered directly since it serves files rather than rendered templates.
+     *
+     * @return void
+     */
+    private function loadAdminPanel(): void {
+        $system = $this->settingsService->get('system') ?? [];
+
+        if (!isset($system['password']))
+            return;
+
+        $admin = new Admin($this->routeConfig);
+        $this->render->loadProcessor('admin', $admin);
+
+        $this->routeConfig->loadRouteFile(__DIR__ . '/../Configuration/Routes/Admin/system.yml');
+
+        $publicDir = __DIR__ . '/../Resources/Public';
+        $this->router->get('/system/assets/(.*)', function(string $file) use ($publicDir) {
+            if (strpos($file, '..') !== false) {
+                header('HTTP/1.1 403 Forbidden');
+                exit;
+            }
+
+            $path = $publicDir . '/' . ltrim($file, '/');
+            $ext  = strtolower(pathinfo($path, PATHINFO_EXTENSION));
+            $types = [
+                'css'   => 'text/css; charset=UTF-8',
+                'js'    => 'application/javascript; charset=UTF-8',
+                'svg'   => 'image/svg+xml',
+                'woff'  => 'font/woff',
+                'woff2' => 'font/woff2',
+                'ttf'   => 'font/ttf',
+                'eot'   => 'application/vnd.ms-fontobject',
+            ];
+
+            if (!isset($types[$ext]) || !is_file($path)) {
+                header('HTTP/1.1 404 Not Found');
+                exit;
+            }
+
+            header('Content-Type: ' . $types[$ext]);
+            header('Cache-Control: public, max-age=86400');
+            readfile($path);
+            exit;
+        });
     }
 
     /**

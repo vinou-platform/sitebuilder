@@ -376,13 +376,14 @@ class Render implements RendererInterface {
      * @return Environment
      */
     private function initTwig(?array $config = null): Environment {
-        if (empty($this->templateStorages)) {
-            $packageResourcePath = str_replace('Classes/Tools', 'Resources', Helper::getClassPath(get_class($this)));
-            foreach ($this->templateDirectories as $dir) {
-                $packageDir = $packageResourcePath . '/' . $dir;
-                if (is_dir($packageDir))
-                    $this->templateStorages[] = $packageDir;
-            }
+        // Always append package templates as lowest-priority fallback so that
+        // built-in templates (Admin panel, 404, …) are found even after
+        // loadDefaultStorages() and addTemplateStorages() have run.
+        $packageResourcePath = str_replace('Classes/Tools', 'Resources', Helper::getClassPath(get_class($this)));
+        foreach ($this->templateDirectories as $dir) {
+            $packageDir = $packageResourcePath . '/' . $dir;
+            if (is_dir($packageDir) && !in_array($packageDir, $this->templateStorages))
+                $this->templateStorages[] = $packageDir;
         }
 
         $loader = new FilesystemLoader($this->templateStorages);

@@ -1,0 +1,39 @@
+@use 'variables' as *;
+
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.375rem;
+  padding: 0.5625rem 1.125rem;
+  border-radius: 0.3125rem;
+  font-size: 0.8125rem;
+  font-weight: 600;
+  cursor: pointer;
+  border: none;
+  text-decoration: none;
+  transition: background .15s, transform .1s;
+
+  &:active { transform: scale(.98); }
+}
+
+.btn-primary {
+  background: $accent;
+  color: $white;
+  &:hover { background: $accent-hover; }
+}
+
+.btn-dark {
+  background: $primary;
+  color: $white;
+  &:hover { background: $primary-dark; }
+}
+
+.btn-ghost {
+  background: transparent;
+  color: $accent;
+  border: 2px solid $accent;
+  &:hover { background: #fef5ef; }
+}
+
+.btn-block { width: 100%; }

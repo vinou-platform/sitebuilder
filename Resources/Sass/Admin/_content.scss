@@ -1,0 +1,25 @@
+@use 'variables' as *;
+
+.content {
+  flex: 1;
+  padding: 1.5rem;          // 24px mobile
+  overflow: auto;
+
+  @media (min-width: $bp-lg) {
+    padding: 2.5rem 3rem;   // 40px 48px
+  }
+}
+
+.content-header {
+  margin-bottom: 1.75rem;
+  display: flex;
+  align-items: baseline;
+  gap: 0.75rem;
+
+  h2 { font-size: 1.4375rem; font-weight: 700; color: $text; }  // 23px
+  .subtitle { font-size: 0.875rem; color: $text-muted; }
+
+  @media (min-width: $bp-lg) {
+    margin-bottom: 2rem;
+  }
+}

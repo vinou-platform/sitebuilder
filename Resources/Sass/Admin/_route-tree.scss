@@ -1,0 +1,46 @@
+@use 'variables' as *;
+
+details { margin-bottom: 0.3125rem; }
+
+details > summary {
+  cursor: pointer;
+  padding: 0.5rem 0.75rem;
+  background: $bg-card-header;
+  border: 1px solid $border;
+  border-radius: 0.3125rem;
+  font-size: 0.8125rem;
+  list-style: none;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  user-select: none;
+
+  &::-webkit-details-marker { display: none; }
+
+  &::before {
+    content: '▶';
+    font-size: 0.5625rem;
+    color: #aaa;
+    transition: transform .15s;
+    flex-shrink: 0;
+  }
+
+  &:hover { background: #f5eaea; border-color: #c08080; }
+}
+
+details[open] > summary::before { transform: rotate(90deg); }
+
+.route-url      { font-weight: 600; color: $text; font-family: $font-mono; font-size: 0.75rem; }
+.route-template { margin-left: auto; font-size: 0.6875rem; color: $text-faint; font-family: $font-mono; }
+
+.route-details {
+  padding: 0.625rem 0.75rem 0.625rem 1.5rem;
+  border: 1px solid $border;
+  border-top: none;
+  border-radius: 0 0 0.3125rem 0.3125rem;
+  background: $bg-card;
+}
+
+.route-detail-row { display: flex; gap: 0.75rem; padding: 0.1875rem 0; font-size: 0.75rem; }
+.route-detail-key { color: $primary; font-weight: 600; min-width: 8.125rem; flex-shrink: 0; }
+.route-detail-val { color: $text; font-family: $font-mono; word-break: break-all; }
