@@ -129,6 +129,15 @@ system/redirects/delete:
       function: deleteRedirect
       forceLoadAll: true
 
+system/cache:
+  template: 'Admin/Fragment/CacheResult.twig'
+  excludeContent: true
+  dataProcessing:
+    admin:
+      processor: admin
+      function: cacheAction
+      forceLoadAll: true
+
 system/{name}:
   template: 'Admin/Panel.twig'
   excludeContent: true

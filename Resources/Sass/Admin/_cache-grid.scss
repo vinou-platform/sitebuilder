@@ -2,15 +2,17 @@
 
 .cache-grid {
   display: grid;
-  grid-template-columns: 1fr 1fr;   // mobile: 2 columns
+  grid-template-columns: 1fr 1fr;
   gap: 1rem;
 
   @media (min-width: $bp-lg) {
-    grid-template-columns: repeat(auto-fill, minmax(11.25rem, 1fr));  // 180px
+    grid-template-columns: repeat(auto-fill, minmax(11.25rem, 1fr));
   }
 }
 
 .cache-card {
+  display: flex;
+  flex-direction: column;
   border: 1px solid $border;
   border-radius: 0.5rem;
   padding: 1.25rem;
@@ -29,5 +31,58 @@
     color: $text-faint;
     margin-bottom: 1rem;
     font-family: $font-mono;
+    flex: 1;
   }
+}
+
+// ── Result area ──────────────────────────────────────────────────
+
+.cache-result-area {
+  min-height: 1.25rem;
+  margin-top: 0.5rem;
+}
+
+.cache-result {
+  display: block;
+  font-size: 0.6875rem;
+  padding: 0.25rem 0.5rem;
+  border-radius: 0.25rem;
+  text-align: center;
+
+  &--ok    { color: #166534; background: #dcfce7; }
+  &--error { color: #991b1b; background: #fee2e2; }
+}
+
+// ── Progress bar ─────────────────────────────────────────────────
+
+.cache-progress {
+  height: 3px;
+  background: $border;
+  border-radius: 2px;
+  margin-top: 0.625rem;
+  overflow: hidden;
+  opacity: 0;
+  transition: opacity 0.15s ease-in;
+
+  .cache-progress-bar {
+    height: 100%;
+    background: $accent;
+    border-radius: 2px;
+    width: 0;
+  }
+
+  &.htmx-request {
+    opacity: 1;
+
+    .cache-progress-bar {
+      animation: cache-fill 30s cubic-bezier(0.05, 0.6, 0.2, 1) forwards;
+    }
+  }
+}
+
+@keyframes cache-fill {
+  0%   { width: 0% }
+  20%  { width: 55% }
+  60%  { width: 78% }
+  100% { width: 90% }
 }

@@ -21,12 +21,54 @@
         <div class="cache-card">
           <h3>{{ label }}</h3>
           <p>Cache/{{ type }}</p>
-          <button hx-get="/system/system?action=clearCache&type={{ type }}"
-                  hx-target="#section-content"
-                  hx-select="#section-content"
-                  class="btn btn-ghost">Leeren</button>
+          <button hx-get="/system/cache?action=clear{{ type }}"
+                  hx-target="#clear-{{ type|lower }}-result"
+                  hx-swap="innerHTML"
+                  hx-indicator="#clear-{{ type|lower }}-progress"
+                  hx-disabled-elt="this"
+                  class="btn btn-ghost btn-block">Leeren</button>
+          <div id="clear-{{ type|lower }}-progress" class="cache-progress">
+            <div class="cache-progress-bar"></div>
+          </div>
+          <div id="clear-{{ type|lower }}-result" class="cache-result-area"></div>
         </div>
       {% endfor %}
+    </div>
+  </div>
+</div>
+
+<div class="card">
+  <div class="card-header">Cache Warm-up</div>
+  <div class="card-body">
+    <div class="cache-grid">
+      <div class="cache-card">
+        <h3>Bildcache aufwärmen</h3>
+        <p>Alle Produkt­bilder von der API laden, cachen und als WebP konvertieren</p>
+        <button hx-get="/system/cache?action=warmupImages"
+                hx-target="#warmup-img-result"
+                hx-swap="innerHTML"
+                hx-indicator="#warmup-img-progress"
+                hx-disabled-elt="this"
+                class="btn btn-ghost btn-block">Starten</button>
+        <div id="warmup-img-progress" class="cache-progress">
+          <div class="cache-progress-bar"></div>
+        </div>
+        <div id="warmup-img-result" class="cache-result-area"></div>
+      </div>
+      <div class="cache-card">
+        <h3>PDF-Cache aufwärmen</h3>
+        <p>Alle Wein-Expertise-PDFs von der API laden und lokal cachen</p>
+        <button hx-get="/system/cache?action=warmupPdf"
+                hx-target="#warmup-pdf-result"
+                hx-swap="innerHTML"
+                hx-indicator="#warmup-pdf-progress"
+                hx-disabled-elt="this"
+                class="btn btn-ghost btn-block">Starten</button>
+        <div id="warmup-pdf-progress" class="cache-progress">
+          <div class="cache-progress-bar"></div>
+        </div>
+        <div id="warmup-pdf-result" class="cache-result-area"></div>
+      </div>
     </div>
   </div>
 </div>

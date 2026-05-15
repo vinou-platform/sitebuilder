@@ -1,0 +1,190 @@
+#!/usr/bin/env php
+<?php
+/**
+ * Vinou Shop CLI
+ *
+ * Usage:
+ *   vendor/bin/vinou cache:clear     Bildcache (Cache/Images/) leeren
+ *   vendor/bin/vinou cache:warmup    Alle Produktbilder von der API laden und cachen
+ *   vendor/bin/vinou pdf:clear       PDF-Cache (Cache/Pdf/) leeren
+ *   vendor/bin/vinou pdf:warmup      Alle Wein-Expertise-PDFs von der API laden und cachen
+ */
+
+// VINOU_ROOT must point to the project's public/ directory.
+// __DIR__ is vendor/vinou/site-builder/bin — four levels up is the project root.
+define('VINOU_ROOT', realpath(__DIR__ . '/../../../../public') . '/');
+
+require realpath(__DIR__ . '/../../../../vendor/autoload.php');
+
+use Symfony\Component\Yaml\Yaml;
+use Vinou\ApiConnector\Api;
+use Vinou\ApiConnector\FileHandler\Images;
+use Vinou\ApiConnector\FileHandler\Pdf;
+use Vinou\SiteBuilder\Tools\ImageService;
+
+$command = $argv[1] ?? null;
+
+if (!$command || in_array($command, ['help', '--help', '-h'])) {
+    echo "Vinou Shop CLI\n\n";
+    echo "Verfügbare Kommandos:\n";
+    echo "  cache:clear    Bildcache (Cache/Images/) leeren\n";
+    echo "  cache:warmup   Alle Produktbilder von der API laden und lokal cachen\n";
+    echo "  pdf:clear      PDF-Cache (Cache/Pdf/) leeren\n";
+    echo "  pdf:warmup     Alle Wein-Expertise-PDFs von der API laden und lokal cachen\n\n";
+    echo "Aufruf: vendor/bin/vinou <kommando>\n";
+    exit(0);
+}
+
+match ($command) {
+    'cache:clear'  => cacheClean(),
+    'cache:warmup' => cacheWarmup(),
+    'pdf:clear'    => pdfClean(),
+    'pdf:warmup'   => pdfWarmup(),
+    default        => unknownCommand($command),
+};
+
+// ─────────────────────────────────────────────────────────────────
+
+function cacheClean(): void {
+    clearDirectory(VINOU_ROOT . 'Cache/Images', 'Bildcache');
+}
+
+function pdfClean(): void {
+    clearDirectory(VINOU_ROOT . 'Cache/Pdf', 'PDF-Cache');
+}
+
+function clearDirectory(string $dir, string $label): void {
+    if (!is_dir($dir)) {
+        echo "{$label}: Verzeichnis nicht gefunden — nichts zu tun.\n";
+        exit(0);
+    }
+
+    $count = 0;
+    $it = new RecursiveIteratorIterator(
+        new RecursiveDirectoryIterator($dir, FilesystemIterator::SKIP_DOTS),
+        RecursiveIteratorIterator::CHILD_FIRST
+    );
+    foreach ($it as $entry) {
+        if ($entry->isFile()) {
+            unlink($entry->getPathname());
+            $count++;
+        }
+    }
+
+    echo "{$label} geleert: {$count} " . ($count === 1 ? 'Datei' : 'Dateien') . " gelöscht.\n";
+}
+
+function loadApi(): Api {
+    $settingsFile = realpath(VINOU_ROOT . '../config/settings.yml');
+    if (!$settingsFile || !is_file($settingsFile)) {
+        fwrite(STDERR, "Fehler: config/settings.yml nicht gefunden.\n");
+        exit(1);
+    }
+
+    $settings = Yaml::parseFile($settingsFile);
+    $token    = $settings['vinou']['token']  ?? null;
+    $authid   = $settings['vinou']['authid'] ?? null;
+
+    if (!$token || !$authid) {
+        fwrite(STDERR, "Fehler: Vinou-Zugangsdaten nicht konfiguriert.\n");
+        exit(1);
+    }
+
+    echo "Verbinde mit Vinou-API...\n";
+
+    session_start();
+    $api = new Api($token, $authid);
+
+    if (!$api->connected) {
+        fwrite(STDERR, "Fehler: Keine Verbindung zur Vinou-API.\n");
+        exit(1);
+    }
+
+    echo "Verbunden.\n\n";
+    return $api;
+}
+
+function loadSettings(): array {
+    $settingsFile = realpath(VINOU_ROOT . '../config/settings.yml');
+    return $settingsFile && is_file($settingsFile) ? Yaml::parseFile($settingsFile) : [];
+}
+
+function cacheWarmup(): void {
+    $settings = loadSettings();
+    $api      = loadApi();
+
+    $webpEnabled = ($settings['system']['performance']['webpRendering'] ?? false) === true;
+
+    $winesResult    = $api->getWinesAll(['pageSize' => 500]);
+    $bundlesResult  = $api->getBundlesAll(['pageSize' => 500]);
+    $productsResult = $api->getProductsAll(['pageSize' => 500]);
+
+    $wines    = is_array($winesResult['wines']  ?? null) ? $winesResult['wines']  : (is_array($winesResult)    ? $winesResult    : []);
+    $bundles  = is_array($bundlesResult['data'] ?? null) ? $bundlesResult['data'] : (is_array($bundlesResult)  ? $bundlesResult  : []);
+    $products = is_array($productsResult)                 ? $productsResult        : [];
+
+    $all = array_merge($wines, $bundles, $products);
+    echo 'Verarbeite ' . count($all) . " Artikel...\n\n";
+
+    $count = $errors = 0;
+
+    foreach ($all as $item) {
+        $src = $item['image'] ?? null;
+        if (empty($src)) continue;
+
+        $result = Images::storeApiImage($src, $item['chstamp'] ?? null);
+
+        if (isset($result['absolute']) && is_file($result['absolute'])) {
+            $ext = strtolower(pathinfo($result['absolute'], PATHINFO_EXTENSION));
+            if ($webpEnabled && ImageService::checkWebPEnvironment() && in_array($ext, ['jpg', 'jpeg', 'png', 'gif'])) {
+                $webpPath = ImageService::replaceExtension($result['absolute'], 'webp');
+                if (!is_file($webpPath))
+                    ImageService::convertToWebP($result['absolute'], $webpPath);
+            }
+            echo '  ✓ ' . basename($result['absolute']) . "\n";
+            $count++;
+        } else {
+            echo '  ✗ FEHLER: ' . $src . "\n";
+            $errors++;
+        }
+    }
+
+    echo "\nFertig: {$count} " . ($count === 1 ? 'Bild' : 'Bilder') . " gecached";
+    if ($errors > 0) echo ", {$errors} Fehler";
+    echo ".\n";
+}
+
+function pdfWarmup(): void {
+    $api = loadApi();
+
+    $winesResult = $api->getWinesAll(['pageSize' => 500]);
+    $wines = is_array($winesResult['wines'] ?? null) ? $winesResult['wines'] : (is_array($winesResult) ? $winesResult : []);
+
+    $withPdf = array_filter($wines, fn($w) => !empty($w['pdf']));
+    echo 'Verarbeite ' . count($withPdf) . " Weine mit Expertise-PDF...\n\n";
+
+    $count = $errors = 0;
+
+    foreach ($withPdf as $wine) {
+        $src = '/PDF/' . $wine['id'] . '/' . $wine['pdf'];
+        $result = Pdf::storeApiPDF($src, $wine['chstamp'] ?? null);
+
+        if (!empty($result['src']) && is_file(VINOU_ROOT . ltrim($result['src'], '/'))) {
+            echo '  ✓ ' . $result['fileName'] . "\n";
+            $count++;
+        } else {
+            echo '  ✗ FEHLER: ' . $src . "\n";
+            $errors++;
+        }
+    }
+
+    echo "\nFertig: {$count} " . ($count === 1 ? 'PDF' : 'PDFs') . " gecached";
+    if ($errors > 0) echo ", {$errors} Fehler";
+    echo ".\n";
+}
+
+function unknownCommand(string $cmd): void {
+    fwrite(STDERR, "Unbekanntes Kommando: {$cmd}\n");
+    fwrite(STDERR, "Aufruf: vendor/bin/vinou help\n");
+    exit(1);
+}

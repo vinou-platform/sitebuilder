@@ -34,5 +34,8 @@
         "psr-4": {
             "Vinou\\SiteBuilder\\": "Classes/"
         }
-    }
+    },
+    "bin": [
+        "bin/vinou"
+    ]
 }

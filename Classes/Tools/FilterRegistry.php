@@ -245,42 +245,50 @@ class FilterRegistry {
             ?string $chstamp = null,
             int|array|null $dimension = null
         ): array {
-            $image     = Images::storeApiImage($imagesrc, $chstamp);
-            $extension = pathinfo($image['src'], PATHINFO_EXTENSION);
+            $chstamp = $chstamp ?? 'now';
 
+            // Proxy URL — returned whenever any cached version is missing
+            $proxyParams = ['src' => $imagesrc, 'chstamp' => $chstamp];
+            if (!is_null($dimension))
+                $proxyParams['dim'] = is_array($dimension)
+                    ? implode('x', $dimension)
+                    : (string)$dimension;
+            $proxyUrl = ['src' => '/image-proxy?' . http_build_query($proxyParams)];
+
+            // Check whether the original is already cached locally (no download)
+            $image     = Images::checkCache($imagesrc, $chstamp);
+            $extension = strtolower(pathinfo($image['src'], PATHINFO_EXTENSION));
+
+            if ($image['recreate'])
+                return $proxyUrl;
+
+            $localPath = $image['absolute'];
+
+            // Resize version: check existence, do not generate here
             if ($extension !== 'svg' && !is_null($dimension)) {
-                $prefix = $dimension;
-                if (is_array($dimension)) {
-                    [$width, $height] = $dimension;
-                    $prefix = $width . 'x' . $height;
-                }
-                $shrinked = dirname($image['absolute']) . '/' . $prefix . '-' . basename($image['absolute']);
-
-                if (!is_file($shrinked) || ($image['recreate'] ?? false)) {
-                    $resize = new ImageResize($image['absolute']);
-                    if (is_integer($dimension))
-                        $resize->resizeToWidth($dimension);
-                    elseif (is_array($dimension))
-                        $resize->resizeToBestFit($width, $height);
-                    $resize->save($shrinked);
-                }
-
-                $image['absolute'] = Helper::getNormDocRoot() . $shrinked;
-                $image['src']      = $shrinked;
+                $prefix   = is_array($dimension)
+                    ? $dimension[0] . 'x' . $dimension[1]
+                    : (string)$dimension;
+                $shrinked = dirname($localPath) . '/' . $prefix . '-' . basename($localPath);
+                if (!is_file($shrinked))
+                    return $proxyUrl;
+                $localPath = $shrinked;
             }
 
+            // WebP version: check existence, do not generate here
             if (ImageService::isWebPAllowed($this->settings)
                 && ImageService::checkWebPEnvironment()
                 && in_array($extension, ['jpg', 'jpeg', 'png', 'gif'])
             ) {
-                $image['src'] = ImageService::convertToWebP(
-                    $image['absolute'],
-                    ImageService::replaceExtension($image['absolute'], 'webp')
-                );
+                $webpPath = ImageService::replaceExtension($localPath, 'webp');
+                if (!is_file($webpPath))
+                    return $proxyUrl;
+                $localPath = $webpPath;
             }
 
-            $image['src'] = str_replace(Helper::getNormDocRoot(), '/', $image['src']);
-            return $image;
+            // All versions present → direct local URL, no proxy
+            $src = str_replace(Helper::getNormDocRoot(), '/', $localPath);
+            return ['src' => $src, 'absolute' => $localPath, 'recreate' => false];
         }));
     }
 

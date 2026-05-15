@@ -1,11 +1,15 @@
 <?php
 namespace Vinou\SiteBuilder\Processors;
 
+use \Vinou\ApiConnector\Api;
+use \Vinou\ApiConnector\FileHandler\Images;
+use \Vinou\ApiConnector\FileHandler\Pdf;
 use \Vinou\ApiConnector\Services\ServiceLocator;
 use \Vinou\ApiConnector\Session\Session;
 use \Vinou\ApiConnector\Tools\Helper;
 use \Vinou\ApiConnector\Tools\Redirect;
 use \Vinou\SiteBuilder\Router\DynamicRoutes;
+use \Vinou\SiteBuilder\Tools\ImageService;
 use \Symfony\Component\Yaml\Yaml;
 
 /**
@@ -273,8 +277,6 @@ class Admin implements ProcessorInterface {
             $name = 'settings';
 
         $message = null;
-        if ($name === 'system' && ($_GET['action'] ?? '') === 'clearCache')
-            $message = $this->clearCache($_GET['type'] ?? '');
 
         $flash  = $this->popFlash();
         $system = $this->settingsService->get('system') ?? [];
@@ -1165,6 +1167,113 @@ class Admin implements ProcessorInterface {
         }
         usort($packages, fn($a, $b) => strcmp($a['name'], $b['name']));
         return $packages;
+    }
+
+    /**
+     * Fragment endpoint for in-place cache actions (clear + warmup).
+     * Returns a minimal array rendered by Admin/Fragment/CacheResult.twig.
+     *
+     * @return array{message: string, error: bool}
+     */
+    public function cacheAction(): array {
+        if (!$this->isAuthenticated())
+            return ['message' => 'Nicht authentifiziert.', 'error' => true];
+
+        $action  = $_GET['action'] ?? '';
+        $message = match ($action) {
+            'clearImages'    => $this->clearCache('Images'),
+            'clearInstagram' => $this->clearCache('Instagram'),
+            'clearPdf'       => $this->clearCache('PDF'),
+            'warmupImages'   => $this->warmupImages(),
+            'warmupPdf'      => $this->warmupPdfs(),
+            default          => 'Unbekannte Aktion: ' . htmlspecialchars($action),
+        };
+
+        return ['message' => $message, 'error' => str_starts_with($message, 'Fehler')];
+    }
+
+    private function buildApi(): Api|string {
+        $vinou  = $this->settingsService->get('vinou') ?? [];
+        $token  = $vinou['token']  ?? null;
+        $authid = $vinou['authid'] ?? null;
+
+        if (!$token || !$authid)
+            return 'Fehler: Vinou-API-Zugangsdaten nicht konfiguriert.';
+
+        set_time_limit(120);
+        $api = new Api($token, $authid);
+
+        if (!$api->connected)
+            return 'Fehler: Keine Verbindung zur Vinou-API.';
+
+        return $api;
+    }
+
+    private function warmupImages(): string {
+        $api = $this->buildApi();
+        if (is_string($api)) return $api;
+
+        $system = $this->settingsService->get('system') ?? [];
+
+        $winesResult    = $api->getWinesAll(['pageSize' => 500]);
+        $bundlesResult  = $api->getBundlesAll(['pageSize' => 500]);
+        $productsResult = $api->getProductsAll(['pageSize' => 500]);
+
+        $wines    = is_array($winesResult['wines']  ?? null) ? $winesResult['wines']  : (is_array($winesResult)    ? $winesResult    : []);
+        $bundles  = is_array($bundlesResult['data'] ?? null) ? $bundlesResult['data'] : (is_array($bundlesResult)  ? $bundlesResult  : []);
+        $products = is_array($productsResult)                 ? $productsResult        : [];
+
+        $count  = 0;
+        $errors = 0;
+        $settingsArr = ['system' => $system];
+
+        foreach (array_merge($wines, $bundles, $products) as $item) {
+            $src = $item['image'] ?? null;
+            if (empty($src)) continue;
+
+            $result = Images::storeApiImage($src, $item['chstamp'] ?? null);
+
+            if (isset($result['absolute']) && is_file($result['absolute'])) {
+                $ext = strtolower(pathinfo($result['absolute'], PATHINFO_EXTENSION));
+                if (ImageService::isWebPAllowed($settingsArr)
+                    && ImageService::checkWebPEnvironment()
+                    && in_array($ext, ['jpg', 'jpeg', 'png', 'gif'])
+                ) {
+                    $webpPath = ImageService::replaceExtension($result['absolute'], 'webp');
+                    if (!is_file($webpPath))
+                        ImageService::convertToWebP($result['absolute'], $webpPath);
+                }
+                $count++;
+            } else {
+                $errors++;
+            }
+        }
+
+        $msg = 'Bildcache: ' . $count . ' ' . ($count === 1 ? 'Bild' : 'Bilder') . ' gecached';
+        if ($errors > 0) $msg .= ', ' . $errors . ' Fehler';
+        return $msg . '.';
+    }
+
+    private function warmupPdfs(): string {
+        $api = $this->buildApi();
+        if (is_string($api)) return $api;
+
+        $winesResult = $api->getWinesAll(['pageSize' => 500]);
+        $wines = is_array($winesResult['wines'] ?? null) ? $winesResult['wines'] : (is_array($winesResult) ? $winesResult : []);
+
+        $count  = 0;
+        $errors = 0;
+
+        foreach ($wines as $wine) {
+            if (empty($wine['pdf'])) continue;
+            $src    = '/PDF/' . $wine['id'] . '/' . $wine['pdf'];
+            $result = Pdf::storeApiPDF($src, $wine['chstamp'] ?? null);
+            !empty($result['src']) ? $count++ : $errors++;
+        }
+
+        $msg = 'PDF-Cache: ' . $count . ' ' . ($count === 1 ? 'PDF' : 'PDFs') . ' gecached';
+        if ($errors > 0) $msg .= ', ' . $errors . ' Fehler';
+        return $msg . '.';
     }
 
     private function clearCache(string $type): string {

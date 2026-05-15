@@ -18,6 +18,7 @@ use \Vinou\SiteBuilder\Processors\Instagram;
 use \Vinou\SiteBuilder\Processors\Mailer;
 use \Vinou\SiteBuilder\Processors\Shop;
 use \Vinou\SiteBuilder\Processors\Sitemap;
+use \Vinou\SiteBuilder\Tools\ImageService;
 
 /**
  * Application bootstrap for SiteBuilder-based projects.
@@ -88,6 +89,7 @@ class Site {
             $this->routeConfig->setAdditionalContent($additionalContent);
 
         $this->loadAdminPanel();
+        $this->registerImageProxy();
         $this->routeConfig->init();
         $this->router->run();
     }
@@ -203,6 +205,35 @@ class Site {
         $this->render->loadProcessor('instagram', new Instagram());
         $this->render->loadProcessor('sitemap',   new Sitemap($this->routeConfig, $this->render->api));
         $this->render->loadProcessor('formatter', new Formatter());
+    }
+
+    /**
+     * Registers the /image-proxy route for on-demand image caching.
+     *
+     * The |image Twig filter emits /image-proxy?src=...&chstamp=... URLs instead
+     * of downloading images during page rendering. This handler downloads the image
+     * from the Vinou API on first request, caches it locally, and serves it with
+     * long-lived cache headers. Subsequent requests are served directly from cache.
+     *
+     * @return void
+     */
+    private function registerImageProxy(): void {
+        $settings = ['system' => $this->settingsService->get('system') ?? []];
+        $this->router->get('/image-proxy', function() use ($settings) {
+            $src      = $_GET['src'] ?? '';
+            $chstamp  = $_GET['chstamp'] ?? 'now';
+            $dimRaw   = $_GET['dim'] ?? null;
+            $dimension = null;
+            if ($dimRaw !== null) {
+                if (str_contains($dimRaw, 'x')) {
+                    [$w, $h]   = explode('x', $dimRaw, 2);
+                    $dimension = [(int)$w, (int)$h];
+                } else {
+                    $dimension = (int)$dimRaw;
+                }
+            }
+            ImageService::serveProxy($src, $chstamp, $dimension, $settings);
+        });
     }
 
     /**
