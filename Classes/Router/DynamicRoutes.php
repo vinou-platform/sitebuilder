@@ -238,7 +238,7 @@ class DynamicRoutes {
         if (!is_file($file))
             return;
 
-        $newRoutes = Yaml::parseFile($file);
+        $newRoutes = Yaml::parseFile($file) ?? [];
 
         foreach ($newRoutes as $pattern => &$options) {
             if (isset($options['extend']) && $options['extend'] === true && isset($this->configuration[$pattern])) {

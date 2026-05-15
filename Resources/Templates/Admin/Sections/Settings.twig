@@ -1,7 +1,7 @@
 {% macro renderTree(data, prefix, depth, projectPaths) %}
   {% import _self as macros %}
   {% set depth = depth is defined ? depth : 0 %}
-  {% for key, value in data %}
+  {% for key, value in data|ksort %}
     {% set path = prefix ? prefix ~ '.' ~ key : key %}
     {% if value is iterable %}
       <div class="stree-group stree-d{{ depth < 3 ? depth : 3 }}">
@@ -115,7 +115,7 @@
 
 <style>
 /* ── Base ── */
-.stree-root { font-size: 13px; line-height: 1.5; padding: 4px 0; }
+.stree-root { font-size: 13px; line-height: 1.5; padding: 8px 12px 6px; }
 
 /* ── Group (object / array) ── */
 .stree-group { margin: 2px 0; }

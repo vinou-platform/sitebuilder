@@ -53,11 +53,11 @@ class Admin implements ProcessorInterface {
         $system    = $this->settingsService->get('system') ?? [];
         $csrfToken = $this->getCsrfToken();
 
-        if (!isset($system['password']))
+        $multiUser = !empty($system['users']) && is_array($system['users']);
+
+        if (!isset($system['password']) && !$multiUser)
             return ['authenticated' => false, 'step' => 'password', 'version' => $this->getVersion(),
                     'error' => 'Kein Admin-Passwort in system.password gesetzt.', 'csrfToken' => $csrfToken];
-
-        $multiUser = !empty($system['users']) && is_array($system['users']);
 
         if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['password'])) {
             if (!$this->verifyCsrfToken())
@@ -1221,7 +1221,7 @@ class Admin implements ProcessorInterface {
             $out[$source] = ['type' => 'redirect', 'redirect' => $r['redirect'], 'method' => $r['method'] ?? 'get'];
         }
         $file = Helper::getNormDocRoot() . VINOU_CONFIG_DIR . 'redirects.yml';
-        file_put_contents($file, empty($out) ? '' : Yaml::dump($out, 3, 2));
+        file_put_contents($file, empty($out) ? "{}\n" : Yaml::dump($out, 3, 2));
     }
 
     // ─────────────────────── Array utilities ───────────────────────
