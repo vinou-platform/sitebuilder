@@ -1,0 +1,344 @@
+{% if section.flash is defined and section.flash %}
+  <div class="alert alert-{{ section.flash.type == 'error' ? 'error' : 'success' }}">
+    {{ section.flash.message }}
+  </div>
+{% endif %}
+
+<div class="content-header">
+  <h2>Benutzer</h2>
+  <span class="subtitle">Admin-Logins &amp; Zwei-Faktor-Authentifizierung</span>
+</div>
+
+{% if section.users is defined and section.users|length > 0 %}
+<div class="card">
+  <div class="card-header">Registrierte Benutzer ({{ section.users|length }})</div>
+  <div class="card-body" style="padding:0">
+    <table class="users-table">
+      <thead>
+        <tr>
+          <th>E-Mail</th>
+          <th>2FA</th>
+          <th></th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for user in section.users %}
+        <tr class="user-row">
+          <td>
+            <i class="fa-regular fa-user" style="color:#bbb;margin-right:8px"></i>
+            {{ user.email }}
+          </td>
+          <td>
+            {% if user.totpCount > 0 %}
+              <span class="badge badge-2fa-ok">
+                <i class="fa-solid fa-shield-halved" style="font-size:0.7rem;margin-right:3px"></i>{{ user.totpCount }} App{{ user.totpCount != 1 ? 's' : '' }}
+              </span>
+            {% else %}
+              <span class="badge badge-2fa-none">Kein 2FA</span>
+            {% endif %}
+          </td>
+          <td class="users-action">
+            <button type="button" class="users-edit-btn" onclick="toggleUserEdit({{ loop.index }})" title="Bearbeiten">
+              <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5">
+                <path d="M11.5 2.5l2 2-8 8-2.5.5.5-2.5 8-8z"/>
+                <path d="M9.5 4.5l2 2"/>
+              </svg>
+            </button>
+            {% if section.users|length > 1 %}
+            <form hx-post="/system/users/delete"
+                  hx-target="#section-content"
+                  hx-select="#section-content"
+                  hx-confirm="Benutzer '{{ user.email }}' wirklich löschen?">
+              <input type="hidden" name="email" value="{{ user.email }}">
+              <button type="submit" class="users-del-btn" title="Löschen">
+                <svg viewBox="0 0 14 16" fill="none" stroke="currentColor" stroke-width="1.5">
+                  <path d="M1.5 4.5h11M5 4.5V3h4v1.5M3 4.5l.8 9h6.4l.8-9"/>
+                </svg>
+              </button>
+            </form>
+            {% endif %}
+          </td>
+        </tr>
+        <tr class="user-edit-row" id="user-edit-{{ loop.index }}" style="display:none">
+          <td colspan="3" style="padding:0.75rem 1rem 1rem;background:#fafafa;border-top:1px solid #f0e8e8">
+            <form hx-post="/system/users/update"
+                  hx-target="#section-content"
+                  hx-select="#section-content">
+              <input type="hidden" name="original_email" value="{{ user.email }}">
+              <div class="users-form-grid" style="margin-bottom:0.75rem">
+                <div class="form-group">
+                  <label>E-Mail</label>
+                  <input type="email" name="email" value="{{ user.email }}" required autocomplete="off">
+                </div>
+                <div class="form-group">
+                  <label>Neues Passwort <span style="font-weight:400;color:#aaa;font-style:normal">(leer = unverändert)</span></label>
+                  <input type="password" name="password" autocomplete="new-password" placeholder="••••••••••">
+                </div>
+                <div class="form-group">
+                  <label>Passwort bestätigen</label>
+                  <input type="password" name="password_confirm" autocomplete="new-password" placeholder="••••••••••">
+                </div>
+              </div>
+              <div style="display:flex;gap:0.5rem">
+                <button type="submit" class="btn btn-primary" style="padding:0.4rem 1rem;font-size:0.8125rem">Speichern</button>
+                <button type="button" class="btn" onclick="toggleUserEdit({{ loop.index }})"
+                        style="padding:0.4rem 1rem;font-size:0.8125rem;background:#f5f5f5;color:#555;border:1px solid #e0e0e0">Abbrechen</button>
+              </div>
+            </form>
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% else %}
+<div class="card">
+  <div class="card-body" style="padding:2rem 1.5rem;color:#999;font-size:0.875rem">
+    <p>Noch kein Benutzer angelegt. Nach dem ersten Anlegen erscheint beim Login ein E-Mail-Feld.</p>
+    <p style="margin-top:0.5rem">Das bisherige <code>system.password</code> bleibt als Fallback aktiv, solange keine Benutzer eingetragen sind.</p>
+  </div>
+</div>
+{% endif %}
+
+<div class="card">
+  <div class="card-header">Neuen Benutzer hinzufügen</div>
+  <div class="card-body">
+    <form hx-post="/system/users/save"
+          hx-target="#section-content"
+          hx-select="#section-content">
+      <div class="users-form-grid">
+        <div class="form-group">
+          <label for="user_email">E-Mail</label>
+          <input type="email" id="user_email" name="email"
+                 placeholder="name@domain.de" autocomplete="off">
+        </div>
+        <div class="form-group">
+          <label for="user_pw">Passwort <span style="font-weight:400;color:#aaa;text-transform:none;font-style:normal">(min. 10 Zeichen)</span></label>
+          <input type="password" id="user_pw" name="password"
+                 autocomplete="new-password" placeholder="••••••••••">
+        </div>
+        <div class="form-group">
+          <label for="user_pw2">Passwort bestätigen</label>
+          <input type="password" id="user_pw2" name="password_confirm"
+                 autocomplete="new-password" placeholder="••••••••••">
+        </div>
+      </div>
+      <button type="submit" class="btn btn-primary" style="margin-top:0.25rem">
+        <i class="fa-solid fa-plus"></i> Benutzer hinzufügen
+      </button>
+    </form>
+  </div>
+</div>
+
+{# ── 2FA-Verwaltung für den eingeloggten User ── #}
+{% if section.currentEmail is defined and section.currentEmail %}
+<div class="card" style="margin-top:1.5rem">
+  <div class="card-header" style="display:flex;align-items:center;gap:8px">
+    Deine 2FA-Apps
+    <span style="font-size:0.75rem;color:#888;font-weight:400">({{ section.currentEmail }})</span>
+    {% if section.totpEnabled %}
+      <span class="badge badge-2fa-ok" style="margin-left:auto">
+        <i class="fa-solid fa-shield-halved" style="font-size:0.7rem;margin-right:3px"></i>Aktiv
+      </span>
+    {% endif %}
+  </div>
+
+  {% if section.totpEnabled %}
+  <div class="card-body" style="padding:0">
+    <table class="totp-table">
+      <thead>
+        <tr><th>App / Gerät</th><th></th></tr>
+      </thead>
+      <tbody>
+        {% for app in section.totpApps %}
+        <tr>
+          <td>
+            <i class="fa-solid fa-mobile-screen-button" style="color:#bbb;margin-right:8px"></i>
+            {{ app.name }}
+          </td>
+          <td class="totp-app-action">
+            <form hx-post="/system/totp/disable"
+                  hx-target="#section-content"
+                  hx-select="#section-content"
+                  hx-confirm="\"{{ app.name }}\" als 2FA-Gerät entfernen?">
+              <input type="hidden" name="totp_index" value="{{ app.index }}">
+              <button type="submit" class="totp-remove-btn" title="Entfernen">
+                <svg viewBox="0 0 14 16" fill="none" stroke="currentColor" stroke-width="1.5">
+                  <path d="M1.5 4.5h11M5 4.5V3h4v1.5M3 4.5l.8 9h6.4l.8-9"/>
+                </svg>
+              </button>
+            </form>
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {% endif %}
+
+  <div class="card-body" style="{{ section.totpEnabled ? 'border-top:1px solid #f5ecec;' : '' }}">
+    {% if not section.totpEnabled %}
+    <p style="margin-bottom:1.25rem;color:#666;font-size:0.875rem">
+      Noch kein 2FA eingerichtet. Mit einem TOTP-Authenticator (z.&nbsp;B. Google Authenticator, Aegis, Bitwarden)
+      wird beim Login nach dem Passwort ein zweiter Code verlangt.
+    </p>
+    {% endif %}
+    <div class="totp-setup-grid">
+      <div class="totp-qr-wrap">
+        <div id="totp-qrcode"></div>
+      </div>
+      <div class="totp-setup-form-wrap">
+        <p style="font-size:0.8125rem;color:#888;margin-bottom:0.75rem">
+          QR-Code scannen oder Secret manuell eintragen:
+        </p>
+        <div class="totp-secret-box">
+          <code id="totpSecret">{{ section.newTotpSecret }}</code>
+          <button type="button" class="btn btn-ghost btn-sm" onclick="totpCopySecret()">
+            <i class="fa-regular fa-copy"></i> Kopieren
+          </button>
+        </div>
+        <form hx-post="/system/totp/setup"
+              hx-target="#section-content"
+              hx-select="#section-content"
+              style="margin-top:1.25rem">
+          <input type="hidden" name="totp_secret" value="{{ section.newTotpSecret }}">
+          <div class="totp-form-row">
+            <div class="form-group" style="flex:1;min-width:140px">
+              <label for="totp_app_name">Name / Gerät</label>
+              <input type="text" id="totp_app_name" name="app_name"
+                     placeholder="z. B. iPhone" autocomplete="off" maxlength="40">
+            </div>
+            <div class="form-group" style="width:140px;flex-shrink:0">
+              <label for="otp_code_add">Bestätigungscode</label>
+              <input type="text" id="otp_code_add" name="otp_code"
+                     autocomplete="one-time-code" inputmode="numeric"
+                     maxlength="6" placeholder="000000">
+            </div>
+          </div>
+          <button type="submit" class="btn btn-primary" style="margin-top:0.5rem">
+            <i class="fa-solid fa-plus"></i> App registrieren
+          </button>
+        </form>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+(function() {
+  var el = document.getElementById('totp-qrcode');
+  if (!el || typeof QRCode === 'undefined') return;
+  new QRCode(el, {
+    text: '{{ section.totpOtpUri|escape('js') }}',
+    width: 160, height: 160,
+    colorDark: '#222222', colorLight: '#ffffff',
+    correctLevel: QRCode.CorrectLevel.M
+  });
+})();
+function totpCopySecret() {
+  var el = document.getElementById('totpSecret');
+  if (el && navigator.clipboard) navigator.clipboard.writeText(el.textContent.trim());
+}
+</script>
+{% endif %}
+
+<script>
+function toggleUserEdit(idx) {
+  var row = document.getElementById('user-edit-' + idx);
+  if (row) row.style.display = row.style.display === 'none' ? 'table-row' : 'none';
+}
+</script>
+
+<style>
+.users-table {
+  width: 100%;
+  border-collapse: collapse;
+}
+.users-table th {
+  text-align: left;
+  padding: 9px 16px;
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: .5px;
+  color: #640000;
+  font-weight: 700;
+  border-bottom: 2px solid #e0d0d0;
+  background: #fdf8f8;
+}
+.users-table td {
+  padding: 12px 16px;
+  border-bottom: 1px solid #f5ecec;
+  font-size: 0.875rem;
+  vertical-align: middle;
+}
+.users-table tr.user-row:last-of-type td { border-bottom: none; }
+.users-table tr.user-edit-row:last-child td { border-bottom: none; }
+.users-action { width: 72px; text-align: right; white-space: nowrap; }
+.users-action form { display: inline; }
+.users-edit-btn, .users-del-btn {
+  width: 28px; height: 28px;
+  display: inline-flex; align-items: center; justify-content: center;
+  border: none; background: none; cursor: pointer; border-radius: 4px;
+  color: #ccc; transition: color .1s, background .1s;
+}
+.users-edit-btn svg { width: 13px; height: 13px; }
+.users-del-btn svg { width: 13px; height: 15px; }
+.users-edit-btn:hover { color: #555; background: #f0f0f0; }
+.users-del-btn:hover { color: #c0392b; background: #fdf5f5; }
+.badge-2fa-ok {
+  display: inline-flex; align-items: center;
+  background: #edf7ed; color: #2e7d32;
+  border: 1px solid #c3e6c4; border-radius: 4px;
+  padding: 2px 7px; font-size: 0.75rem; font-weight: 600;
+}
+.badge-2fa-none {
+  display: inline-block;
+  background: #fef6e4; color: #9e6c00;
+  border: 1px solid #f5d77a; border-radius: 4px;
+  padding: 2px 7px; font-size: 0.75rem; font-weight: 600;
+}
+.users-form-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+  gap: 0 1.25rem;
+}
+.totp-table { width: 100%; border-collapse: collapse; }
+.totp-table th {
+  text-align: left; padding: 9px 16px; font-size: 11px;
+  text-transform: uppercase; letter-spacing: .5px; color: #640000;
+  font-weight: 700; border-bottom: 2px solid #e0d0d0; background: #fdf8f8;
+}
+.totp-table td {
+  padding: 12px 16px; border-bottom: 1px solid #f5ecec;
+  font-size: 0.875rem; vertical-align: middle;
+}
+.totp-table tr:last-child td { border-bottom: none; }
+.totp-app-action { width: 48px; text-align: right; }
+.totp-app-action form { display: inline; }
+.totp-remove-btn {
+  width: 28px; height: 28px;
+  display: inline-flex; align-items: center; justify-content: center;
+  border: none; background: none; cursor: pointer; border-radius: 4px;
+  color: #ccc; transition: color .1s, background .1s;
+}
+.totp-remove-btn svg { width: 13px; height: 15px; }
+.totp-remove-btn:hover { color: #c0392b; background: #fdf5f5; }
+.totp-setup-grid { display: flex; gap: 2rem; align-items: flex-start; flex-wrap: wrap; }
+.totp-qr-wrap {
+  flex-shrink: 0; background: #fff; border: 1px solid #e0d0d0;
+  border-radius: 8px; padding: 12px; line-height: 0;
+}
+.totp-setup-form-wrap { flex: 1; min-width: 260px; }
+.totp-secret-box {
+  display: flex; align-items: center; gap: 8px; flex-wrap: wrap;
+  background: #fdf8f8; border: 1px solid #e0d0d0;
+  border-radius: 5px; padding: 10px 14px;
+}
+.totp-secret-box code {
+  font-family: 'SFMono-Regular', Consolas, monospace; font-size: 0.8125rem;
+  letter-spacing: .08em; color: #222; flex: 1; min-width: 0; word-break: break-all;
+}
+.totp-form-row { display: flex; gap: 12px; flex-wrap: wrap; align-items: flex-end; }
+.btn-sm { font-size: 0.75rem; padding: 4px 10px; }
+</style>

@@ -39,6 +39,76 @@ system/settings/add:
       function: addSetting
       forceLoadAll: true
 
+system/totp:
+  template: 'Admin/Panel.twig'
+  method: all
+  excludeContent: true
+  dataProcessing:
+    admin:
+      processor: admin
+      function: verifyTotpStep
+      forceLoadAll: true
+
+system/totp/setup:
+  template: 'Admin/Panel.twig'
+  method: post
+  excludeContent: true
+  dataProcessing:
+    admin:
+      processor: admin
+      function: setupTotp
+      forceLoadAll: true
+
+system/totp/disable:
+  template: 'Admin/Panel.twig'
+  method: post
+  excludeContent: true
+  dataProcessing:
+    admin:
+      processor: admin
+      function: disableTotp
+      forceLoadAll: true
+
+system/users/save:
+  template: 'Admin/Panel.twig'
+  method: post
+  excludeContent: true
+  dataProcessing:
+    admin:
+      processor: admin
+      function: saveUser
+      forceLoadAll: true
+
+system/users/delete:
+  template: 'Admin/Panel.twig'
+  method: post
+  excludeContent: true
+  dataProcessing:
+    admin:
+      processor: admin
+      function: deleteUser
+      forceLoadAll: true
+
+system/totp/first-setup:
+  template: 'Admin/Panel.twig'
+  method: all
+  excludeContent: true
+  dataProcessing:
+    admin:
+      processor: admin
+      function: firstTotpSetup
+      forceLoadAll: true
+
+system/users/update:
+  template: 'Admin/Panel.twig'
+  method: post
+  excludeContent: true
+  dataProcessing:
+    admin:
+      processor: admin
+      function: updateUser
+      forceLoadAll: true
+
 system/redirects/save:
   template: 'Admin/Panel.twig'
   method: post

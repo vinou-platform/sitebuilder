@@ -1,8 +1,10 @@
 <div class="content-header">
   <h2>Umgebung</h2>
-  <span class="subtitle">PHP-Extensions und Systemvoraussetzungen</span>
+  <span class="subtitle">PHP-Extensions, Systemvoraussetzungen und Vinou-Pakete</span>
 </div>
+
 <div class="card">
+  <div class="card-header">PHP &amp; System</div>
   <div class="card-body" style="padding:0;">
     <table class="env-table">
       <thead>
@@ -29,3 +31,27 @@
     </table>
   </div>
 </div>
+
+{% if section.vinouPackages is defined and section.vinouPackages|length > 0 %}
+<div class="card">
+  <div class="card-header">Vinou-Pakete</div>
+  <div class="card-body" style="padding:0;">
+    <table class="env-table">
+      <thead>
+        <tr>
+          <th>Paket</th>
+          <th>Version</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for pkg in section.vinouPackages %}
+          <tr>
+            <td style="font-family:'SFMono-Regular',Consolas,monospace;font-size:0.8125rem;">{{ pkg.name }}</td>
+            <td><span class="badge badge-get" style="font-size:0.75rem">{{ pkg.version }}</span></td>
+          </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endif %}

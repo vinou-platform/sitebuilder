@@ -15,7 +15,10 @@
   }
 }
 
-input[type=password] {
+input[type=text],
+input[type=password],
+input[type=number],
+input[type=email] {
   width: 100%;
   padding: 0.625rem 0.875rem;
   border: 1px solid $border;
@@ -31,5 +34,9 @@ input[type=password] {
     border-color: $accent;
     box-shadow: 0 0 0 3px rgba(219, 91, 20, .12);
     background: $white;
+  }
+
+  &::placeholder {
+    color: #bbb;
   }
 }

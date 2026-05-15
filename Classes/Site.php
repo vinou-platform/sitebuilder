@@ -206,7 +206,7 @@ class Site {
     }
 
     /**
-     * Bootstraps the admin panel when system.password is configured.
+     * Bootstraps the admin panel when system.password or system.users is configured.
      *
      * Registers the Admin processor and loads the system route definitions from
      * Configuration/Routes/Admin/system.yml into the route configuration so they
@@ -218,7 +218,7 @@ class Site {
     private function loadAdminPanel(): void {
         $system = $this->settingsService->get('system') ?? [];
 
-        if (!isset($system['password']))
+        if (!isset($system['password']) && empty($system['users']))
             return;
 
         $admin = new Admin($this->routeConfig);

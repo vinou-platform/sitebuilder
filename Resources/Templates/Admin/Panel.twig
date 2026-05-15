@@ -3,11 +3,19 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="csrf-token" content="{{ admin.csrfToken ?? '' }}">
 <title>Vinou SiteBuilder - Admin Panel</title>
 <link rel="stylesheet" href="/system/assets/vendor/source-sans-3/source-sans-3.css">
 <link rel="stylesheet" href="/system/assets/vendor/fontawesome/css/all.min.css">
 <link rel="stylesheet" href="/system/assets/styles/admin.css">
 <script src="/system/assets/vendor/htmx/htmx.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/qrcodejs@1.0.0/qrcode.min.js"></script>
+<script>
+document.addEventListener('htmx:configRequest', function(evt) {
+  var meta = document.querySelector('meta[name="csrf-token"]');
+  if (meta) evt.detail.headers['X-CSRF-Token'] = meta.getAttribute('content');
+});
+</script>
 </head>
 <body>
 
@@ -23,6 +31,78 @@
       </div>
     </div>
 
+    {% if admin.step is defined and admin.step == 'totp_setup' %}
+
+    <div class="login-card-right">
+      <p class="login-overline">Vinou SiteBuilder</p>
+      <h1 class="login-heading">2FA einrichten</h1>
+      <p class="login-sub">Scanne den QR-Code und bestätige mit dem Code aus deiner App.</p>
+
+      {% if admin.error is defined and admin.error %}
+        <div class="alert alert-error">{{ admin.error }}</div>
+      {% endif %}
+
+      <div id="qrcode-setup" style="margin:1rem 0;display:flex;justify-content:center;"></div>
+      <p style="font-family:monospace;font-size:0.8rem;text-align:center;word-break:break-all;color:#888;margin-bottom:1rem">{{ admin.newTotpSecret }}</p>
+
+      <form method="post" action="/system/totp/first-setup">
+        <input type="hidden" name="_csrf_token" value="{{ admin.csrfToken }}">
+        <input type="hidden" name="totp_secret" value="{{ admin.newTotpSecret }}">
+        <div class="form-group">
+          <label for="app_name_fs">App-Name <span style="font-weight:400;color:#aaa">(optional)</span></label>
+          <input type="text" id="app_name_fs" name="app_name" placeholder="Mein iPhone" autocomplete="off">
+        </div>
+        <div class="form-group">
+          <label for="otp_code_fs">Bestätigungscode</label>
+          <input type="text" id="otp_code_fs" name="otp_code" autofocus
+                 autocomplete="one-time-code" inputmode="numeric"
+                 maxlength="6" placeholder="000000">
+        </div>
+        <button type="submit" class="btn btn-primary btn-block">2FA aktivieren &amp; einloggen</button>
+      </form>
+
+      {% if admin.version is defined %}
+        <p class="login-version">SiteBuilder {{ admin.version }}</p>
+      {% endif %}
+    </div>
+
+    <script>
+    new QRCode(document.getElementById('qrcode-setup'), {
+      text: {{ admin.totpOtpUri|json_encode|raw }},
+      width: 176, height: 176, colorDark: '#222', colorLight: '#fff',
+      correctLevel: QRCode.CorrectLevel.M
+    });
+    </script>
+
+    {% elseif admin.step is defined and admin.step == 'totp' %}
+
+    <div class="login-card-right">
+      <p class="login-overline">Vinou SiteBuilder</p>
+      <h1 class="login-heading">Zwei-Faktor</h1>
+      <p class="login-sub">Gib den Code aus deiner Authenticator-App ein.</p>
+
+      {% if admin.error is defined and admin.error %}
+        <div class="alert alert-error">{{ admin.error }}</div>
+      {% endif %}
+
+      <form method="post" action="/system/totp">
+        <input type="hidden" name="_csrf_token" value="{{ admin.csrfToken }}">
+        <div class="form-group">
+          <label for="otp_code">Authenticator-Code</label>
+          <input type="text" id="otp_code" name="otp_code" autofocus
+                 autocomplete="one-time-code" inputmode="numeric"
+                 maxlength="6" placeholder="000000">
+        </div>
+        <button type="submit" class="btn btn-primary btn-block">Verifizieren</button>
+      </form>
+
+      {% if admin.version is defined %}
+        <p class="login-version">SiteBuilder {{ admin.version }}</p>
+      {% endif %}
+    </div>
+
+    {% else %}
+
     <div class="login-card-right">
       <p class="login-overline">Vinou SiteBuilder</p>
       <h1 class="login-heading">Admin Panel</h1>
@@ -33,10 +113,22 @@
       {% endif %}
 
       <form method="post" action="/system">
-        <div class="form-group">
-          <label for="password">Passwort</label>
-          <input type="password" id="password" name="password" autofocus autocomplete="current-password" placeholder="••••••••">
-        </div>
+        <input type="hidden" name="_csrf_token" value="{{ admin.csrfToken }}">
+        {% if admin.multiUser is defined and admin.multiUser %}
+          <div class="form-group">
+            <label for="email">E-Mail</label>
+            <input type="email" id="email" name="email" autofocus autocomplete="username" placeholder="name@domain.de">
+          </div>
+          <div class="form-group">
+            <label for="password">Passwort</label>
+            <input type="password" id="password" name="password" autocomplete="current-password" placeholder="••••••••">
+          </div>
+        {% else %}
+          <div class="form-group">
+            <label for="password">Passwort</label>
+            <input type="password" id="password" name="password" autofocus autocomplete="current-password" placeholder="••••••••">
+          </div>
+        {% endif %}
         <button type="submit" class="btn btn-primary btn-block">Anmelden</button>
       </form>
 
@@ -44,6 +136,8 @@
         <p class="login-version">SiteBuilder {{ admin.version }}</p>
       {% endif %}
     </div>
+
+    {% endif %}
 
   </div>
 </div>
@@ -70,6 +164,14 @@
          hx-push-url="/system/settings"
          class="{{ admin.adminTab == 'settings' ? 'active' : '' }}">
         <i class="fa-solid fa-sliders nav-icon"></i> <span>Settings</span>
+      </a>
+      <a data-tab="users"
+         hx-get="/system/users"
+         hx-target="#section-content"
+         hx-select="#section-content"
+         hx-push-url="/system/users"
+         class="{{ admin.adminTab == 'users' ? 'active' : '' }}">
+        <i class="fa-solid fa-users nav-icon"></i> <span>Benutzer</span>
       </a>
       <a data-tab="redirects"
          hx-get="/system/redirects"
@@ -102,14 +204,6 @@
          hx-push-url="/system/system"
          class="{{ admin.adminTab == 'system' ? 'active' : '' }}">
         <i class="fa-solid fa-server nav-icon"></i> <span>System</span>
-      </a>
-      <a data-tab="environment"
-         hx-get="/system/environment"
-         hx-target="#section-content"
-         hx-select="#section-content"
-         hx-push-url="/system/environment"
-         class="{{ admin.adminTab == 'environment' ? 'active' : '' }}">
-        <i class="fa-solid fa-microchip nav-icon"></i> <span>Umgebung</span>
       </a>
     </nav>
 
