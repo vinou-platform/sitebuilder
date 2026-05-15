@@ -250,8 +250,10 @@ class Site {
                 exit;
             }
 
+            header_remove('Cache-Control');
+            header_remove('Pragma');
             header('Content-Type: ' . $types[$ext]);
-            header('Cache-Control: public, max-age=86400');
+            header('Cache-Control: public, max-age=86400, immutable');
             readfile($path);
             exit;
         });

@@ -932,7 +932,7 @@ class Admin implements ProcessorInterface {
 
     private function checkSmtp(string $host, int $port): bool {
         if (empty($host)) return false;
-        $connection = @fsockopen($host, $port, $errno, $errstr, 3);
+        $connection = @fsockopen($host, $port, $errno, $errstr, 1);
         if ($connection) { fclose($connection); return true; }
         return false;
     }

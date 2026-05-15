@@ -6,10 +6,11 @@
 <meta name="csrf-token" content="{{ admin.csrfToken ?? '' }}">
 <title>Vinou SiteBuilder - Admin Panel</title>
 <link rel="stylesheet" href="/system/assets/vendor/source-sans-3/source-sans-3.css">
-<link rel="stylesheet" href="/system/assets/vendor/fontawesome/css/all.min.css">
+<link rel="stylesheet" href="/system/assets/vendor/fontawesome/css/fontawesome.min.css">
+<link rel="stylesheet" href="/system/assets/vendor/fontawesome/css/solid.min.css">
 <link rel="stylesheet" href="/system/assets/styles/admin.css">
-<script src="/system/assets/vendor/htmx/htmx.min.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/qrcodejs@1.0.0/qrcode.min.js"></script>
+<script src="/system/assets/vendor/htmx/htmx.min.js" defer></script>
+<script src="/system/assets/vendor/qrcodejs/qrcode.min.js"></script>
 <script>
 document.addEventListener('htmx:configRequest', function(evt) {
   var meta = document.querySelector('meta[name="csrf-token"]');
