@@ -403,6 +403,155 @@ All filters are registered by `\Vinou\SiteBuilder\Tools\Render`.
 
 ---
 
+## Admin panel
+
+The SiteBuilder ships with a built-in admin panel at `/system`. It is activated automatically when the project settings contain admin credentials and provides a HTMX-driven single-page interface for managing settings, users, redirects, routes, mail configuration, and system state.
+
+### Activation
+
+`Site::loadAdminPanel()` registers the panel routes when **either** of the following keys is present in `config/settings.yml`:
+
+```yaml
+# Option A — legacy single-password (useful for initial bootstrap)
+system:
+  password: 'my-password'
+
+# Option B — multi-user (production)
+system:
+  users:
+    - email: admin@example.com
+      password: '$2y$10$…'   # bcrypt hash, auto-generated on first save via the panel
+```
+
+Both keys can coexist temporarily during the bootstrap process. Once `system.users` is populated, `system.password` can be removed.
+
+### Login flow
+
+**Single-password mode** (no `system.users`):
+1. Enter password.
+2. If system-level TOTP is configured (`system.totp_secrets`): redirect to `/system/totp`.
+3. Otherwise: panel access granted.
+
+**Multi-user mode** (`system.users` present):
+1. Enter email + password.
+2. Account has **no** `totp_secrets` → redirected to `/system/totp/first-setup` (forced; cannot be skipped).
+3. Account has `totp_secrets` → redirected to `/system/totp` (TOTP verification).
+4. Correct TOTP code → panel access granted.
+
+Session keys used during the flow:
+
+| Key | Value | Purpose |
+|:----|:------|:--------|
+| `vinou_admin_auth` | `true` | Full authentication complete |
+| `vinou_admin_pw_ok` | `true` | Password verified; awaiting TOTP |
+| `vinou_admin_user_email` | email string | Identifies which user is logging in |
+| `admin_csrf_token` | hex string | Per-session CSRF token |
+| `admin_login_attempts` | array | Brute-force counter and lockout timestamp |
+
+### Security
+
+| Feature | Implementation |
+|:--------|:---------------|
+| Password hashing | `password_hash(PASSWORD_BCRYPT)` — plaintext passwords in `settings.yml` are auto-upgraded to bcrypt on first successful login |
+| Brute-force protection | 5 failed attempts (password or TOTP) → 15-minute session lockout |
+| CSRF | Per-session token via `random_bytes(16)`; HTMX injects it as `X-CSRF-Token` header via `htmx:configRequest`; login forms use a hidden `_csrf_token` field |
+| TOTP 2FA | RFC 6238 native implementation — no external library; base32 decode, HMAC-SHA1, dynamic truncation, ±1 window for clock drift; multiple apps per user |
+
+### Bootstrap workflow for new projects
+
+1. Add `system.password: 'bootstrap'` to `config/settings.yml` to activate the panel.
+2. Log in (single-password mode, no email field shown).
+3. Open the **Benutzer** tab → create the first user (email + password).
+4. Log out, log in as the new user.
+5. The forced first-time 2FA screen appears — scan the QR code and enter the confirmation code.
+6. Delete `system.password` from `config/settings.yml`. The panel stays active because `system.users` is now populated.
+
+### URL structure
+
+| URL | Handler | Description |
+|:----|:--------|:------------|
+| `GET/POST /system` | `Admin::init()` | Login form or redirect to settings |
+| `GET /system?action=logout` | `Admin::init()` | Destroy session |
+| `POST /system/totp` | `Admin::verifyTotpStep()` | TOTP code verification |
+| `GET/POST /system/totp/first-setup` | `Admin::firstTotpSetup()` | Forced initial 2FA registration |
+| `POST /system/totp/setup` | `Admin::setupTotp()` | Add a 2FA app to the current user |
+| `POST /system/totp/disable` | `Admin::disableTotp()` | Remove a 2FA app from the current user |
+| `GET /system/settings` | `Admin::page()` | Settings editor |
+| `GET /system/users` | `Admin::page()` | User management + own 2FA apps |
+| `GET /system/redirects` | `Admin::page()` | Redirect management |
+| `GET /system/routes` | `Admin::page()` | Route overview |
+| `GET /system/mail` | `Admin::page()` | Mail configuration |
+| `GET /system/system` | `Admin::page()` | Cache management + PHP environment + Vinou packages |
+| `POST /system/users/save` | `Admin::saveUser()` | Create user |
+| `POST /system/users/update` | `Admin::updateUser()` | Update user email / password |
+| `POST /system/users/delete` | `Admin::deleteUser()` | Delete user |
+| `POST /system/settings/save` | `Admin::saveSetting()` | Save a setting value |
+| `POST /system/settings/delete` | `Admin::deleteSetting()` | Delete a setting key |
+| `POST /system/settings/add` | `Admin::addSetting()` | Append to a settings array |
+| `POST /system/redirects/save` | `Admin::saveRedirect()` | Save a redirect rule |
+| `POST /system/redirects/delete` | `Admin::deleteRedirect()` | Delete a redirect rule |
+| `GET /system/assets/{file}` | PHP closure | Static assets (CSS, JS) |
+
+### Panel tabs
+
+| Tab | URL | Content |
+|:----|:----|:--------|
+| Settings | `/system/settings` | Edit whitelisted settings keys (`additionalContent`, `settings`, `vinou`) |
+| Benutzer | `/system/users` | User list with edit/delete + own TOTP app management |
+| Redirects | `/system/redirects` | HTTP redirect rules from `config/redirects.yml` |
+| Routes | `/system/routes` | Loaded route configuration |
+| Mail | `/system/mail` | SMTP config + form definitions from `config/mail.yml` |
+| System | `/system/system` | Cache clearing + PHP/extension checks + installed Vinou packages |
+
+### Settings whitelist
+
+The Settings panel only displays and allows editing of keys listed in `SETTINGS_WHITELIST`:
+
+```php
+private const SETTINGS_WHITELIST = ['additionalContent', 'settings', 'vinou'];
+```
+
+All other top-level keys (`system`, `shop`, etc.) are never exposed or writable through the panel UI.
+
+### User data structure
+
+```yaml
+system:
+  users:
+    - email: admin@example.com
+      password: '$2y$10$…'           # bcrypt
+      totp_secrets:
+        - name: 'My iPhone'
+          secret: 'ABCDEFGHIJKLMNOP' # base32-encoded TOTP secret
+        - name: 'Backup key'
+          secret: 'QRSTUVWXYZ234567'
+```
+
+Each user manages their own `totp_secrets`. The system-level `totp_secrets` / `totp_secret` keys are only used in legacy single-password mode.
+
+### Template structure
+
+```
+Admin/Panel.twig           Shell: <head> with CSS, HTMX, qrcodejs; navigation; #section-content
+Admin/Sections/
+  Settings.twig            Settings editor (section.settings, section.projectPaths)
+  Users.twig               User list + edit forms + own TOTP management
+                           (section.users, section.currentEmail, section.totpApps, …)
+  Redirects.twig           Redirect CRUD (section.redirects)
+  Routes.twig              Route tree (section.routes)
+  Mail.twig                SMTP + form config (section.mailConfig)
+  System.twig              Cache cards + PHP checks + Vinou packages
+                           (section.environment, section.vinouPackages)
+```
+
+`qrcodejs` is loaded once in `Panel.twig`'s `<head>` to avoid HTMX script-loading race conditions.
+
+### Static assets
+
+CSS (`admin.css`) and JS (`htmx.min.js`) are served via a PHP closure from `vendor/vinou/site-builder/Resources/Public/`. SCSS source: `Resources/Sass/Admin/panel.scss`.
+
+---
+
 ## Provider
 
 This library is developed by Vinou GmbH.
