@@ -14,61 +14,89 @@
 </div>
 
 <div class="card">
-  <div class="card-header">Cache leeren</div>
+  <div class="card-header">Vinou API</div>
   <div class="card-body">
-    <div class="cache-grid">
-      {% for type, label in {'Images': 'Bilder-Cache', 'Instagram': 'Instagram-Cache', 'PDF': 'PDF-Cache'} %}
-        <div class="cache-card">
-          <h3>{{ label }}</h3>
-          <p>Cache/{{ type }}</p>
-          <button hx-get="/system/cache?action=clear{{ type }}"
-                  hx-target="#clear-{{ type|lower }}-result"
-                  hx-swap="innerHTML"
-                  hx-indicator="#clear-{{ type|lower }}-progress"
-                  hx-disabled-elt="this"
-                  class="btn btn-ghost btn-block">Leeren</button>
-          <div id="clear-{{ type|lower }}-progress" class="cache-progress">
-            <div class="cache-progress-bar"></div>
-          </div>
-          <div id="clear-{{ type|lower }}-result" class="cache-result-area"></div>
+    <div class="cache-grid cache-grid--api">
+      <div class="cache-card">
+        <h3>API-Verbindung</h3>
+        <p>Live-Verbindung zur Vinou-API prüfen und Session erneuern</p>
+        <button hx-get="/system/cache?action=testApi"
+                hx-target="#api-test-result"
+                hx-swap="innerHTML"
+                hx-indicator="#api-test-progress"
+                hx-disabled-elt="this"
+                class="btn btn-ghost btn-block">Verbindung prüfen</button>
+        <div id="api-test-progress" class="cache-progress">
+          <div class="cache-progress-bar"></div>
         </div>
-      {% endfor %}
+      </div>
+      <div id="api-test-result" class="cache-result-area cache-result-area--panel"></div>
     </div>
   </div>
 </div>
 
 <div class="card">
-  <div class="card-header">Cache Warm-up</div>
+  <div class="card-header">Cache</div>
   <div class="card-body">
     <div class="cache-grid">
+
       <div class="cache-card">
-        <h3>Bildcache aufwärmen</h3>
-        <p>Alle Produkt­bilder von der API laden, cachen und als WebP konvertieren</p>
+        <h3>Bilder-Cache</h3>
+        <p>Cache/Images</p>
+        <button hx-get="/system/cache?action=clearImages"
+                hx-target="#cache-images-result"
+                hx-swap="innerHTML"
+                hx-indicator="#cache-images-progress"
+                hx-disabled-elt="this"
+                class="btn btn-ghost btn-block">Leeren</button>
         <button hx-get="/system/cache?action=warmupImages"
-                hx-target="#warmup-img-result"
+                hx-target="#cache-images-result"
                 hx-swap="innerHTML"
-                hx-indicator="#warmup-img-progress"
+                hx-indicator="#cache-images-progress"
                 hx-disabled-elt="this"
-                class="btn btn-ghost btn-block">Starten</button>
-        <div id="warmup-img-progress" class="cache-progress">
+                class="btn btn-ghost btn-block" style="margin-top:0.375rem">Aufwärmen</button>
+        <div id="cache-images-progress" class="cache-progress">
           <div class="cache-progress-bar"></div>
         </div>
-        <div id="warmup-img-result" class="cache-result-area"></div>
+        <div id="cache-images-result" class="cache-result-area"></div>
       </div>
+
       <div class="cache-card">
-        <h3>PDF-Cache aufwärmen</h3>
-        <p>Alle Wein-Expertise-PDFs von der API laden und lokal cachen</p>
-        <button hx-get="/system/cache?action=warmupPdf"
-                hx-target="#warmup-pdf-result"
+        <h3>Instagram-Cache</h3>
+        <p>Cache/Instagram</p>
+        <button hx-get="/system/cache?action=clearInstagram"
+                hx-target="#cache-instagram-result"
                 hx-swap="innerHTML"
-                hx-indicator="#warmup-pdf-progress"
+                hx-indicator="#cache-instagram-progress"
                 hx-disabled-elt="this"
-                class="btn btn-ghost btn-block">Starten</button>
-        <div id="warmup-pdf-progress" class="cache-progress">
+                class="btn btn-ghost btn-block">Leeren</button>
+        <div id="cache-instagram-progress" class="cache-progress">
           <div class="cache-progress-bar"></div>
         </div>
-        <div id="warmup-pdf-result" class="cache-result-area"></div>
+        <div id="cache-instagram-result" class="cache-result-area"></div>
       </div>
+
+      <div class="cache-card">
+        <h3>PDF-Cache</h3>
+        <p>Cache/PDF</p>
+        <button hx-get="/system/cache?action=clearPdf"
+                hx-target="#cache-pdf-result"
+                hx-swap="innerHTML"
+                hx-indicator="#cache-pdf-progress"
+                hx-disabled-elt="this"
+                class="btn btn-ghost btn-block">Leeren</button>
+        <button hx-get="/system/cache?action=warmupPdf"
+                hx-target="#cache-pdf-result"
+                hx-swap="innerHTML"
+                hx-indicator="#cache-pdf-progress"
+                hx-disabled-elt="this"
+                class="btn btn-ghost btn-block" style="margin-top:0.375rem">Aufwärmen</button>
+        <div id="cache-pdf-progress" class="cache-progress">
+          <div class="cache-progress-bar"></div>
+        </div>
+        <div id="cache-pdf-result" class="cache-result-area"></div>
+      </div>
+
     </div>
   </div>
 </div>

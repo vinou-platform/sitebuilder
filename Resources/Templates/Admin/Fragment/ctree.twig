@@ -1,0 +1,36 @@
+{% macro renderTree(data, depth) %}
+  {% import _self as macros %}
+  {% set depth = depth is defined ? depth : 0 %}
+  {% for key, value in data %}
+    {% if value is iterable %}
+      <details class="ctree-group ctree-d{{ depth < 3 ? depth : 3 }}" {% if depth < 1 %}open{% endif %}>
+        <summary>
+          <svg class="ctree-chevron" viewBox="0 0 10 6" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M1 1l4 4 4-4"/></svg>
+          <span class="ctree-gkey">{{ key }}</span>
+          <span class="ctree-gmeta">{{ value|length }}</span>
+        </summary>
+        <div class="ctree-children">
+          {{ macros.renderTree(value, depth + 1) }}
+        </div>
+      </details>
+    {% else %}
+      <div class="ctree-leaf">
+        <div class="ctree-leaf-key">
+          <svg class="ctree-licon" viewBox="0 0 10 10" fill="none" stroke="currentColor"><path d="M2 1v5h7"/></svg>
+          <code class="ctree-lkey">{{ key }}</code>
+        </div>
+        <div class="ctree-val-cell">
+          {% if value is null %}
+            <span class="ctree-val ctree-null">null</span>
+          {% elseif value is same as(true) %}
+            <span class="ctree-val ctree-bool">true</span>
+          {% elseif value is same as(false) %}
+            <span class="ctree-val ctree-bool">false</span>
+          {% else %}
+            <span class="ctree-val ctree-string">{{ value }}</span>
+          {% endif %}
+        </div>
+      </div>
+    {% endif %}
+  {% endfor %}
+{% endmacro %}

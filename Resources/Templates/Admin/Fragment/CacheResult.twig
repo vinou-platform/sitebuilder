@@ -1,3 +1,36 @@
-<span class="cache-result {{ admin.error ? 'cache-result--error' : 'cache-result--ok' }}">
-  {{ admin.message }}
-</span>
+{% from 'Admin/Fragment/ctree.twig' import renderTree as renderTree %}
+{% import 'Admin/Fragment/ctree.twig' as macros %}
+
+{% if admin.checks is defined and admin.checks|length > 0 %}
+
+  <table class="env-table" style="width:100%;">
+    {% for check in admin.checks %}
+      <tr>
+        <td style="font-weight:600;">{{ check.label }}</td>
+        <td>
+          <span class="status">
+            <span class="status-dot {{ check.ok ? 'status-ok' : 'status-fail' }}"></span>
+            {{ check.ok ? 'OK' : 'Fehler' }}
+          </span>
+        </td>
+        <td>
+          {{ check.detail }}
+          {% if loop.last and admin.customer is defined and admin.customer %}
+            <a class="ctree-open-link" onclick="ctreeModalOpen()">Kundeninformationen anzeigen</a>
+          {% endif %}
+        </td>
+      </tr>
+    {% endfor %}
+  </table>
+
+  {% if admin.customer is defined and admin.customer %}
+    <div id="ctree-data" style="display:none;">
+      {{ macros.renderTree(admin.customer, 0) }}
+    </div>
+  {% endif %}
+
+{% else %}
+  <span class="cache-result {{ admin.error ? 'cache-result--error' : 'cache-result--ok' }}">
+    {{ admin.message }}
+  </span>
+{% endif %}

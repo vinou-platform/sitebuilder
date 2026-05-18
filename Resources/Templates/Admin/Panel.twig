@@ -216,6 +216,36 @@ document.addEventListener('htmx:configRequest', function(evt) {
   </div>
 </div>
 
+<div id="ctree-modal-wrapper" data-status="hidden" onclick="if(event.target===this)ctreeModalClose()">
+  <div id="ctree-modal">
+    <div class="ctree-modal-header">
+      <h3>Kundendaten</h3>
+      <button class="ctree-modal-close" onclick="ctreeModalClose()" title="Schließen">&#x2715;</button>
+    </div>
+    <div id="ctree-modal-body" class="ctree-root ctree-outer-body"></div>
+  </div>
+</div>
+
+<script>
+function ctreeModalOpen() {
+  var src = document.getElementById('ctree-data');
+  var body = document.getElementById('ctree-modal-body');
+  if (src && body) {
+    body.innerHTML = src.innerHTML;
+    document.getElementById('ctree-modal-wrapper').setAttribute('data-status', 'visible');
+    document.documentElement.classList.add('ctree-modal-open');
+  }
+}
+function ctreeModalClose() {
+  document.getElementById('ctree-modal-wrapper').setAttribute('data-status', 'hidden');
+  document.getElementById('ctree-modal-body').innerHTML = '';
+  document.documentElement.classList.remove('ctree-modal-open');
+}
+document.addEventListener('keydown', function(e) {
+  if (e.key === 'Escape') ctreeModalClose();
+});
+</script>
+
 <script>
 var sectionLoader = '<div class="section-loader"><div class="loader-spinner"></div><span>Wird geladen…</span></div>';
 

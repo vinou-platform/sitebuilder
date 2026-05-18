@@ -1,3 +1,6 @@
+_feature: products
+_feature_default: true
+
 produkte:
   template: 'Products/List.twig'
   pageTitle: 'Products'

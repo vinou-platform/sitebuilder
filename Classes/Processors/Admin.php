@@ -908,7 +908,7 @@ class Admin implements ProcessorInterface {
      * @return array<string, mixed>
      */
     private function getRoutes(): array {
-        return $this->routeConfig->configuration;
+        return $this->routeConfig->getEnabledConfiguration();
     }
 
     /**
@@ -944,7 +944,10 @@ class Admin implements ProcessorInterface {
      */
     private function checkEnvironment(): array {
         $cacheRoot = Helper::getNormDocRoot() . 'Cache/';
+        $vinou     = $this->settingsService->get('vinou') ?? [];
+        $hasApiCfg = !empty($vinou['token']) && !empty($vinou['authid']);
         return [
+            'vinou_api'       => ['label' => 'Vinou API Zugangsdaten',   'available' => $hasApiCfg,  'detail' => $hasApiCfg ? 'authid + token konfiguriert' : 'Fehlt in config/settings.yml (vinou.authid / vinou.token)'],
             'php'             => ['label' => 'PHP Version',              'available' => version_compare(PHP_VERSION, '8.2.0', '>='), 'detail' => PHP_VERSION],
             'curl'            => ['label' => 'cURL',                     'available' => extension_loaded('curl'),    'detail' => extension_loaded('curl') ? curl_version()['version'] : 'nicht verfügbar'],
             'gd'              => ['label' => 'GD Library',               'available' => extension_loaded('gd'),      'detail' => extension_loaded('gd') ? (gd_info()['GD Version'] ?? 'vorhanden') : 'nicht verfügbar'],
@@ -1170,16 +1173,19 @@ class Admin implements ProcessorInterface {
     }
 
     /**
-     * Fragment endpoint for in-place cache actions (clear + warmup).
-     * Returns a minimal array rendered by Admin/Fragment/CacheResult.twig.
-     *
-     * @return array{message: string, error: bool}
+     * Fragment endpoint for in-place cache actions (clear + warmup) and API diagnostics.
+     * Returns either array{message: string, error: bool} for cache actions or
+     * array{checks: list<array{label: string, ok: bool, detail: string}>, error: bool} for testApi.
      */
     public function cacheAction(): array {
         if (!$this->isAuthenticated())
             return ['message' => 'Nicht authentifiziert.', 'error' => true];
 
-        $action  = $_GET['action'] ?? '';
+        $action = $_GET['action'] ?? '';
+
+        if ($action === 'testApi')
+            return $this->runApiDiagnostics();
+
         $message = match ($action) {
             'clearImages'    => $this->clearCache('Images'),
             'clearInstagram' => $this->clearCache('Instagram'),
@@ -1274,6 +1280,67 @@ class Admin implements ProcessorInterface {
         $msg = 'PDF-Cache: ' . $count . ' ' . ($count === 1 ? 'PDF' : 'PDFs') . ' gecached';
         if ($errors > 0) $msg .= ', ' . $errors . ' Fehler';
         return $msg . '.';
+    }
+
+    private function runApiDiagnostics(): array {
+        $vinou  = $this->settingsService->get('vinou') ?? [];
+        $token  = $vinou['token']  ?? null;
+        $authid = $vinou['authid'] ?? null;
+
+        if (!$token || !$authid)
+            return ['checks' => [], 'message' => 'Zugangsdaten fehlen (vinou.token / vinou.authid).', 'error' => true];
+
+        set_time_limit(120);
+        $t0  = microtime(true);
+        $api = new Api($token, $authid);
+        $ms  = (int)round((microtime(true) - $t0) * 1000);
+
+        if (!$api->connected)
+            return ['checks' => [], 'message' => 'Keine Verbindung zur Vinou-API (' . $ms . ' ms).', 'error' => true];
+
+        $checks   = [];
+        $anyError = false;
+
+        // 1. Wines
+        $t0     = microtime(true);
+        $result = $api->getWinesAll(['pageSize' => 500]);
+        $ms     = (int)round((microtime(true) - $t0) * 1000);
+        $wines  = is_array($result['wines'] ?? null) ? $result['wines'] : (is_array($result) ? $result : []);
+        $count  = count($wines);
+        $ok     = $count > 0;
+        if (!$ok) $anyError = true;
+        $checks[] = ['label' => 'Weine', 'ok' => $ok, 'detail' => $count . ' Einträge (' . $ms . ' ms)'];
+
+        // 2. Bundles
+        $t0     = microtime(true);
+        $result = $api->getBundlesAll(['pageSize' => 500]);
+        $ms     = (int)round((microtime(true) - $t0) * 1000);
+        $count  = is_array($result['data'] ?? null) ? count($result['data']) : 0;
+        $checks[] = ['label' => 'Weinpakete', 'ok' => true, 'detail' => $count . ' Einträge (' . $ms . ' ms)'];
+
+        // 3. Products
+        $t0     = microtime(true);
+        $result = $api->getProductsAll(['pageSize' => 500]);
+        $ms     = (int)round((microtime(true) - $t0) * 1000);
+        $count  = is_array($result) ? count($result) : 0;
+        $checks[] = ['label' => 'Produkte', 'ok' => true, 'detail' => $count . ' Einträge (' . $ms . ' ms)'];
+
+        // 4. Basket
+        $t0   = microtime(true);
+        $ok   = $api->createBasket();
+        $ms   = (int)round((microtime(true) - $t0) * 1000);
+        if (!$ok) $anyError = true;
+        $checks[] = ['label' => 'Basket', 'ok' => (bool)$ok, 'detail' => $ok ? 'Basket erstellt (' . $ms . ' ms)' : 'Nicht erstellt (' . $ms . ' ms)'];
+
+        // 5. Customer — error only when request fails or response has no id
+        $t0       = microtime(true);
+        $customer = $api->getCustomer();
+        $ms       = (int)round((microtime(true) - $t0) * 1000);
+        $hasData  = is_array($customer) && isset($customer['id']);
+        if (!$hasData) $anyError = true;
+        $checks[] = ['label' => 'Kunde', 'ok' => $hasData, 'detail' => $hasData ? (($customer['email'] ?? 'ID ' . $customer['id']) . ' (' . $ms . ' ms)') : 'Keine Daten (' . $ms . ' ms)'];
+
+        return ['checks' => $checks, 'error' => $anyError, 'customer' => is_array($customer) ? $customer : null];
     }
 
     private function clearCache(string $type): string {

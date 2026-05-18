@@ -1,3 +1,5 @@
+_feature: wineries
+
 wineries:
   template: 'Wineries/List.twig'
   pageTitle: 'Wineries'

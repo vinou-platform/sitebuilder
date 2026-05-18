@@ -44,3 +44,11 @@ details[open] > summary::before { transform: rotate(90deg); }
 .route-detail-row { display: flex; gap: 0.75rem; padding: 0.1875rem 0; font-size: 0.75rem; }
 .route-detail-key { color: $primary; font-weight: 600; min-width: 8.125rem; flex-shrink: 0; }
 .route-detail-val { color: $text; font-family: $font-mono; word-break: break-all; }
+
+.route-detail-row--tree {
+  flex-direction: column;
+  gap: 0.25rem;
+  padding: 0.375rem 0;
+
+  .ctree-root { width: 100%; }
+}
