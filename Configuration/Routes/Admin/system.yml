@@ -138,6 +138,25 @@ system/cache:
       function: cacheAction
       forceLoadAll: true
 
+system/instagram/credentials:
+  template: 'Admin/Panel.twig'
+  method: post
+  excludeContent: true
+  dataProcessing:
+    admin:
+      processor: admin
+      function: saveInstagramCredentials
+      forceLoadAll: true
+
+system/instagram/status:
+  template: 'Admin/Fragment/InstagramStatus.twig'
+  excludeContent: true
+  dataProcessing:
+    admin:
+      processor: admin
+      function: instagramStatusAction
+      forceLoadAll: true
+
 system/{name}:
   template: 'Admin/Panel.twig'
   excludeContent: true

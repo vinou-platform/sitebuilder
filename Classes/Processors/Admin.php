@@ -132,6 +132,53 @@ class Admin implements ProcessorInterface {
             Redirect::internal('/system');
         }
 
+        if (($_GET['action'] ?? null) === 'instagram_connect') {
+            $ig    = (array)($this->settingsService->get('instagram') ?? []);
+            $appId = $ig['app_id'] ?? '';
+            if (!$appId) {
+                Session::setValue('admin_flash', ['type' => 'error', 'message' => 'Instagram App ID nicht konfiguriert.']);
+                Redirect::internal('/system/system');
+            }
+            $processor = new Instagram();
+            Redirect::external($processor->getAuthUrl($appId, $this->buildInstagramRedirectUri()));
+        }
+
+        if (($_GET['action'] ?? null) === 'instagram_callback') {
+            $code = $_GET['code'] ?? null;
+            if (!$code) {
+                Session::setValue('admin_flash', ['type' => 'error', 'message' => 'Instagram-Verbindung abgebrochen.']);
+                Redirect::internal('/system/system');
+            }
+            $ig        = (array)($this->settingsService->get('instagram') ?? []);
+            $appId     = $ig['app_id']     ?? '';
+            $appSecret = $ig['app_secret'] ?? '';
+            if (!$appId || !$appSecret) {
+                Session::setValue('admin_flash', ['type' => 'error', 'message' => 'App ID oder App Secret fehlen.']);
+                Redirect::internal('/system/system');
+            }
+            $processor   = new Instagram();
+            $redirectUri = $this->buildInstagramRedirectUri();
+            $shortToken  = $processor->exchangeCode($code, $appId, $appSecret, $redirectUri);
+            if (empty($shortToken['access_token'])) {
+                Session::setValue('admin_flash', ['type' => 'error', 'message' => 'Token-Austausch fehlgeschlagen. Bitte erneut versuchen.']);
+                Redirect::internal('/system/system');
+            }
+            $longToken = $processor->getLongLivedToken($shortToken['access_token'], $appSecret);
+            if (empty($longToken['access_token'])) {
+                Session::setValue('admin_flash', ['type' => 'error', 'message' => 'Long-lived Token konnte nicht ausgestellt werden.']);
+                Redirect::internal('/system/system');
+            }
+            $me = $processor->getMe($longToken['access_token']);
+            $this->writeInstagramToken([
+                'access_token'  => $longToken['access_token'],
+                'token_expires' => time() + (int)($longToken['expires_in'] ?? 5183944),
+                'user_id'       => $me['id']       ?? ($shortToken['user_id'] ?? ''),
+                'username'      => $me['username']  ?? '',
+            ]);
+            Session::setValue('admin_flash', ['type' => 'success', 'message' => 'Instagram erfolgreich verbunden.']);
+            Redirect::internal('/system/system');
+        }
+
         Redirect::internal('/system/settings');
     }
 
@@ -283,11 +330,12 @@ class Admin implements ProcessorInterface {
 
         if ($name === 'system') {
             $sectionData = [
-                'sectionName'   => $name,
-                'message'       => $message,
-                'flash'         => $flash,
-                'environment'   => $this->checkEnvironment(),
-                'vinouPackages' => $this->getVinouPackages(),
+                'sectionName'      => $name,
+                'message'          => $message,
+                'flash'            => $flash,
+                'environment'      => $this->checkEnvironment(),
+                'vinouPackages'    => $this->getVinouPackages(),
+                'instagramStatus'  => $this->getInstagramStatus(),
             ];
         } elseif ($name === 'users') {
             $email     = Session::getValue(self::SESSION_KEY_USER) ?? '';
@@ -438,6 +486,137 @@ class Admin implements ProcessorInterface {
         }
 
         header('HX-Redirect: /system/settings'); exit;
+    }
+
+    // ─────────────────────── Instagram ────────────────────────────
+
+    /**
+     * Saves the Meta App ID and App Secret to config/settings.yml.
+     *
+     * @return array<string, mixed>
+     */
+    public function saveInstagramCredentials(): array {
+        if (!$this->isAuthenticated()) {
+            if (!empty($_SERVER['HTTP_HX_REQUEST'])) { header('HX-Redirect: /system'); exit; }
+            return ['authenticated' => false];
+        }
+        if (!$this->verifyCsrfToken()) {
+            Session::setValue('admin_flash', ['type' => 'error', 'message' => 'Ungültige Anfrage (CSRF).']);
+            header('HX-Redirect: /system/system'); exit;
+        }
+        if (!defined('VINOU_CONFIG_DIR')) {
+            Session::setValue('admin_flash', ['type' => 'error', 'message' => 'VINOU_CONFIG_DIR nicht definiert.']);
+            header('HX-Redirect: /system/system'); exit;
+        }
+
+        $appId     = trim($_POST['app_id']     ?? '');
+        $appSecret = trim($_POST['app_secret'] ?? '');
+
+        $configFile = Helper::getNormDocRoot() . VINOU_CONFIG_DIR . 'settings.yml';
+        $current    = is_file($configFile) ? (Yaml::parseFile($configFile) ?? []) : [];
+
+        if ($appId !== '')
+            $current['instagram']['app_id'] = $appId;
+        if ($appSecret !== '' && $appSecret !== '••••••••')
+            $current['instagram']['app_secret'] = $appSecret;
+
+        file_put_contents($configFile, Yaml::dump($current, 10, 2));
+        Session::setValue('admin_flash', ['type' => 'success', 'message' => 'Instagram-App-Daten gespeichert.']);
+        header('HX-Redirect: /system/system'); exit;
+    }
+
+    /**
+     * HTMX endpoint: optionally performs a refresh or disconnect, then returns
+     * the current Instagram connection status for InstagramStatus.twig.
+     *
+     * @return array<string, mixed>
+     */
+    public function instagramStatusAction(): array {
+        if (!$this->isAuthenticated())
+            return ['connected' => false, 'appConfigured' => false];
+
+        $action = $_GET['action'] ?? null;
+
+        if ($action === 'refresh') {
+            $ig    = (array)($this->settingsService->get('instagram') ?? []);
+            $token = $ig['access_token'] ?? '';
+            if ($token) {
+                $result = (new Instagram())->refreshToken($token);
+                if (!empty($result['access_token'])) {
+                    $this->writeInstagramToken([
+                        'access_token'  => $result['access_token'],
+                        'token_expires' => time() + (int)($result['expires_in'] ?? 5183944),
+                    ]);
+                }
+            }
+        } elseif ($action === 'disconnect') {
+            $this->removeInstagramToken();
+        }
+
+        return $this->getInstagramStatus();
+    }
+
+    /**
+     * @return array<string, mixed>
+     */
+    private function getInstagramStatus(): array {
+        $ig    = [];
+        if (defined('VINOU_CONFIG_DIR')) {
+            $file = Helper::getNormDocRoot() . VINOU_CONFIG_DIR . 'settings.yml';
+            if (is_file($file))
+                $ig = (array)((Yaml::parseFile($file)['instagram']) ?? []);
+        }
+        $token   = $ig['access_token'] ?? null;
+        $expires = isset($ig['token_expires']) ? (int)$ig['token_expires'] : null;
+
+        if (!$token) {
+            return [
+                'connected'     => false,
+                'appConfigured' => !empty($ig['app_id']) && !empty($ig['app_secret']),
+                'appId'         => $ig['app_id'] ?? '',
+            ];
+        }
+
+        $daysLeft = $expires !== null ? (int)round(($expires - time()) / 86400) : null;
+        $statusKey = match (true) {
+            $daysLeft === null  => 'unknown',
+            $daysLeft <= 0      => 'expired',
+            $daysLeft <= 7      => 'expiring',
+            default             => 'valid',
+        };
+
+        return [
+            'connected'     => true,
+            'statusKey'     => $statusKey,
+            'daysLeft'      => $daysLeft,
+            'username'      => $ig['username'] ?? '',
+            'userId'        => $ig['user_id']  ?? '',
+            'appId'         => $ig['app_id']   ?? '',
+            'appConfigured' => !empty($ig['app_id']) && !empty($ig['app_secret']),
+        ];
+    }
+
+    private function writeInstagramToken(array $data): void {
+        if (!defined('VINOU_CONFIG_DIR')) return;
+        $configFile = Helper::getNormDocRoot() . VINOU_CONFIG_DIR . 'settings.yml';
+        $current    = is_file($configFile) ? (Yaml::parseFile($configFile) ?? []) : [];
+        foreach ($data as $k => $v)
+            $current['instagram'][$k] = $v;
+        file_put_contents($configFile, Yaml::dump($current, 10, 2));
+    }
+
+    private function removeInstagramToken(): void {
+        if (!defined('VINOU_CONFIG_DIR')) return;
+        $configFile = Helper::getNormDocRoot() . VINOU_CONFIG_DIR . 'settings.yml';
+        $current    = is_file($configFile) ? (Yaml::parseFile($configFile) ?? []) : [];
+        foreach (['access_token', 'token_expires', 'user_id', 'username'] as $k)
+            unset($current['instagram'][$k]);
+        file_put_contents($configFile, Yaml::dump($current, 10, 2));
+    }
+
+    private function buildInstagramRedirectUri(): string {
+        $proto = (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off') ? 'https' : 'http';
+        return $proto . '://' . ($_SERVER['HTTP_HOST'] ?? 'localhost') . '/system?action=instagram_callback';
     }
 
     // ─────────────────────── Redirects CRUD ───────────────────────
@@ -1188,7 +1367,7 @@ class Admin implements ProcessorInterface {
 
         $message = match ($action) {
             'clearImages'    => $this->clearCache('Images'),
-            'clearInstagram' => $this->clearCache('Instagram'),
+            'clearInstagram' => (new Instagram())->clearCache(),
             'clearPdf'       => $this->clearCache('PDF'),
             'warmupImages'   => $this->warmupImages(),
             'warmupPdf'      => $this->warmupPdfs(),

@@ -1,0 +1,52 @@
+<div id="instagram-status-area">
+
+{% if admin.connected %}
+
+  <div class="ig-status ig-status--{{ admin.statusKey }}">
+    <div class="ig-status-header">
+      <span class="ig-status-dot"></span>
+      <strong>{% if admin.username %}@{{ admin.username }}{% else %}Verbunden{% endif %}</strong>
+      <span class="ig-status-label">
+        {% if admin.statusKey == 'valid' %}Aktiv
+        {% elseif admin.statusKey == 'expiring' %}Läuft bald ab
+        {% else %}Abgelaufen{% endif %}
+      </span>
+    </div>
+    {% if admin.daysLeft is not null %}
+      <p class="ig-status-meta">Token noch gültig für <strong>{{ admin.daysLeft }}</strong> {{ admin.daysLeft == 1 ? 'Tag' : 'Tage' }}</p>
+    {% endif %}
+
+    <button hx-get="/system/instagram/status?action=refresh"
+            hx-target="#instagram-status-area"
+            hx-swap="outerHTML"
+            hx-indicator="#ig-progress"
+            hx-disabled-elt="this"
+            class="btn btn-ghost btn-block">Token verlängern</button>
+
+    <button hx-get="/system/instagram/status?action=disconnect"
+            hx-target="#instagram-status-area"
+            hx-swap="outerHTML"
+            hx-indicator="#ig-progress"
+            hx-confirm="Instagram-Verbindung wirklich trennen?"
+            hx-disabled-elt="this"
+            class="btn btn-ghost btn-block" style="margin-top:0.375rem">Verbindung trennen</button>
+
+    <div id="ig-progress" class="cache-progress"><div class="cache-progress-bar"></div></div>
+  </div>
+
+{% elseif admin.appConfigured %}
+
+  <div class="ig-status ig-status--disconnected">
+    <p class="ig-status-meta">App-Daten gespeichert. Jetzt Instagram-Account verbinden.</p>
+    <a href="/system?action=instagram_connect" class="btn btn-primary btn-block">Mit Instagram verbinden</a>
+  </div>
+
+{% else %}
+
+  <div class="ig-status ig-status--unconfigured">
+    <p class="ig-status-meta">App ID und App Secret eintragen, dann Instagram-Account verbinden.</p>
+  </div>
+
+{% endif %}
+
+</div>
