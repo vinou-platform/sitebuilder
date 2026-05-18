@@ -1,3 +1,5 @@
+{% import 'Admin/Fragment/ctree.twig' as macros %}
+
 <div class="content-header">
   <h2>Routes</h2>
   <span class="subtitle">{{ section.routes|length }} Routen geladen</span>
@@ -9,7 +11,9 @@
       <details>
         <summary>
           <span class="route-url">{{ url }}</span>
-          {% if route.method is defined %}
+          {% if route.type is defined and route.type == 'redirect' %}
+            <span class="badge badge-redirect">REDIRECT</span>
+          {% elseif route.method is defined %}
             <span class="badge badge-{{ route.method|lower }}">{{ route.method|upper }}</span>
           {% else %}
             <span class="badge badge-get">GET</span>
@@ -19,28 +23,38 @@
           {% endif %}
         </summary>
         <div class="route-details">
+          {% if route.type is defined and route.type == 'redirect' %}
+            <div class="route-detail-row">
+              <span class="route-detail-key">redirect</span>
+              <span class="route-detail-val">{{ route.redirect }}</span>
+            </div>
+          {% endif %}
           {% if route.pageTitle is defined %}
             <div class="route-detail-row">
               <span class="route-detail-key">pageTitle</span>
               <span class="route-detail-val">{{ route.pageTitle }}</span>
             </div>
           {% endif %}
-          {% if route.dataProcessing is defined %}
-            <div class="route-detail-row">
-              <span class="route-detail-key">dataProcessing</span>
-              <span class="route-detail-val">{{ route.dataProcessing|keys|join(', ') }}</span>
-            </div>
-          {% endif %}
-          {% if route.sitemap is defined %}
-            <div class="route-detail-row">
-              <span class="route-detail-key">sitemap</span>
-              <span class="route-detail-val">{{ route.sitemap is same as(true) ? 'true' : route.sitemap|json_encode }}</span>
-            </div>
-          {% endif %}
           {% if route.middleware is defined %}
             <div class="route-detail-row">
               <span class="route-detail-key">middleware</span>
               <span class="route-detail-val">{{ route.middleware|join(', ') }}</span>
+            </div>
+          {% endif %}
+          {% if route.sitemap is defined %}
+            <div class="route-detail-row route-detail-row--tree">
+              <span class="route-detail-key">sitemap</span>
+              {% if route.sitemap is same as(true) %}
+                <span class="route-detail-val">true</span>
+              {% else %}
+                <div class="ctree-root">{{ macros.renderTree(route.sitemap, 0) }}</div>
+              {% endif %}
+            </div>
+          {% endif %}
+          {% if route.dataProcessing is defined %}
+            <div class="route-detail-row route-detail-row--tree">
+              <span class="route-detail-key">dataProcessing</span>
+              <div class="ctree-root">{{ macros.renderTree(route.dataProcessing, 0) }}</div>
             </div>
           {% endif %}
         </div>

@@ -1,3 +1,6 @@
+_feature: bundles
+_feature_default: true
+
 bundles:
   template: 'Bundles/List.twig'
   pageTitle: 'Bundles'

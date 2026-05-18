@@ -1,0 +1,267 @@
+@use 'variables' as *;
+
+// ── Read-only collapsible data tree (ctree) ───────────────────────────────────
+// Used in CacheResult fragment for API diagnostic customer data.
+// No edit/delete/add — display only. Collapse via native <details>/<summary>.
+
+.ctree-root { font-size: 13px; line-height: 1.5; }
+
+// ── Outer disclosure wrapper ──────────────────────────────────────────────────
+
+details.ctree-outer {
+  margin-top: 0.75rem;
+  border: 1px solid $border;
+  border-radius: 6px;
+  overflow: hidden;
+}
+
+details.ctree-outer > summary {
+  list-style: none;
+  cursor: pointer;
+  padding: 10px 14px;
+  background: $bg-card-header;
+  font-size: 12px;
+  font-weight: 600;
+  color: $primary;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  user-select: none;
+
+  &::-webkit-details-marker { display: none; }
+  &:hover { background: #f5eaea; }
+}
+
+details.ctree-outer > summary .ctree-chevron    { color: #a05050; }
+details.ctree-outer:not([open]) > summary .ctree-chevron { transform: rotate(-90deg); }
+
+.ctree-outer-body { padding: 8px 12px 6px; }
+
+// ── Group (object / array node) ───────────────────────────────────────────────
+
+details.ctree-group { margin: 2px 0; }
+
+details.ctree-group > summary {
+  list-style: none;
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  cursor: pointer;
+  background: none;
+  border: none;
+  font-family: inherit;
+  padding: 8px 12px;
+  border-radius: 5px;
+  transition: background .12s;
+  user-select: none;
+
+  &::-webkit-details-marker { display: none; }
+  &:hover { background: #fdf0f0; }
+}
+
+details.ctree-group:not([open]) > summary .ctree-chevron { transform: rotate(-90deg); }
+
+// depth-0 — top-level, most prominent
+details.ctree-d0 > summary {
+  padding: 10px 14px;
+  background: #faf4f4;
+  border: 1px solid #e4d5d5;
+  border-radius: 6px;
+  margin-bottom: 1px;
+
+  &:hover { background: #f5eaea; }
+
+  .ctree-gkey    { font-size: 13px; font-weight: 700; color: $primary; }
+  .ctree-chevron { color: #a05050; }
+  .ctree-gmeta   { background: #eddada; color: #a07070; }
+}
+
+// depth-1
+details.ctree-d1 > summary .ctree-gkey { font-size: 12px; font-weight: 600; color: #333; }
+
+// depth ≥ 2
+details.ctree-d2 > summary .ctree-gkey,
+details.ctree-d3 > summary .ctree-gkey { font-size: 12px; font-weight: 500; color: #555; }
+
+// ── Shared elements inside summary ───────────────────────────────────────────
+
+.ctree-chevron {
+  width: 10px; height: 10px; flex-shrink: 0;
+  color: #aaa;
+  transition: transform .15s;
+  stroke: currentColor;
+}
+
+.ctree-gkey { font-size: 12px; }
+
+.ctree-gmeta {
+  margin-left: auto;
+  font-size: 11px;
+  color: #bbb;
+  font-family: $font-mono;
+  background: #f0e8e8;
+  border-radius: 10px;
+  padding: 1px 7px;
+  flex-shrink: 0;
+}
+
+// ── Children container ────────────────────────────────────────────────────────
+
+.ctree-children {
+  margin-left: 16px;
+  padding-left: 14px;
+  border-left: 1px solid #ecdede;
+  padding-top: 2px;
+  padding-bottom: 2px;
+}
+
+details.ctree-d0 > .ctree-children {
+  margin-left: 7px;
+  border-left-color: #e4d5d5;
+  margin-bottom: 8px;
+}
+
+// ── Leaf (key / value row) ────────────────────────────────────────────────────
+
+.ctree-leaf {
+  display: grid;
+  grid-template-columns: 180px 1fr;
+  align-items: center;
+  padding: 3px 0 3px 10px;
+  border-radius: 4px;
+  min-height: 30px;
+
+  &:hover { background: #fdf8f8; }
+}
+
+.ctree-leaf-key {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  min-width: 0;
+  padding-right: 8px;
+}
+
+.ctree-licon {
+  width: 10px; height: 10px; flex-shrink: 0;
+  color: #ccc; stroke-width: 1.5;
+}
+
+.ctree-lkey {
+  font-family: $font-mono;
+  font-size: 12px;
+  color: #888;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  background: none;
+  padding: 0;
+}
+
+.ctree-val-cell { display: flex; align-items: center; min-width: 0; }
+
+.ctree-val {
+  padding: 2px 7px;
+  border-radius: 3px;
+  font-family: $font-mono;
+  font-size: 12px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 100%;
+}
+
+.ctree-string { color: #1d7a3a; }
+.ctree-bool   { color: #c0392b; font-weight: 600; }
+.ctree-null   { color: #aaa; font-style: italic; }
+
+// ── "Kundeninformationen anzeigen" link ───────────────────────────────────────
+
+.ctree-open-link {
+  margin-left: 0.625rem;
+  font-size: 0.75rem;
+  color: $primary;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+  cursor: pointer;
+  white-space: nowrap;
+
+  &:hover { color: $primary-dark; }
+}
+
+// ── Modal overlay + card (Ernteplaner pattern) ────────────────────────────────
+
+html.ctree-modal-open { overflow: hidden; }
+
+#ctree-modal-wrapper {
+  position: fixed;
+  z-index: 1000;
+  inset: 0;
+  background: rgba(0, 0, 0, .55);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: opacity .25s ease, visibility .25s ease;
+
+  &[data-status="hidden"] {
+    opacity: 0;
+    visibility: hidden;
+
+    #ctree-modal { margin-top: -2rem; }
+  }
+
+  &[data-status="visible"] {
+    opacity: 1;
+    visibility: visible;
+
+    #ctree-modal { margin-top: 0; }
+  }
+}
+
+#ctree-modal {
+  background: #fff;
+  border-radius: 8px;
+  width: min(640px, 90vw);
+  max-height: 82vh;
+  display: flex;
+  flex-direction: column;
+  box-shadow: 0 8px 40px rgba(0, 0, 0, .22);
+  transition: margin-top .25s ease;
+  overflow: hidden;
+}
+
+.ctree-modal-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 14px 18px;
+  background: $bg-card-header;
+  border-bottom: 1px solid $border;
+  flex-shrink: 0;
+
+  h3 {
+    margin: 0;
+    font-size: 0.875rem;
+    font-weight: 700;
+    color: $primary;
+  }
+}
+
+#ctree-modal-body {
+  flex: 1;
+  overflow-y: auto;
+}
+
+.ctree-modal-close {
+  border: none;
+  background: none;
+  cursor: pointer;
+  color: $text-muted;
+  padding: 4px 6px;
+  border-radius: 4px;
+  font-size: 1rem;
+  line-height: 1;
+  transition: color .1s, background .1s;
+
+  &:hover { color: $primary; background: #f5eaea; }
+}

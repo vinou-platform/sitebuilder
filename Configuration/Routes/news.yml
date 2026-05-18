@@ -1,3 +1,5 @@
+_feature: news
+
 news:
   template: 'News/List.twig'
   pageTitle: 'News list'

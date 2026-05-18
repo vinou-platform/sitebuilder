@@ -35,11 +35,32 @@
   }
 }
 
+// ── API diagnostic layout (card left, result panel right) ────────
+
+.cache-grid--api {
+  display: flex;
+  gap: 1rem;
+  align-items: flex-start;
+
+  .cache-card {
+    flex: 0 0 11.25rem;
+  }
+}
+
 // ── Result area ──────────────────────────────────────────────────
 
 .cache-result-area {
   min-height: 1.25rem;
   margin-top: 0.5rem;
+}
+
+.cache-result-area--panel {
+  flex: 1;
+  min-height: 0;
+  margin-top: 0;
+  align-self: stretch;
+  display: flex;
+  align-items: flex-start;
 }
 
 .cache-result {

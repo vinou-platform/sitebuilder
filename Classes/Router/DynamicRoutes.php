@@ -1,6 +1,7 @@
 <?php
 namespace Vinou\SiteBuilder\Router;
 
+use \Vinou\ApiConnector\Services\ServiceLocator;
 use \Vinou\ApiConnector\Tools\Helper;
 use \Vinou\SiteBuilder\Tools\Render;
 use \Vinou\SiteBuilder\Processors\Sitemap;
@@ -41,8 +42,26 @@ class DynamicRoutes {
     /** @var array<string, mixed> Merged route configuration (pattern → options). */
     public array $configuration = [];
 
+    /**
+     * Routes loaded from config/redirects.yml — kept separate so the admin
+     * panel's route view never shows managed redirects alongside page routes.
+     *
+     * @var array<string, mixed>
+     */
+    private array $managedRedirects = [];
+
     /** @var string|null Absolute path to the project-level route override file. */
     public ?string $routeFile = null;
+
+    /**
+     * Raw settings.features map resolved during init().
+     *
+     * Keys present with value false disable a feature; keys set to true or
+     * missing entirely fall back to the per-route 'feature_default'.
+     *
+     * @var array<string, mixed>
+     */
+    private array $featureSettings = [];
 
     /**
      * @param object $router  Initialized bramus/router instance.
@@ -93,10 +112,14 @@ class DynamicRoutes {
         if (defined('VINOU_CONFIG_DIR')) {
             $redirectsFile = Helper::getNormDocRoot() . VINOU_CONFIG_DIR . 'redirects.yml';
             if (is_file($redirectsFile))
-                $this->loadRouteFile($redirectsFile);
+                $this->managedRedirects = $this->parseRouteFile($redirectsFile);
         }
 
+        $this->featureSettings = (array)(ServiceLocator::get('Settings')->get('settings')['features'] ?? []);
+
         $this->generateRoutes();
+        if (!empty($this->managedRedirects))
+            $this->generateRoutes($this->managedRedirects);
     }
 
     /**
@@ -106,6 +129,27 @@ class DynamicRoutes {
      */
     public function getDefaults(): bool|array {
         return $this->loadDefaults;
+    }
+
+    /**
+     * Returns only the routes that pass the current feature filter.
+     *
+     * Applies the same feature/feature_default logic as generateRoutes() so
+     * callers (e.g. the admin panel) see exactly the routes that are active.
+     *
+     * @return array<string, mixed>
+     */
+    public function getEnabledConfiguration(): array {
+        $enabled = [];
+        foreach ($this->configuration as $pattern => $options) {
+            if (isset($options['feature'])) {
+                $default = (bool)($options['feature_default'] ?? false);
+                $active  = (bool)($this->featureSettings[$options['feature']] ?? $default);
+                if (!$active) continue;
+            }
+            $enabled[$pattern] = $options;
+        }
+        return $enabled;
     }
 
     /**
@@ -238,7 +282,7 @@ class DynamicRoutes {
         if (!is_file($file))
             return;
 
-        $newRoutes = Yaml::parseFile($file) ?? [];
+        $newRoutes = $this->parseRouteFile($file);
 
         foreach ($newRoutes as $pattern => &$options) {
             if (isset($options['extend']) && $options['extend'] === true && isset($this->configuration[$pattern])) {
@@ -262,7 +306,34 @@ class DynamicRoutes {
         if (!is_file($file))
             return;
 
-        $this->configuration = array_merge(Yaml::parseFile($file), $this->configuration);
+        $this->configuration = array_merge($this->parseRouteFile($file), $this->configuration);
+    }
+
+    /**
+     * Parses a route YAML file and injects file-level _feature / _feature_default
+     * declarations into every route entry that does not already declare a feature.
+     *
+     * @param string $file  Absolute path to a .yml route file.
+     * @return array<string, mixed>
+     */
+    private function parseRouteFile(string $file): array {
+        $routes = Yaml::parseFile($file) ?? [];
+
+        $fileFeature        = $routes['_feature']         ?? null;
+        $fileFeatureDefault = $routes['_feature_default'] ?? false;
+        unset($routes['_feature'], $routes['_feature_default']);
+
+        if ($fileFeature !== null) {
+            foreach ($routes as &$options) {
+                if (is_array($options) && !isset($options['feature'])) {
+                    $options['feature']         = $fileFeature;
+                    $options['feature_default'] = $fileFeatureDefault;
+                }
+            }
+            unset($options);
+        }
+
+        return $routes;
     }
 
     /**
@@ -280,6 +351,12 @@ class DynamicRoutes {
             $configuration = $this->configuration;
 
         foreach ($configuration as $pattern => $options) {
+            if (isset($options['feature'])) {
+                $default = (bool)($options['feature_default'] ?? false);
+                $enabled = (bool)($this->featureSettings[$options['feature']] ?? $default);
+                if (!$enabled) continue;
+            }
+
             if ($pattern[0] != '/')
                 $pattern = '/' . $pattern;
 
