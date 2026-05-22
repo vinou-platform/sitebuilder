@@ -390,8 +390,8 @@ class DynamicRoutes {
                     break;
 
                 case 'sitemap':
-                    $this->router->{$method}($pattern, function() use ($configuration) {
-                        $this->render->processors['sitemap']->renderSitemapXML($configuration);
+                    $this->router->{$method}($pattern, function() {
+                        $this->render->processors['sitemap']->renderSitemapXML($this->getEnabledConfiguration());
                     });
                     break;
 

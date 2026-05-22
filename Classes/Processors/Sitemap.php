@@ -77,7 +77,7 @@ class Sitemap implements ProcessorInterface {
     public function renderSitemap(): array {
         $entries = [];
 
-        foreach ($this->routeConfig->configuration as $url => $routeConfig) {
+        foreach ($this->routeConfig->getEnabledConfiguration() as $url => $routeConfig) {
             if (!isset($routeConfig['sitemap']) || $url === '/')
                 continue;
 
