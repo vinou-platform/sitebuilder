@@ -160,6 +160,10 @@ class Site {
             header('HTTP/1.1 404 Not Found');
             $options = ['pageTitle' => '404 Page Not Found'];
 
+            $additionalContent = $this->settingsService->get('additionalContent');
+            if (is_array($additionalContent))
+                $this->render->dataProcessing($additionalContent);
+
             if (isset($this->config['pageNotFound'])) {
                 $config404 = $this->config['pageNotFound'];
 
