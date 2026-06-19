@@ -659,7 +659,7 @@ class Mailer implements ProcessorInterface {
         ]);
 
         $this->renderer->addExtension(new DebugExtension());
-        $this->renderer->addExtension(new \Vinou\Translations\TwigExtension(
+        $this->renderer->addExtension(new \Vinou\Translations\TwigExtensionV3(
             $this->config['language'] ?? 'de'
         ));
 

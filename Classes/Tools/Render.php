@@ -398,7 +398,7 @@ class Render implements RendererInterface {
         $twig = new Environment($loader, $twigSettings);
 
         $twig->addExtension(new DebugExtension());
-        $twig->addExtension(new \Vinou\Translations\TwigExtension($this->options['language'] ?? 'de'));
+        $twig->addExtension(new \Vinou\Translations\TwigExtensionV3($this->options['language'] ?? 'de'));
 
         $registry = new FilterRegistry($this->api, $this->translation ?? [], $this->regions, $this->settings);
         $registry->registerAll($twig);
