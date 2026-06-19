@@ -397,9 +397,6 @@ class Render implements RendererInterface {
 
         $twig = new Environment($loader, $twigSettings);
 
-        // twig/extensions is archived; these will be removed on the Twig 3 migration
-        $twig->addExtension(new \Twig_Extensions_Extension_Intl());
-        $twig->addExtension(new \Twig_Extensions_Extension_Array());
         $twig->addExtension(new DebugExtension());
         $twig->addExtension(new \Vinou\Translations\TwigExtension($this->options['language'] ?? 'de'));
 
