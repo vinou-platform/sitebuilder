@@ -40,10 +40,12 @@ class Admin implements ProcessorInterface {
 
     private object $settingsService;
     private DynamicRoutes $routeConfig;
+    private ?string $themeDir;
 
-    public function __construct(DynamicRoutes &$routeConfig) {
+    public function __construct(DynamicRoutes &$routeConfig, ?string $themeDir = null) {
         $this->settingsService = ServiceLocator::get('Settings');
         $this->routeConfig     = $routeConfig;
+        $this->themeDir        = $themeDir;
     }
 
     // ─────────────────────── Login flow ───────────────────────
@@ -1108,7 +1110,46 @@ class Admin implements ProcessorInterface {
             $config['smtp']['reachable'] = $this->checkSmtp($smtp['host'] ?? '', (int)($smtp['port'] ?? 25));
         }
 
+        $includeDefaults = !isset($config['template']['includeDefaults']) || $config['template']['includeDefaults'] !== false;
+        $config['_templateDirs'] = $this->resolveMailTemplateDirs($config, $includeDefaults);
+
         return $config;
+    }
+
+    /**
+     * @param array<string, mixed> $config
+     * @return list<array{path: string, source: string, templates: list<string>}>
+     */
+    private function resolveMailTemplateDirs(array $config, bool $includeDefaults): array {
+        $dirs = [];
+
+        if (isset($config['template']['rootDir'], $config['template']['directories'])) {
+            $rootDir = Helper::getNormDocRoot() . $config['template']['rootDir'];
+            foreach ((array)$config['template']['directories'] as $dir) {
+                $path = $rootDir . $dir;
+                $twig = glob($path . '*.twig') ?: [];
+                if (is_dir($path) && !empty($twig))
+                    $dirs[] = ['path' => $path, 'source' => 'project', 'templates' => array_map('basename', $twig)];
+            }
+        }
+
+        if ($includeDefaults && !is_null($this->themeDir)) {
+            $path = Helper::getNormDocRoot() . $this->themeDir . 'Resources/Mail/';
+            $twig = glob($path . '*.twig') ?: [];
+            if (is_dir($path) && !empty($twig))
+                $dirs[] = ['path' => $path, 'source' => 'theme', 'templates' => array_map('basename', $twig)];
+        }
+
+        if ($includeDefaults) {
+            $path = realpath(__DIR__ . '/../../Resources/Mail/');
+            if ($path) {
+                $twig = glob($path . '/*.twig') ?: [];
+                if (!empty($twig))
+                    $dirs[] = ['path' => $path . '/', 'source' => 'default', 'templates' => array_map('basename', $twig)];
+            }
+        }
+
+        return $dirs;
     }
 
     private function checkSmtp(string $host, int $port): bool {

@@ -77,4 +77,30 @@
     </div>
   {% endif %}
 
+  {% if section.mailConfig._templateDirs is defined and section.mailConfig._templateDirs|length > 0 %}
+    <div class="card">
+      <div class="card-header">Mail-Templates</div>
+      <div class="card-body">
+        {% for dir in section.mailConfig._templateDirs %}
+          <details>
+            <summary>
+              <span class="route-url">
+                {% if dir.source == 'project' %}Projekt{% elseif dir.source == 'theme' %}Theme{% else %}Built-in{% endif %}
+              </span>
+              <span class="route-template">{{ dir.templates|length }} Templates</span>
+            </summary>
+            <div class="route-details">
+              <code style="display:block;margin-bottom:.5rem;font-size:.8em;opacity:.7">{{ dir.path }}</code>
+              <ul style="margin:0;padding-left:1.25rem">
+                {% for tpl in dir.templates|sort %}
+                  <li>{{ tpl }}</li>
+                {% endfor %}
+              </ul>
+            </div>
+          </details>
+        {% endfor %}
+      </div>
+    </div>
+  {% endif %}
+
 {% endif %}

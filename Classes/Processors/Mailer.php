@@ -39,6 +39,12 @@ class Mailer implements ProcessorInterface {
     /** @var list<string> Absolute paths to template directories, in search order. */
     public array $storage = [];
 
+    /** @var list<string> Built-in fallback directories appended after $storage in search order. */
+    private array $defaultStorage = [];
+
+    /** @var bool Whether built-in and theme fallback directories are included in template search. */
+    protected bool $includeDefaults = true;
+
     /** @var Environment|null Twig environment instance, initialised lazily before sending. */
     protected ?Environment $renderer = null;
 
@@ -491,6 +497,11 @@ class Mailer implements ProcessorInterface {
                 $this->config['template']['directories']
             );
 
+        if (isset($this->config['template']['includeDefaults']) && $this->config['template']['includeDefaults'] === false) {
+            $this->includeDefaults = false;
+            $this->defaultStorage  = [];
+        }
+
         if (isset($this->config['captcha']))
             $this->loadCaptchaConfig($this->config['captcha']);
     }
@@ -561,10 +572,36 @@ class Mailer implements ProcessorInterface {
     }
 
     /**
-     * Registers the built-in Resources/Mail/ directory as the default template storage.
+     * Appends the theme's Resources/Mail/ directory to the template storage as a fallback.
+     *
+     * Must be called after construction, e.g. from Site::loadDefaultProcessors().
+     * Skipped when includeDefaults is false or the directory does not exist.
+     *
+     * @param string       $rootDir    Theme root directory (absolute or webroot-relative).
+     * @param list<string> $subfolders Sub-directories to append (e.g. ['Mail/']).
+     */
+    public function addThemeMailStorage(string $rootDir, array $subfolders): void {
+        if (!$this->includeDefaults)
+            return;
+
+        if (!str_starts_with($rootDir, '/'))
+            $rootDir = Helper::getNormDocRoot() . $rootDir;
+
+        foreach ($subfolders as $directory) {
+            $path = $rootDir . $directory;
+            if (is_dir($path) && !empty(glob($path . '*.twig')))
+                $this->storage[] = $path;
+        }
+    }
+
+    /**
+     * Registers the built-in Resources/Mail/ directory as the lowest-priority fallback.
      */
     private function loadDefaultTemplateStorage(): void {
-        $this->loadTemplateDirectories($this->templateRootPath, $this->templateDirectories, true);
+        $rootDir = __DIR__ . '/' . $this->templateRootPath;
+        foreach ($this->templateDirectories as $directory) {
+            $this->defaultStorage[] = $rootDir . $directory;
+        }
     }
 
     /**
@@ -614,7 +651,7 @@ class Mailer implements ProcessorInterface {
      * @return Environment  The configured Twig environment instance.
      */
     private function initTwig(): Environment {
-        $loader = new FilesystemLoader($this->storage);
+        $loader = new FilesystemLoader(array_merge($this->storage, $this->defaultStorage));
 
         $this->renderer = new Environment($loader, [
             'cache' => defined('VINOU_CACHE') ? VINOU_CACHE : Helper::getNormDocRoot() . 'Cache/Twig',

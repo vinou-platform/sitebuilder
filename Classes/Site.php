@@ -202,8 +202,13 @@ class Site {
      * @return void
      */
     private function loadDefaultProcessors(): void {
-        $this->render->loadProcessor('shop',      new Shop($this->render->api));
-        $this->render->loadProcessor('mailer',    new Mailer($this->render->api));
+        $this->render->loadProcessor('shop',   new Shop($this->render->api));
+
+        $mailer = new Mailer($this->render->api);
+        if (!is_null($this->themeDir))
+            $mailer->addThemeMailStorage($this->themeDir . 'Resources/', ['Mail/']);
+        $this->render->loadProcessor('mailer', $mailer);
+
         $this->render->loadProcessor('files',     new Files());
         $this->render->loadProcessor('external',  new External());
         $this->render->loadProcessor('instagram', new Instagram());
@@ -256,7 +261,7 @@ class Site {
         if (!isset($system['password']) && empty($system['users']))
             return;
 
-        $admin = new Admin($this->routeConfig);
+        $admin = new Admin($this->routeConfig, $this->themeDir);
         $this->render->loadProcessor('admin', $admin);
 
         $this->routeConfig->loadRouteFile(__DIR__ . '/../Configuration/Routes/Admin/system.yml');
