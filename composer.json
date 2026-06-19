@@ -19,8 +19,7 @@
     "require": {
         "php": ">=8.2",
         "bramus/router": "*",
-        "twig/twig": "2.*",
-        "twig/extensions": "1.*",
+        "twig/twig": "^3.0",
         "symfony/yaml": "^6.0|^7.0",
         "erusev/parsedown": "^1.7",
         "phpmailer/phpmailer": "^6.0",
