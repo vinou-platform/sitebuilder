@@ -69,7 +69,7 @@
               {% endif %}
             </summary>
             <div class="route-details">
-              <pre>{{ form|json_encode(constant('JSON_PRETTY_PRINT') b-or constant('JSON_UNESCAPED_UNICODE')) }}</pre>
+              <pre>{{ form|json_encode(constant('JSON_PRETTY_PRINT') + constant('JSON_UNESCAPED_UNICODE')) }}</pre>
             </div>
           </details>
         {% endfor %}
