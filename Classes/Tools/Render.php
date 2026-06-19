@@ -462,7 +462,7 @@ class Render implements RendererInterface {
         $this->settings = $this->settingsService->getAll();
 
         $view     = $this->initTwig($options['twig'] ?? null);
-        $template = $view->loadTemplate($template);
+        $template = $view->load($template);
 
         if (!is_null($options)) {
             if (isset($options['public']) && !$options['public'] && !Session::getValue('client'))

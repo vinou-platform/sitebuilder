@@ -639,7 +639,7 @@ class Mailer implements ProcessorInterface {
         $data['domain']   = $_SERVER['SERVER_NAME'];
         $data['protocol'] = Helper::fetchProtocol();
 
-        return $this->renderer->loadTemplate($template)->render($data);
+        return $this->renderer->load($template)->render($data);
     }
 
     /**
