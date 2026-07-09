@@ -90,6 +90,7 @@ class Site {
 
         $this->loadAdminPanel();
         $this->registerImageProxy();
+        $this->registerStatusEndpoint();
         $this->routeConfig->init();
         $this->router->run();
     }
@@ -243,6 +244,327 @@ class Site {
             }
             ImageService::serveProxy($src, $chstamp, $dimension, $settings);
         });
+    }
+
+    /**
+     * Registers the protected system status endpoint at GET /system/status.
+     *
+     * Returns a compact JSON snapshot of the runtime for external monitoring
+     * (PHP version, last deployment, installed vinou package versions). The
+     * endpoint is always registered but only answers with data when the request
+     * carries the shared secret configured under system.statusSecret; otherwise
+     * it responds 401 without leaking any information. When no secret is
+     * configured the endpoint is effectively disabled (always 401).
+     *
+     * Authentication accepts either an "Authorization: Bearer <secret>" header
+     * or an "X-Status-Token: <secret>" header (fallback for hosts that strip
+     * the Authorization header). Comparison is constant-time via hash_equals().
+     *
+     * @return void
+     */
+    private function registerStatusEndpoint(): void {
+        $system = $this->settingsService->get('system') ?? [];
+        $secret = isset($system['statusSecret']) ? (string) $system['statusSecret'] : '';
+
+        $this->router->get('/system/status', function() use ($secret) {
+            $provided = $this->extractStatusToken();
+
+            if ($secret === '' || $provided === null || !hash_equals($secret, $provided)) {
+                header('HTTP/1.1 401 Unauthorized');
+                header('Content-Type: application/json');
+                header('WWW-Authenticate: Bearer realm="status"');
+                echo json_encode(['ok' => false, 'error' => 'unauthorized']);
+                exit();
+            }
+
+            Render::sendJSON($this->collectSystemStatus());
+        });
+    }
+
+    /**
+     * Extracts the status token from the incoming request headers.
+     *
+     * Prefers the standard "Authorization: Bearer <token>" header and falls
+     * back to a custom "X-Status-Token" header for environments where the
+     * Authorization header is not forwarded to PHP.
+     *
+     * @return string|null  The provided token, or null when none was sent.
+     */
+    private function extractStatusToken(): ?string {
+        $authorization = $_SERVER['HTTP_AUTHORIZATION']
+            ?? $_SERVER['REDIRECT_HTTP_AUTHORIZATION']
+            ?? '';
+
+        if ($authorization === '' && function_exists('apache_request_headers')) {
+            $headers = apache_request_headers();
+            $authorization = $headers['Authorization'] ?? $headers['authorization'] ?? '';
+        }
+
+        if (preg_match('/^Bearer\s+(.+)$/i', trim($authorization), $matches))
+            return trim($matches[1]);
+
+        $custom = $_SERVER['HTTP_X_STATUS_TOKEN'] ?? '';
+        if ($custom !== '')
+            return trim($custom);
+
+        return null;
+    }
+
+    /**
+     * Collects the full system status payload returned by the status endpoint.
+     *
+     * Intentionally comprehensive so that the consuming monitoring dashboard can
+     * surface additional details later without requiring a redeploy of every
+     * shop. The `schema` field is bumped whenever the payload structure changes.
+     *
+     * @return array<string, mixed>
+     */
+    private function collectSystemStatus(): array {
+        return [
+            'ok'         => true,
+            'schema'     => 1,
+            'time'       => date('c'),
+            'deployment' => $this->readDeployInfo(),
+            'php'        => $this->collectPhpInfo(),
+            'system'     => $this->collectSystemInfo(),
+            'packages'   => $this->collectPackageVersions(),
+        ];
+    }
+
+    /**
+     * Collects PHP runtime details: version, SAPI, architecture, loaded
+     * extensions, the complete INI configuration, OPcache state and the
+     * versions of the most relevant bundled libraries.
+     *
+     * @return array<string, mixed>
+     */
+    private function collectPhpInfo(): array {
+        return [
+            'version'      => PHP_VERSION,
+            'versionId'    => PHP_VERSION_ID,
+            'major'        => PHP_MAJOR_VERSION,
+            'minor'        => PHP_MINOR_VERSION,
+            'release'      => PHP_RELEASE_VERSION,
+            'sapi'         => PHP_SAPI,
+            'zend'         => zend_version(),
+            'architecture' => PHP_INT_SIZE * 8,
+            'extensions'   => $this->collectExtensions(),
+            'ini'          => $this->collectIni(),
+            'opcache'      => $this->collectOpcacheInfo(),
+            'libraries'    => $this->collectLibraries(),
+        ];
+    }
+
+    /**
+     * Returns all loaded PHP extensions, sorted for stable output.
+     *
+     * @return list<string>
+     */
+    private function collectExtensions(): array {
+        $extensions = get_loaded_extensions();
+        sort($extensions, SORT_STRING | SORT_FLAG_CASE);
+        return array_values($extensions);
+    }
+
+    /**
+     * Returns the complete PHP INI configuration (every directive with its
+     * current value). Falls back to a curated subset when ini_get_all() is
+     * disabled on the host.
+     *
+     * @return array<string, mixed>
+     */
+    private function collectIni(): array {
+        $all = @ini_get_all(null, false);
+        if (is_array($all)) {
+            ksort($all);
+            return $all;
+        }
+
+        $keys = [
+            'memory_limit', 'max_execution_time', 'max_input_time', 'max_input_vars',
+            'upload_max_filesize', 'post_max_size', 'max_file_uploads', 'file_uploads',
+            'display_errors', 'display_startup_errors', 'log_errors', 'error_reporting',
+            'error_log', 'date.timezone', 'default_charset', 'default_socket_timeout',
+            'allow_url_fopen', 'short_open_tag', 'session.save_handler',
+            'session.gc_maxlifetime', 'session.cookie_secure', 'opcache.enable',
+            'opcache.memory_consumption', 'opcache.jit', 'opcache.jit_buffer_size',
+            'realpath_cache_size', 'output_buffering',
+        ];
+
+        $out = [];
+        foreach ($keys as $key)
+            $out[$key] = ini_get($key);
+
+        return $out;
+    }
+
+    /**
+     * Returns a compact summary of the OPcache state, or ['enabled' => false]
+     * when OPcache is unavailable or its API is restricted.
+     *
+     * @return array<string, mixed>
+     */
+    private function collectOpcacheInfo(): array {
+        if (!function_exists('opcache_get_status'))
+            return ['enabled' => false];
+
+        $status = @opcache_get_status(false);
+        if (!is_array($status))
+            return ['enabled' => false];
+
+        $info = ['enabled' => (bool) ($status['opcache_enabled'] ?? false)];
+
+        if (isset($status['memory_usage']) && is_array($status['memory_usage'])) {
+            $memory = $status['memory_usage'];
+            $info['memoryUsedMb'] = round(($memory['used_memory'] ?? 0) / 1048576, 1);
+            $info['memoryFreeMb'] = round(($memory['free_memory'] ?? 0) / 1048576, 1);
+        }
+
+        if (isset($status['opcache_statistics']) && is_array($status['opcache_statistics'])) {
+            $stats = $status['opcache_statistics'];
+            $info['cachedScripts'] = $stats['num_cached_scripts'] ?? null;
+            $info['hitRate']       = isset($stats['opcache_hit_rate'])
+                ? round((float) $stats['opcache_hit_rate'], 2)
+                : null;
+        }
+
+        if (function_exists('opcache_get_configuration')) {
+            $config = @opcache_get_configuration();
+            if (is_array($config) && isset($config['directives']['opcache.jit']))
+                $info['jit'] = $config['directives']['opcache.jit'];
+        }
+
+        return $info;
+    }
+
+    /**
+     * Returns the versions of a few security-relevant bundled libraries.
+     *
+     * @return array<string, string>
+     */
+    private function collectLibraries(): array {
+        $libraries = [];
+
+        if (function_exists('curl_version')) {
+            $curl = @curl_version();
+            if (is_array($curl)) {
+                if (isset($curl['version']))     $libraries['curl'] = $curl['version'];
+                if (isset($curl['ssl_version'])) $libraries['curlSsl'] = $curl['ssl_version'];
+            }
+        }
+
+        if (defined('OPENSSL_VERSION_TEXT'))
+            $libraries['openssl'] = OPENSSL_VERSION_TEXT;
+        if (defined('INTL_ICU_VERSION'))
+            $libraries['icu'] = INTL_ICU_VERSION;
+        if (defined('LIBXML_DOTTED_VERSION'))
+            $libraries['libxml'] = LIBXML_DOTTED_VERSION;
+
+        return $libraries;
+    }
+
+    /**
+     * Collects host/server details: hostname, OS, web server, document root and
+     * disk usage of the deployment volume.
+     *
+     * @return array<string, mixed>
+     */
+    private function collectSystemInfo(): array {
+        $root = defined('VINOU_ROOT') ? VINOU_ROOT : getcwd();
+
+        $info = [
+            'hostname'       => gethostname() ?: null,
+            'os'             => PHP_OS,
+            'osRelease'      => php_uname('r'),
+            'machine'        => php_uname('m'),
+            'serverSoftware' => $_SERVER['SERVER_SOFTWARE'] ?? null,
+            'documentRoot'   => $_SERVER['DOCUMENT_ROOT'] ?? $root,
+        ];
+
+        $free = @disk_free_space($root);
+        if ($free !== false)
+            $info['diskFreeMb'] = round($free / 1048576);
+
+        $total = @disk_total_space($root);
+        if ($total !== false)
+            $info['diskTotalMb'] = round($total / 1048576);
+
+        return $info;
+    }
+
+    /**
+     * Reads the pretty version strings of every installed Composer package via
+     * Composer's runtime metadata, sorted by package name.
+     *
+     * @return array<string, string>
+     */
+    private function collectPackageVersions(): array {
+        $versions = [];
+        if (!class_exists(\Composer\InstalledVersions::class))
+            return $versions;
+
+        try {
+            foreach (\Composer\InstalledVersions::getInstalledPackages() as $package) {
+                try {
+                    $versions[$package] = \Composer\InstalledVersions::getPrettyVersion($package) ?? 'dev';
+                } catch (\Throwable) {
+                    // Ignore packages that cannot be resolved.
+                }
+            }
+        } catch (\Throwable) {
+            // Composer runtime metadata unavailable.
+        }
+
+        ksort($versions);
+        return $versions;
+    }
+
+    /**
+     * Reads the last line of the deployment marker file (deploy.txt) written by
+     * the CI pipeline on every deploy. The file lives at the project root, one
+     * level above the web root, and grows with one line per deployment:
+     *
+     *   Version:<shortSha>;Date:<ISO8601>;Commit:<fullSha>
+     *
+     * @return array{date: ?string, version: ?string, commit: ?string}
+     */
+    private function readDeployInfo(): array {
+        $info = ['date' => null, 'version' => null, 'commit' => null];
+
+        $root = defined('VINOU_ROOT') ? VINOU_ROOT : getcwd();
+        $candidates = [
+            dirname($root) . '/deploy.txt',
+            $root . '/deploy.txt',
+        ];
+
+        $file = null;
+        foreach ($candidates as $candidate) {
+            if (is_file($candidate)) {
+                $file = $candidate;
+                break;
+            }
+        }
+
+        if ($file === null)
+            return $info;
+
+        $lines = @file($file, FILE_IGNORE_NEW_LINES | FILE_SKIP_EMPTY_LINES);
+        if ($lines === false || $lines === [])
+            return $info;
+
+        $last = trim((string) end($lines));
+        foreach (explode(';', $last) as $pair) {
+            $parts = explode(':', $pair, 2);
+            if (count($parts) !== 2)
+                continue;
+
+            $key   = strtolower(trim($parts[0]));
+            $value = trim($parts[1]);
+            if (array_key_exists($key, $info))
+                $info[$key] = $value;
+        }
+
+        return $info;
     }
 
     /**
