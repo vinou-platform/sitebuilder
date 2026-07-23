@@ -8,6 +8,8 @@ use \Thepixeldeveloper\Sitemap\Urlset;
 use \Thepixeldeveloper\Sitemap\Url;
 use \Thepixeldeveloper\Sitemap\Drivers\XmlWriterDriver;
 use \Thepixeldeveloper\Sitemap\Extensions\Image;
+use \Monolog\Logger;
+use \Monolog\Handler\RotatingFileHandler;
 
 /**
  * Processor for generating sitemaps from the active route configuration.
@@ -32,6 +34,9 @@ class Sitemap implements ProcessorInterface {
 
     /** @var Api Vinou API instance for fetching dynamic sitemap entries. */
     public Api $api;
+
+    /** @var Logger|null Lazily initialised Monolog logger (development only). */
+    private ?Logger $logger = null;
 
     /**
      * @param DynamicRoutes $routeConfig  Reference to the active router configuration.
@@ -150,19 +155,39 @@ class Sitemap implements ProcessorInterface {
             preg_match_all('/{(.+?)}/', $url, $matches);
 
             if (count($matches[1]) > 0) {
-                if (!isset($config['function']))
+                if (!isset($config['function'])) {
+                    $this->logSkippedRoute('dynamic route without function', ['url' => $url]);
                     continue;
+                }
 
                 $function = $config['function'];
                 $dataKey  = $config['dataKey'] ?? 'data';
                 $postData = $config['params'] ?? [];
                 $result   = $this->api->{$function}($postData);
+
+                // API may return false (e.g. empty/failed lookup); skip this
+                // route's dynamic entries instead of fatally erroring.
+                if (!is_array($result)) {
+                    $this->logSkippedRoute('API returned non-array', [
+                        'url'      => $url,
+                        'function' => $function,
+                        'type'     => gettype($result),
+                    ]);
+                    continue;
+                }
+
                 $data     = $result[$dataKey] ?? $result;
 
                 $data = $this->fetchPaginatedResults($function, $postData, $result, $data, $dataKey);
 
-                if (!is_iterable($data))
+                if (!is_iterable($data)) {
+                    $this->logSkippedRoute('resolved data not iterable', [
+                        'url'      => $url,
+                        'function' => $function,
+                        'dataKey'  => $dataKey,
+                    ]);
                     continue;
+                }
 
                 foreach ($data as $entry) {
                     $createUrl = true;
@@ -238,5 +263,36 @@ class Sitemap implements ProcessorInterface {
         }
 
         return $data;
+    }
+
+    /**
+     * Logs a skipped sitemap route – only in the local development context.
+     *
+     * A route can drop out of the XML sitemap for several reasons (dynamic
+     * route without a function, API returning a non-array/non-iterable). In
+     * production this stays silent; locally it is written via Monolog so the
+     * gap is traceable.
+     *
+     * @param string               $reason Short machine-readable skip reason.
+     * @param array<string, mixed> $ctx    Additional context (url, function …).
+     */
+    private function logSkippedRoute(string $reason, array $ctx = []): void
+    {
+        $isDev = (defined('VINOU_LOCAL') && VINOU_LOCAL)
+              || (defined('VINOU_LOG_LEVEL') && VINOU_LOG_LEVEL === 'DEBUG');
+
+        if (!$isDev)
+            return;
+
+        if ($this->logger === null) {
+            $logDir = Helper::getNormDocRoot() . (defined('VINOU_LOG_DIR') ? VINOU_LOG_DIR : 'logs/');
+            if (!is_dir($logDir))
+                mkdir($logDir, 0777, true);
+
+            $this->logger = new Logger('sitemap');
+            $this->logger->pushHandler(new RotatingFileHandler($logDir . 'sitemap.log', 30, Logger::DEBUG));
+        }
+
+        $this->logger->warning('Sitemap route skipped: ' . $reason, $ctx);
     }
 }
