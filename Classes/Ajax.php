@@ -50,6 +50,25 @@ class Ajax {
     }
 
     /**
+     * True if settings.geoBlocking blocks the basket or checkout for the
+     * visitor's country (ajax.php bypasses Site::run and its page check).
+     *
+     * @return bool
+     */
+    private function isGeoBlocked(): bool {
+        $settings = $this->settingsService->get('settings');
+        $config   = is_array($settings) ? ($settings['geoBlocking'] ?? null) : null;
+        if (!is_array($config) || empty($config['countries']))
+            return false;
+
+        $paths = (array)($config['paths'] ?? ['*']);
+        if (!Tools\GeoIp::pathMatches('warenkorb', $paths) && !Tools\GeoIp::pathMatches('checkout', $paths))
+            return false;
+
+        return Tools\GeoIp::blockedCountry($config) !== null;
+    }
+
+    /**
      * Initialises the settings loader with the given theme directory.
      *
      * @param string|null $dir  Absolute path to the theme directory, or null to skip.
@@ -98,6 +117,8 @@ class Ajax {
                 break;
 
             case 'addItem':
+                if ($this->isGeoBlocked())
+                    $this->sendResult(false, 'not available in your country', 403);
                 $this->sendResult($this->api->addItemToBasket($this->request), 'item could not be added');
                 break;
 

@@ -80,6 +80,7 @@ class Site {
     public function run(): void {
         $this->initialize();
         $this->render->loadDefaultStorages();
+        $this->applyGeoBlocking();
 
         if (isset($this->config['load']['defaultRoutes']))
             $this->routeConfig->setDefaults($this->config['load']['defaultRoutes']);
@@ -93,6 +94,51 @@ class Site {
         $this->registerStatusEndpoint();
         $this->routeConfig->init();
         $this->router->run();
+    }
+
+    /**
+     * Blocks configured paths for visitors from configured countries.
+     *
+     * settings.geoBlocking:
+     *   countries:     ISO codes to block, e.g. [dk] – empty/missing = off
+     *   paths:         path prefixes to block ('weine' blocks /weine and /weine/…),
+     *                  '*' = whole site
+     *   exceptions:    path prefixes that stay reachable (legal pages, /system)
+     *   countryHeader: optional $_SERVER key with a country code set by the
+     *                  host/CDN (e.g. HTTP_CF_IPCOUNTRY) – used before the database
+     *   template:      page shown with HTTP 451 (default GeoBlocked.twig)
+     *
+     * Country database: config/geoip/ (built by `vendor/bin/vinou geoip:update`).
+     * Fail-open: without database or with an unknown country nothing is blocked.
+     *
+     * @return void
+     */
+    private function applyGeoBlocking(): void {
+        $settings = $this->settingsService->get('settings');
+        $config   = is_array($settings) ? ($settings['geoBlocking'] ?? null) : null;
+        if (!is_array($config) || empty($config['countries']))
+            return;
+
+        $path = (string)parse_url($_SERVER['REQUEST_URI'] ?? '/', PHP_URL_PATH);
+        if (!Tools\GeoIp::pathMatches($path, (array)($config['paths'] ?? ['*']))
+            || Tools\GeoIp::pathMatches($path, (array)($config['exceptions'] ?? [])))
+            return;
+
+        $country = Tools\GeoIp::blockedCountry($config);
+        if ($country === null)
+            return;
+
+        header('HTTP/1.1 451 Unavailable For Legal Reasons');
+        header('Cache-Control: no-store');
+
+        $additionalContent = $this->settingsService->get('additionalContent');
+        if (is_array($additionalContent))
+            $this->render->dataProcessing($additionalContent);
+
+        $this->render->renderPage($config['template'] ?? 'GeoBlocked.twig', [
+            'pageTitle' => 'Nicht verfügbar',
+            'geoCountry' => $country
+        ]);
     }
 
     /**

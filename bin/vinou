@@ -8,6 +8,7 @@
  *   vendor/bin/vinou cache:warmup    Alle Produktbilder von der API laden und cachen
  *   vendor/bin/vinou pdf:clear       PDF-Cache (Cache/Pdf/) leeren
  *   vendor/bin/vinou pdf:warmup      Alle Wein-Expertise-PDFs von der API laden und cachen
+ *   vendor/bin/vinou geoip:update    Länderdatenbank (DB-IP Lite, CC BY 4.0) nach config/geoip/ laden
  */
 
 // VINOU_ROOT must point to the project's public/ directory.
@@ -30,7 +31,8 @@ if (!$command || in_array($command, ['help', '--help', '-h'])) {
     echo "  cache:clear    Bildcache (Cache/Images/) leeren\n";
     echo "  cache:warmup   Alle Produktbilder von der API laden und lokal cachen\n";
     echo "  pdf:clear      PDF-Cache (Cache/Pdf/) leeren\n";
-    echo "  pdf:warmup     Alle Wein-Expertise-PDFs von der API laden und lokal cachen\n\n";
+    echo "  pdf:warmup     Alle Wein-Expertise-PDFs von der API laden und lokal cachen\n";
+    echo "  geoip:update   Länderdatenbank für settings.geoBlocking laden (DB-IP Lite, CC BY 4.0)\n\n";
     echo "Aufruf: vendor/bin/vinou <kommando>\n";
     exit(0);
 }
@@ -40,10 +42,47 @@ match ($command) {
     'cache:warmup' => cacheWarmup(),
     'pdf:clear'    => pdfClean(),
     'pdf:warmup'   => pdfWarmup(),
+    'geoip:update' => geoipUpdate(),
     default        => unknownCommand($command),
 };
 
 // ─────────────────────────────────────────────────────────────────
+
+/**
+ * Lädt DB-IP „IP to Country Lite“ (monatlich, CC BY 4.0, kostenlos) und baut
+ * daraus die Binärdateien in config/geoip/ (siehe Tools\\GeoIp). Versucht den
+ * aktuellen Monat, sonst den Vormonat (die Datei erscheint zum Monatsanfang).
+ */
+function geoipUpdate(): void {
+    $target = realpath(VINOU_ROOT . '../config') . '/geoip/';
+    $tmp    = sys_get_temp_dir() . '/dbip-country-lite.csv.gz';
+
+    $loaded = false;
+    foreach ([date('Y-m'), date('Y-m', strtotime('first day of last month'))] as $month) {
+        $url = "https://download.db-ip.com/free/dbip-country-lite-{$month}.csv.gz";
+        $ch  = curl_init($url);
+        $fh  = fopen($tmp, 'wb');
+        curl_setopt_array($ch, [CURLOPT_FILE => $fh, CURLOPT_FOLLOWLOCATION => true, CURLOPT_TIMEOUT => 120, CURLOPT_FAILONERROR => true]);
+        $ok = curl_exec($ch);
+        curl_close($ch);
+        fclose($fh);
+        if ($ok && filesize($tmp) > 1000000) {
+            echo "Geladen: {$url} (" . round(filesize($tmp) / 1048576, 1) . " MB)\n";
+            $loaded = true;
+            break;
+        }
+    }
+
+    if (!$loaded) {
+        fwrite(STDERR, "Fehler: DB-IP-Datei konnte nicht geladen werden – bestehende Datenbank bleibt.\n");
+        exit(1);
+    }
+
+    $counts = (new \Vinou\SiteBuilder\Tools\GeoIp($target))->build($tmp);
+    unlink($tmp);
+    echo "Länderdatenbank gebaut: {$counts['v4']} IPv4- und {$counts['v6']} IPv6-Bereiche in {$target}\n";
+    echo "Quelle: IP Geolocation by DB-IP (https://db-ip.com), CC BY 4.0\n";
+}
 
 function cacheClean(): void {
     clearDirectory(VINOU_ROOT . 'Cache/Images', 'Bildcache');
