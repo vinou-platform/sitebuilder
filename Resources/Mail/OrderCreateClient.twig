@@ -1,10 +1,10 @@
 {% extends "Layouts/Default.html" %}
 {% block mailcontent %}
 	<h3>Vielen Dank!</h3>
-	<p>Wir haben Deine Bestellung wie folgt erhalten.<br><br></p>
+	<p>{% if formalSpeech %}Wir haben Ihre Bestellung wie folgt erhalten.{% else %}Wir haben Deine Bestellung wie folgt erhalten.{% endif %}<br><br></p>
 
 	{% if order.payment_type == 'prepaid' %}
-		<p><b>Du hast als Zahlungsart Vorkasse gewählt.<br>Bitte überweise den fälligen Gesamtbetrag von {{order.gross_cashback|number_format(2, ',', '.')}}&nbsp;EUR auf folgendes Konto:</b><br><br></p>
+		<p><b>{% if formalSpeech %}Sie haben als Zahlungsart Vorkasse gewählt.<br>Bitte überweisen Sie den fälligen Gesamtbetrag von{% else %}Du hast als Zahlungsart Vorkasse gewählt.<br>Bitte überweise den fälligen Gesamtbetrag von{% endif %} {{order.gross_cashback|number_format(2, ',', '.')}}&nbsp;EUR auf folgendes Konto:</b><br><br></p>
 		<table border="0" cellspacing="0" cellpadding="10" style="width: 100%">
 			<tr style="background-color: #EFEFEF;">
 				<td width="150">IBAN:</td>
@@ -63,7 +63,7 @@
 			</td>
 			<td width="50%">
 				{% if order.delivery_type == 'none' %}
-					<p><strong>Click & Collect - Abholung</strong><br>Du holst Deine Bestellung zu den regulären Öffnungszeiten oder nach telefonischer Vereinbarung bei uns ab.</p>
+					<p><strong>Click & Collect - Abholung</strong><br>{% if formalSpeech %}Sie holen Ihre Bestellung zu den regulären Öffnungszeiten oder nach telefonischer Vereinbarung bei uns ab.{% else %}Du holst Deine Bestellung zu den regulären Öffnungszeiten oder nach telefonischer Vereinbarung bei uns ab.{% endif %}</p>
 				{% else %}
 					<p><b>Die Lieferung erfolgt an:</b><br>
 						{% if order.delivery.company and order.delivery.company != '' %}Firma: {{order.delivery.company}}<br>{% endif %}
@@ -87,7 +87,7 @@
 		{% if order.note %}
 			<tr>
 				<td colspan="2">
-					<p><b>Deine Nachricht an uns:</b><br>
+					<p><b>{% if formalSpeech %}Ihre Nachricht an uns:{% else %}Deine Nachricht an uns:{% endif %}</b><br>
 					{{order.note}}<br></p>
 				</td>
 			</tr>
@@ -228,6 +228,6 @@
 	</table>
 
 	{% if order.payment_type != 'prepaid' %}
-		<p>Deine Bestellung wird schnellstmöglich bearbeitet.</p>
+		<p>{% if formalSpeech %}Ihre Bestellung wird schnellstmöglich bearbeitet.{% else %}Deine Bestellung wird schnellstmöglich bearbeitet.{% endif %}</p>
 	{% endif %}
 {% endblock %}

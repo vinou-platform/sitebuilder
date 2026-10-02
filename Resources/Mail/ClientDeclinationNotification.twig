@@ -1,12 +1,12 @@
 {% extends "Layouts/Default.html" %}
 {% block mailcontent %}
-	<h3>Hallo,</h3>
+	<h3>{% if formalSpeech %}Guten Tag,{% else %}Hallo,{% endif %}</h3>
 	<p>
-		Deine Registrierung wurde abgelehnt!<br>
-		Wir bitten um Dein Verständnis.
+		{% if formalSpeech %}Ihre Registrierung wurde abgelehnt.{% else %}Deine Registrierung wurde abgelehnt!{% endif %}<br>
+		{% if formalSpeech %}Wir bitten um Ihr Verständnis.{% else %}Wir bitten um Dein Verständnis.{% endif %}
 	</p>
 	<p>
-		Solltest Du Fragen zu Deiner Registrierung haben wende Dich direkt an uns<br><br>
+		{% if formalSpeech %}Sollten Sie Fragen zu Ihrer Registrierung haben, wenden Sie sich bitte direkt an uns{% else %}Solltest Du Fragen zu Deiner Registrierung haben wende Dich direkt an uns{% endif %}<br><br>
 		<a href="{{protocol}}{{domain}}/kontakt" class="button">Kontaktanfrage!</a>
 	</p>
 	<p>

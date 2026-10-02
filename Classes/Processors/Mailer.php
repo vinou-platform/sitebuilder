@@ -6,6 +6,7 @@ use \PHPMailer\PHPMailer\Exception;
 use \Vinou\ApiConnector\Api;
 use \Vinou\ApiConnector\Tools\Helper;
 use \Vinou\ApiConnector\Session\Session;
+use \Vinou\ApiConnector\Services\ServiceLocator;
 use \Twig\Loader\FilesystemLoader;
 use \Twig\Environment;
 use \Twig\TwigFilter;
@@ -639,7 +640,25 @@ class Mailer implements ProcessorInterface {
         $data['domain']   = $_SERVER['SERVER_NAME'];
         $data['protocol'] = Helper::fetchProtocol();
 
+        // Anrede für die Mail-Templates: settings.speechStyle = formal → Sie
+        $data['formalSpeech'] ??= $this->isFormalSpeech();
+
         return $this->renderer->load($template)->render($data);
+    }
+
+    /**
+     * Reads settings.speechStyle; true when the shop addresses customers formally (Sie).
+     *
+     * @return bool
+     */
+    private function isFormalSpeech(): bool {
+        try {
+            $settings = ServiceLocator::get('Settings')->get('settings') ?? [];
+        } catch (\Throwable $e) {
+            return false;
+        }
+
+        return is_array($settings) && ($settings['speechStyle'] ?? '') === 'formal';
     }
 
     /**

@@ -1,11 +1,11 @@
 {% extends "Layouts/Default.html" %}
 {% block mailcontent %}
-	<h3>Hallo {{client.first_name}} {{client.last_name}},</h3>
+	<h3>{% if formalSpeech %}Guten Tag{% else %}Hallo{% endif %} {{client.first_name}} {{client.last_name}},</h3>
 	<p>
-		Schön dass Du unseren Shop {{domain}} gefunden hast. Wir haben für Dich einen Kunden-Account angelegt über den Du dich über den aktuellen Zustand Deiner Bestellungen und Deine Konditionen informieren kannst.<br><br>
-		Um Deinen Account zu nutzen musst Du nun nur noch Dein Passwort setzen. Nutze dazu den folgenden Link. <b>Der Link ist bis zum {{client.lostpassword_expire}} gültig.</b><br>
-		Dein Passwort wurde zurückgesetzt. Mit dem folgenden Link kannst Du Dein Passwort neu setzen.<br><br>
-		<a href="{{protocol}}{{domain}}{{settings.client.pages.resetPassword}}?mail={{client.mail}}&hash={{client.lostpassword_hash}}" class="button">Aktivierung bestätigen</a><br><br>Nutze diesen Link <a href="{{protocol}}{{domain}}{{settings.client.pages.resetPassword}}?mail={{client.mail}}&hash={{client.lostpassword_hash}}" target="_blank">{{protocol}}{{domain}}{{settings.client.pages.resetPassword}}?mail={{client.mail}}&hash={{client.lostpassword_hash}}</a> sollte der Knopf nicht richtig dargestellt werden.<br><br>
-		Du benötigst keinen Account? Dann ignoriere diese Nachricht und freue dich in der Zwischenzeit auf deine Weinbestellung.
+		{% if formalSpeech %}Schön, dass Sie unseren Shop {{domain}} gefunden haben. Wir haben für Sie ein Kundenkonto angelegt, über das Sie sich über den aktuellen Stand Ihrer Bestellungen und Ihre Konditionen informieren können.{% else %}Schön dass Du unseren Shop {{domain}} gefunden hast. Wir haben für Dich einen Kunden-Account angelegt über den Du dich über den aktuellen Zustand Deiner Bestellungen und Deine Konditionen informieren kannst.{% endif %}<br><br>
+		{% if formalSpeech %}Um Ihr Kundenkonto zu nutzen, müssen Sie nur noch Ihr Passwort setzen. Nutzen Sie dazu den folgenden Link.{% else %}Um Deinen Account zu nutzen musst Du nun nur noch Dein Passwort setzen. Nutze dazu den folgenden Link.{% endif %} <b>Der Link ist bis zum {{client.lostpassword_expire}} gültig.</b><br>
+		{% if formalSpeech %}Ihr Passwort wurde zurückgesetzt. Mit dem folgenden Link können Sie Ihr Passwort neu setzen.{% else %}Dein Passwort wurde zurückgesetzt. Mit dem folgenden Link kannst Du Dein Passwort neu setzen.{% endif %}<br><br>
+		<a href="{{protocol}}{{domain}}{{settings.client.pages.resetPassword}}?mail={{client.mail}}&hash={{client.lostpassword_hash}}" class="button">Aktivierung bestätigen</a><br><br>{% if formalSpeech %}Nutzen Sie diesen Link{% else %}Nutze diesen Link{% endif %} <a href="{{protocol}}{{domain}}{{settings.client.pages.resetPassword}}?mail={{client.mail}}&hash={{client.lostpassword_hash}}" target="_blank">{{protocol}}{{domain}}{{settings.client.pages.resetPassword}}?mail={{client.mail}}&hash={{client.lostpassword_hash}}</a> sollte der Knopf nicht richtig dargestellt werden.<br><br>
+		{% if formalSpeech %}Sie benötigen kein Kundenkonto? Dann ignorieren Sie diese Nachricht und freuen Sie sich auf Ihre Weinbestellung.{% else %}Du benötigst keinen Account? Dann ignoriere diese Nachricht und freue dich in der Zwischenzeit auf deine Weinbestellung.{% endif %}
 	</p>
 {% endblock %}

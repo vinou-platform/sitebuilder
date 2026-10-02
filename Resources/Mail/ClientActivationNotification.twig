@@ -1,15 +1,15 @@
 {% extends "Layouts/Default.html" %}
 {% block mailcontent %}
-	<h3>Hallo,</h3>
+	<h3>{% if formalSpeech %}Guten Tag,{% else %}Hallo,{% endif %}</h3>
 	<p>
-		Deine Registrierung wurde bestätigt.<br>
-		Du kannst Dich jetzt auf <a href="{{domain}}">{{domain}}</a> einloggen unseren internen Bereich nutzen. Hier warten viele Vorteile auf Dich.<br><br>
-		<a href="{{protocol}}{{domain}}{{settings.client.pages.login}}" class="button" target="_blank">Jetzt einloggen</a><br><br>Nutze diesen Link <a href="{{protocol}}{{domain}}{{settings.client.pages.login}}" target="_blank">{{protocol}}{{domain}}{{settings.client.pages.login}}</a> sollte der Knopf nicht richtig dargestellt werden.
+		{% if formalSpeech %}Ihre Registrierung wurde bestätigt.{% else %}Deine Registrierung wurde bestätigt.{% endif %}<br>
+		{% if formalSpeech %}Sie können sich jetzt auf <a href="{{domain}}">{{domain}}</a> anmelden und unseren internen Bereich nutzen. Hier warten viele Vorteile auf Sie.{% else %}Du kannst Dich jetzt auf <a href="{{domain}}">{{domain}}</a> einloggen unseren internen Bereich nutzen. Hier warten viele Vorteile auf Dich.{% endif %}<br><br>
+		<a href="{{protocol}}{{domain}}{{settings.client.pages.login}}" class="button" target="_blank">Jetzt einloggen</a><br><br>{% if formalSpeech %}Nutzen Sie diesen Link{% else %}Nutze diesen Link{% endif %} <a href="{{protocol}}{{domain}}{{settings.client.pages.login}}" target="_blank">{{protocol}}{{domain}}{{settings.client.pages.login}}</a> sollte der Knopf nicht richtig dargestellt werden.
 
 	</p>
 	<p>
-		Solltest Du während des Registrierungsprozesses kein Passwort angelegt oder Dein Passwort vergessen haben, kannst Du dein Passwort <a href="{{protocol}}{{domain}}{{settings.client.pages.lostPassword}}">hier neu anfordern.</a><br><br>
-		<a href="{{protocol}}{{domain}}{{settings.client.pages.lostPassword}}" class="button" target="_blank">Passwort vergessen!</a><br><br>Nutze diesen Link <a href="{{protocol}}{{domain}}{{settings.client.pages.lostPassword}}" target="_blank">{{protocol}}{{domain}}{{settings.client.pages.lostPassword}}</a> sollte der Knopf nicht richtig dargestellt werden.
+		{% if formalSpeech %}Sollten Sie bei der Registrierung kein Passwort angelegt oder Ihr Passwort vergessen haben, können Sie Ihr Passwort{% else %}Solltest Du während des Registrierungsprozesses kein Passwort angelegt oder Dein Passwort vergessen haben, kannst Du dein Passwort{% endif %} <a href="{{protocol}}{{domain}}{{settings.client.pages.lostPassword}}">hier neu anfordern.</a><br><br>
+		<a href="{{protocol}}{{domain}}{{settings.client.pages.lostPassword}}" class="button" target="_blank">Passwort vergessen!</a><br><br>{% if formalSpeech %}Nutzen Sie diesen Link{% else %}Nutze diesen Link{% endif %} <a href="{{protocol}}{{domain}}{{settings.client.pages.lostPassword}}" target="_blank">{{protocol}}{{domain}}{{settings.client.pages.lostPassword}}</a> sollte der Knopf nicht richtig dargestellt werden.
 	</p>
 	<p>
 		Viel Spaß!

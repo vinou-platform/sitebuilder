@@ -1,8 +1,8 @@
 {% extends "Layouts/Default.html" %}
 {% block mailcontent %}
-	<h3>Hallo {{client.first_name}} {{client.last_name}},</h3>
+	<h3>{% if formalSpeech %}Guten Tag{% else %}Hallo{% endif %} {{client.first_name}} {{client.last_name}},</h3>
 	<p>
-		Wir haben Deine Registrierung erhalten. Bitte bestätige Deinen Account mit dem folgenden link<br><br>
-		<a href="https://{{domain}}{{settings.client.pages.activation}}?mail={{client.mail}}&hash={{client.lostpassword_hash}}" class="button" target="_blank">Aktivierung bestätigen</a><br><br>Nutze diesen Link <a href="https://{{domain}}{{settings.client.pages.activation}}?mail={{client.mail}}&hash={{client.lostpassword_hash}}" target="_blank">https://{{domain}}{{settings.client.pages.activation}}?mail={{client.mail}}&hash={{client.lostpassword_hash}}</a> sollte der Knopf nicht richtig dargestellt werden.
+		{% if formalSpeech %}Wir haben Ihre Registrierung erhalten. Bitte bestätigen Sie Ihr Kundenkonto mit dem folgenden Link{% else %}Wir haben Deine Registrierung erhalten. Bitte bestätige Deinen Account mit dem folgenden link{% endif %}<br><br>
+		<a href="https://{{domain}}{{settings.client.pages.activation}}?mail={{client.mail}}&hash={{client.lostpassword_hash}}" class="button" target="_blank">Aktivierung bestätigen</a><br><br>{% if formalSpeech %}Nutzen Sie diesen Link{% else %}Nutze diesen Link{% endif %} <a href="https://{{domain}}{{settings.client.pages.activation}}?mail={{client.mail}}&hash={{client.lostpassword_hash}}" target="_blank">https://{{domain}}{{settings.client.pages.activation}}?mail={{client.mail}}&hash={{client.lostpassword_hash}}</a> sollte der Knopf nicht richtig dargestellt werden.
 	</p>
 {% endblock %}

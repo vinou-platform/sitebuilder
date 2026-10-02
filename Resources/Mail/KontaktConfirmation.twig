@@ -1,7 +1,7 @@
 {% extends "Layouts/Default.html" %}
 {% block mailcontent %}
 	<h1>{{title}}</h1>
-	<p>Vielen Dank für Deine Anfrage. Wir haben Deine Anfrage wie folgt erhalten:</p>
+	<p>{% if formalSpeech %}Vielen Dank für Ihre Anfrage. Wir haben Ihre Anfrage wie folgt erhalten:{% else %}Vielen Dank für Deine Anfrage. Wir haben Deine Anfrage wie folgt erhalten:{% endif %}</p>
 
 	{% set oddbg = 'background-color: #EFEFEF;' %}
 	{% set evenbg = 'background-color: #DDDDDD;' %}
@@ -21,5 +21,5 @@
 		{% endfor %}
 	</table>
 
-	<p>Wir werden Deine Anfrage schnellstmöglich bearbeiten.</p>
+	<p>{% if formalSpeech %}Wir werden Ihre Anfrage schnellstmöglich bearbeiten.{% else %}Wir werden Deine Anfrage schnellstmöglich bearbeiten.{% endif %}</p>
 {% endblock %}
