@@ -97,6 +97,19 @@ class Sitemap implements ProcessorInterface {
                 $dataKey    = $config['dataKey'] ?? 'data';
                 $postData   = $config['params'] ?? [];
                 $result     = $this->api->{$function}($postData);
+
+                // API may return false (e.g. a client without products or
+                // bundles); skip this route's dynamic entries instead of
+                // fatally erroring – same guard as in the XML sitemap.
+                if (!is_array($result)) {
+                    $this->logSkippedRoute('API returned non-array', [
+                        'url'      => $url,
+                        'function' => $function,
+                        'type'     => gettype($result),
+                    ]);
+                    continue;
+                }
+
                 $data       = $result[$dataKey] ?? $result;
                 $titleField = $config['titleField'] ?? 'name';
 
@@ -115,12 +128,14 @@ class Sitemap implements ProcessorInterface {
                             'title' => $entry[$titleField] ?? false,
                             'url'   => '/' . $suburl
                         ];
-                        $entries = array_merge_recursive($entries, $this->arrayToMap($suburl, '/', $dataPage));
+                        // replace, not merge: a duplicate slug would otherwise turn
+                        // 'title'/'url' into arrays and break the |link filter
+                        $entries = array_replace_recursive($entries, $this->arrayToMap($suburl, '/', $dataPage));
                     }
                 }
             } else {
                 $page    = ['title' => $routeConfig['pageTitle'], 'url' => '/' . $url];
-                $entries = array_merge_recursive($entries, $this->arrayToMap($url, '/', $page));
+                $entries = array_replace_recursive($entries, $this->arrayToMap($url, '/', $page));
             }
         }
 
