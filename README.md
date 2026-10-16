@@ -392,6 +392,7 @@ All filters are registered by `\Vinou\SiteBuilder\Tools\Render`.
 | `\Vinou\SiteBuilder\Site` | Main class; combines router, renderer, and settings loader |
 | `\Vinou\SiteBuilder\Loader\Settings` | Collects and merges settings YAML files |
 | `\Vinou\SiteBuilder\Tools\Render` | Initialises Twig, registers filters, executes dataProcessing |
+| `\Vinou\SiteBuilder\Tools\BasketCookie` | Keeps the basket UUID in the HttpOnly cookie `vinou_basket` (30 days) and restores it into a new session; removed after an order |
 | `\Vinou\SiteBuilder\Router\DynamicRoutes` | Reads YAML route files and configures the Bramus router |
 | `\Vinou\SiteBuilder\Processors\AbstractProcessor` | Base class for custom processors; provides `loadApi()` |
 | `\Vinou\SiteBuilder\Processors\Shop` | Shop-specific processing (basket, checkout, campaigns) |

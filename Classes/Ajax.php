@@ -2,6 +2,7 @@
 namespace Vinou\SiteBuilder;
 
 use \Vinou\SiteBuilder\Tools\Render;
+use \Vinou\SiteBuilder\Tools\BasketCookie;
 use \Vinou\SiteBuilder\Processors\Shop;
 use \Vinou\ApiConnector\Api;
 use \Vinou\ApiConnector\Session\Session;
@@ -39,6 +40,8 @@ class Ajax {
 
         if ($this->api->connected === false)
             $this->sendResult(false, 'could not create api connection');
+
+        BasketCookie::restore();
 
         $this->request = array_merge(
             $_POST,
@@ -216,6 +219,8 @@ class Ajax {
             else
                 array_push($this->errors, $errorMessage);
         }
+
+        BasketCookie::sync();
 
         if (count($this->errors) > 0)
             Render::sendJSONError([

@@ -207,7 +207,9 @@ class Render implements RendererInterface {
                 die();
             }
 
+            BasketCookie::restore();
             $this->api->initBasket();
+            BasketCookie::sync();
 
             $this->translation = $this->api->loadLocalization();
             foreach ($this->translation['wineregions'] as $countryregions) {

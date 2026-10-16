@@ -8,6 +8,7 @@ use \Vinou\ApiConnector\Services\ServiceLocator;
 use \Vinou\ApiConnector\Tools\Helper;
 use \Vinou\ApiConnector\Tools\Redirect;
 use \Vinou\SiteBuilder\Processors\Mailer;
+use \Vinou\SiteBuilder\Tools\BasketCookie;
 
 /**
  * Processor handling the full shop checkout pipeline.
@@ -423,6 +424,7 @@ class Shop implements ProcessorInterface {
             Session::deleteValue('campaign');
             Session::deleteValue('note');
             Session::deleteValue('order');
+            BasketCookie::clear();
         }
         return $status;
     }
