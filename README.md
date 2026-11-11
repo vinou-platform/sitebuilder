@@ -17,6 +17,7 @@ The Vinou Site-Builder is a PHP library that combines PHP routing configured in 
 - [Settings](#settings)
 - [Template override hierarchy](#template-override-hierarchy)
 - [Twig filters](#twig-filters)
+- [Structured data (JSON-LD)](#structured-data-json-ld)
 - [Classlist](#classlist)
 - [Provider](#provider)
 
@@ -315,6 +316,7 @@ system:
 | `defaultCountry` | Pre-selected country code |
 | `speechStyle` | `formal` or `informal` — controls salutation in templates |
 | `seo.titleAdd` | String appended to every page title |
+| `seo.logo` | Logo for the structured data (`structuredData('site')`), webroot-relative or absolute |
 | `permissionRedirect` | URL to redirect unauthenticated users to |
 | `pages.*` | Internal URLs for basket, checkout, login, etc. |
 | `images.*` | Image dimensions for list and detail views |
@@ -385,6 +387,29 @@ All filters are registered by `\Vinou\SiteBuilder\Tools\Render`.
 
 ---
 
+## Structured data (JSON-LD)
+
+The Twig function `structuredData()` renders schema.org data as a `<script type="application/ld+json">` tag. The data is
+built in `\Vinou\SiteBuilder\Tools\StructuredData`; the theme only decides where it is placed (the Vinou shop theme
+uses `Partials/General/Head.twig`).
+
+| Call | Output |
+|:-----|:-------|
+| `{{ structuredData('site') }}` | `Winery` + `WebSite` (name from `customer.company`, logo from `settings.seo.logo`) |
+| `{{ structuredData('product', wine) }}` | `Product` + `Offer` for a wine, bundle or product: name, url, description (`meta_description`, else `description` without HTML), image, sku, gtin, brand, category, price (client price when logged in), availability |
+
+Request values (`domain`, `path`, `client`, `customer`) come from the template context. Merchants (`customer.type ==
+'merchant'`) use the winery as brand. Texts are encoded with `JSON_HEX_TAG`, so HTML from the API cannot close the tag.
+
+Optional setting:
+```yaml
+settings:
+  seo:
+    logo: /Assets/Images/logo.png   # webroot-relative or absolute URL
+```
+
+---
+
 ## Classlist
 
 | Class | Description |
@@ -392,6 +417,7 @@ All filters are registered by `\Vinou\SiteBuilder\Tools\Render`.
 | `\Vinou\SiteBuilder\Site` | Main class; combines router, renderer, and settings loader |
 | `\Vinou\SiteBuilder\Loader\Settings` | Collects and merges settings YAML files |
 | `\Vinou\SiteBuilder\Tools\Render` | Initialises Twig, registers filters, executes dataProcessing |
+| `\Vinou\SiteBuilder\Tools\StructuredData` | Builds schema.org JSON-LD (Product/Offer, Winery/WebSite) for the `structuredData()` Twig function |
 | `\Vinou\SiteBuilder\Tools\BasketCookie` | Keeps the basket UUID in the HttpOnly cookie `vinou_basket` (30 days) and restores it into a new session; removed after an order |
 | `\Vinou\SiteBuilder\Router\DynamicRoutes` | Reads YAML route files and configures the Bramus router |
 | `\Vinou\SiteBuilder\Processors\AbstractProcessor` | Base class for custom processors; provides `loadApi()` |

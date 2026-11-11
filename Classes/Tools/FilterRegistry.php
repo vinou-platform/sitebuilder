@@ -8,6 +8,7 @@ use \Vinou\ApiConnector\Tools\Helper;
 use \Vinou\SiteBuilder\Processors\Shop;
 use \Twig\Environment;
 use \Twig\TwigFilter;
+use \Twig\TwigFunction;
 use \Gumlet\ImageResize;
 
 /**
@@ -69,6 +70,7 @@ class FilterRegistry {
         $this->registerShopFilters($twig);
         $this->registerHtmlFilters($twig);
         $this->registerApiFilters($twig);
+        $this->registerStructuredDataFunctions($twig);
     }
 
     /**
@@ -458,5 +460,63 @@ class FilterRegistry {
         $twig->addFilter(new TwigFilter('getWinery', function (int $id): mixed {
             return $this->api->getWinery($id);
         }));
+    }
+
+    /**
+     * Registers the structured data (JSON-LD) function.
+     *
+     * Usage in templates:
+     *   {{ structuredData('site') }}             Winery + WebSite (logo from settings.seo.logo)
+     *   {{ structuredData('product', wine) }}    Product + Offer for a wine, bundle or product
+     *
+     * Request values (domain, path, client, customer) are read from the template context,
+     * the image URL from the `image` filter, so templates pass only the object.
+     *
+     * @param Environment $twig
+     * @return void
+     */
+    private function registerStructuredDataFunctions(Environment $twig): void {
+        $twig->addFunction(new TwigFunction('structuredData', function (
+            Environment $env,
+            array $context,
+            string $type,
+            ?array $object = null
+        ): string {
+            $domain   = rtrim((string)($context['domain'] ?? ''), '/');
+            $customer = is_array($context['customer'] ?? null) ? $context['customer'] : [];
+            $company  = (string)($customer['company'] ?? '');
+
+            if ($type === 'site') {
+                $logo = $this->settings['seo']['logo'] ?? null;
+                $logoUrl = null;
+                if (is_string($logo) && $logo !== '')
+                    $logoUrl = preg_match('#^https?://#', $logo) ? $logo : $domain . '/' . ltrim($logo, '/');
+                return StructuredData::toScript(StructuredData::site($company, $domain, $logoUrl));
+            }
+
+            if ($type === 'product' && !empty($object['name'])) {
+                $brand = $company;
+                if (($customer['type'] ?? '') === 'merchant' && !empty($object['winery']['company']))
+                    $brand = (string)$object['winery']['company'];
+
+                $image = null;
+                if (!empty($object['image']) && is_string($object['image'])) {
+                    $imageFilter = $env->getFilter('image');
+                    $resolved    = $imageFilter ? call_user_func($imageFilter->getCallable(), $object['image'], $object['chstamp'] ?? null) : null;
+                    if (!empty($resolved['src']))
+                        $image = $domain . $resolved['src'];
+                }
+
+                return StructuredData::toScript(StructuredData::product($object, [
+                    'url'            => $domain . (string)($context['path'] ?? ''),
+                    'brand'          => $brand,
+                    'seller'         => $company,
+                    'image'          => $image,
+                    'useClientPrice' => !empty($context['client']),
+                ]));
+            }
+
+            return '';
+        }, ['needs_environment' => true, 'needs_context' => true, 'is_safe' => ['html']]));
     }
 }
