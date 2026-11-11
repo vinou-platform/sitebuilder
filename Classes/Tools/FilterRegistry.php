@@ -487,7 +487,7 @@ class FilterRegistry {
             $company  = (string)($customer['company'] ?? '');
 
             if ($type === 'site') {
-                $logo = $this->settings['seo']['logo'] ?? null;
+                $logo = $this->settings['settings']['seo']['logo'] ?? null;
                 $logoUrl = null;
                 if (is_string($logo) && $logo !== '')
                     $logoUrl = preg_match('#^https?://#', $logo) ? $logo : $domain . '/' . ltrim($logo, '/');
