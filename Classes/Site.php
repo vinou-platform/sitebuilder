@@ -97,10 +97,12 @@ class Site {
     }
 
     /**
-     * Blocks configured paths for visitors from configured countries.
+     * Blocks configured paths for visitors from blocked (or not allowed) countries.
      *
      * settings.geoBlocking:
-     *   countries:     ISO codes to block, e.g. [dk] – empty/missing = off
+     *   countries:        ISO codes to block, e.g. [dk]
+     *   allowedCountries: allow list, e.g. [de] – every other known country is blocked
+     *                     (both empty/missing = off; countries wins if a code is in both)
      *   paths:         path prefixes to block ('weine' blocks /weine and /weine/…),
      *                  '*' = whole site
      *   exceptions:    path prefixes that stay reachable (legal pages, /system)
@@ -116,7 +118,7 @@ class Site {
     private function applyGeoBlocking(): void {
         $settings = $this->settingsService->get('settings');
         $config   = is_array($settings) ? ($settings['geoBlocking'] ?? null) : null;
-        if (!is_array($config) || empty($config['countries']))
+        if (!Tools\GeoIp::isEnabled($config))
             return;
 
         $path = (string)parse_url($_SERVER['REQUEST_URI'] ?? '/', PHP_URL_PATH);

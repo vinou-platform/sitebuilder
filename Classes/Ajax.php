@@ -61,7 +61,7 @@ class Ajax {
     private function isGeoBlocked(): bool {
         $settings = $this->settingsService->get('settings');
         $config   = is_array($settings) ? ($settings['geoBlocking'] ?? null) : null;
-        if (!is_array($config) || empty($config['countries']))
+        if (!Tools\GeoIp::isEnabled($config))
             return false;
 
         $paths = (array)($config['paths'] ?? ['*']);

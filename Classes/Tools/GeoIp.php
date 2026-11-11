@@ -132,14 +132,27 @@ class GeoIp {
     }
 
     /**
-     * Returns the visitor's country if it is listed in settings.geoBlocking.countries,
-     * otherwise null. Country source: host/CDN header (countryHeader), then the
-     * local database in config/geoip/. Fail-open: unknown country = not blocked.
+     * True if settings.geoBlocking is switched on: a block list (countries)
+     * or an allow list (allowedCountries) is set.
+     *
+     * @param array<string, mixed>|null $config  settings.geoBlocking
+     */
+    public static function isEnabled(?array $config): bool {
+        return is_array($config) && (!empty($config['countries']) || !empty($config['allowedCountries']));
+    }
+
+    /**
+     * Returns the visitor's country if it is blocked, otherwise null.
+     *
+     * Blocked is a country listed in settings.geoBlocking.countries or – when
+     * settings.geoBlocking.allowedCountries is set – every country not listed
+     * there. Country source: host/CDN header (countryHeader), then the local
+     * database in config/geoip/. Fail-open: unknown country = not blocked.
      *
      * @param array<string, mixed>|null $config  settings.geoBlocking
      */
     public static function blockedCountry(?array $config): ?string {
-        if (!is_array($config) || empty($config['countries']))
+        if (!self::isEnabled($config))
             return null;
 
         $country = null;
@@ -149,8 +162,26 @@ class GeoIp {
         elseif (!empty($_SERVER['REMOTE_ADDR']))
             $country = (new self(self::defaultDir()))->lookup($_SERVER['REMOTE_ADDR']);
 
-        $blocked = array_map('strtoupper', (array)$config['countries']);
-        return ($country !== null && in_array($country, $blocked, true)) ? $country : null;
+        return self::isBlocked($country, $config) ? $country : null;
+    }
+
+    /**
+     * Decides for a known country code; null (unknown) is never blocked.
+     *
+     * @param string|null          $country  ISO 3166-1 alpha-2 code
+     * @param array<string, mixed> $config   settings.geoBlocking
+     */
+    public static function isBlocked(?string $country, array $config): bool {
+        if ($country === null)
+            return false;
+
+        $country = strtoupper($country);
+        $blocked = array_map('strtoupper', (array)($config['countries'] ?? []));
+        if (in_array($country, $blocked, true))
+            return true;
+
+        $allowed = array_map('strtoupper', (array)($config['allowedCountries'] ?? []));
+        return !empty($allowed) && !in_array($country, $allowed, true);
     }
 
     /** True if $path equals or lies below one of the prefixes; '*' matches all. */

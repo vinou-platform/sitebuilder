@@ -320,6 +320,24 @@ system:
 | `permissionRedirect` | URL to redirect unauthenticated users to |
 | `pages.*` | Internal URLs for basket, checkout, login, etc. |
 | `images.*` | Image dimensions for list and detail views |
+| `geoBlocking.*` | Block shop paths by visitor country, see below |
+
+**Geo blocking (`settings.geoBlocking`):**
+
+```yaml
+settings:
+  geoBlocking:
+    allowedCountries: [de]   # allow list: every other known country is blocked
+    countries: []            # block list, e.g. [dk] (wins if a code is in both lists)
+    paths: [weine, weinpakete, produkte, kategorie, suche, warenkorb, checkout, client]  # '*' = whole site
+    exceptions: [impressum, datenschutz, agb, widerruf, system]  # always reachable
+    countryHeader: ~         # optional country header of the host/CDN, e.g. HTTP_CF_IPCOUNTRY
+```
+
+Both lists empty = off. Blocked pages answer with HTTP 451 (`GeoBlocked.twig`), adding items to the basket via
+ajax with 403. The country comes from `countryHeader` or the local DB-IP database in `config/geoip/`
+(`vendor/bin/vinou geoip:update`, e.g. in the CI build). Fail-open: without database, for private IPs or unknown
+countries nothing is blocked.
 
 ---
 
